@@ -1,4 +1,5 @@
 import { BoxGeometry, MeshBasicMaterial, Mesh } from 'three';
+import { Drone } from '../drone/Drone';
 import { CameraFacade } from './CameraFacade';
 import { SceneFacade } from './SceneFacade';
 import { RendererFacade } from './RendererFacade';
@@ -9,8 +10,11 @@ export class Viewer3D {
   private rendererFacade: RendererFacade;
   private animationFrameId: number | null = null;
   private resizeHandler: (() => void) | null = null;
+  private drone: Drone | null = null;
+  private lastFrameTime: number = 0;
 
-  constructor(container: HTMLDivElement) {
+  constructor(container: HTMLDivElement, drone?: Drone) {
+    this.drone = drone || null;
     const width = container.clientWidth;
     const height = container.clientHeight;
 
@@ -35,8 +39,18 @@ export class Viewer3D {
   }
 
   private startAnimation(cube: Mesh): void {
-    const animate = () => {
+    const animate = (currentTime: number) => {
       this.animationFrameId = requestAnimationFrame(animate);
+
+      // Calculate delta time in seconds
+      const deltaTime = this.lastFrameTime === 0 ? 0 : (currentTime - this.lastFrameTime) / 1000;
+      this.lastFrameTime = currentTime;
+
+      // Update drone position
+      if (this.drone) {
+        this.drone.applyMove(deltaTime);
+      }
+
       cube.rotation.x += 0.01;
       cube.rotation.y += 0.01;
       this.rendererFacade.render(
@@ -44,7 +58,7 @@ export class Viewer3D {
         this.cameraFacade.getCamera()
       );
     };
-    animate();
+    animate(0);
   }
 
   private setupResizeHandler(container: HTMLDivElement): void {
