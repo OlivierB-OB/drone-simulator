@@ -4,7 +4,11 @@
   box-sizing: border-box;
 }
 
+html,
 body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
     'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
@@ -12,13 +16,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.app {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+#root {
+  width: 100%;
+  height: 100%;
 }
 
-h1 {
-  margin-bottom: 1rem;
-  color: #333;
+.app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#threejs-container {
+  width: 100%;
+  height: 100%;
+  flex: 1;
 }

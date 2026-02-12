@@ -30,6 +30,7 @@
   },
   "type": "module",
   "dependencies": {
-    "solid-js": "^1.9.11"
+    "solid-js": "^1.9.11",
+    "three": "^0.160.0"
   }
 }
