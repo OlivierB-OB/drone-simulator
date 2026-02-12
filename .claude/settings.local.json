@@ -27,7 +27,11 @@
       "Bash(bun add:*)",
       "Bash(bun run lint:*)",
       "Bash(bun run:*)",
-      "Bash(bun install:*)"
+      "Bash(bun install:*)",
+      "Bash(git -C \"c:\\\\perso\\\\drone-simulator\" log --oneline -5)",
+      "Bash(git -C \"c:\\\\perso\\\\drone-simulator\" add src/3Dviewer/)",
+      "Bash(git -C \"c:\\\\perso\\\\drone-simulator\" commit -m \"$\\(cat <<''EOF''\nFix Viewer3D to use container dimensions instead of window dimensions\n\nUpdate the Viewer3D class to base camera and renderer sizing on the\ncontainer element''s clientWidth and clientHeight rather than the full\nwindow dimensions. This allows proper responsive sizing within a bounded\ncontainer.\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C \"c:\\\\perso\\\\drone-simulator\" push)"
     ]
   }
 }
