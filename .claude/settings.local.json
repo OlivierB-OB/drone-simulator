@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(npm install:*)",
+      "Bash(npm start)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run format:*)",
+      "Bash(npm run format:check:*)",
+      "Bash(git rm:*)",
+      "Bash(ANALYZE_BUNDLE=true npm run build:*)",
+      "Bash(python3:*)",
+      "Bash(node analyze.js:*)",
+      "Bash(npm run lint:fix:*)",
+      "Bash(npm info:*)",
+      "Bash(python generate_sprites.py:*)",
+      "Bash(bun remove:*)",
+      "Bash(bun add:*)",
+      "Bash(bun run lint:*)",
+      "Bash(bun run:*)",
+      "Bash(bun install:*)"
+    ]
+  }
+}
