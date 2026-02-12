@@ -1,0 +1,19 @@
+import { PerspectiveCamera } from 'three';
+
+export class CameraFacade {
+  private camera: PerspectiveCamera;
+
+  constructor(width: number, height: number) {
+    this.camera = new PerspectiveCamera(75, width / height, 0.1, 1000);
+    this.camera.position.z = 5;
+  }
+
+  getCamera(): PerspectiveCamera {
+    return this.camera;
+  }
+
+  updateAspectRatio(width: number, height: number): void {
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+  }
+}
