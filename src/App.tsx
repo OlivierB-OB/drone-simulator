@@ -1,11 +1,11 @@
 import { onMount } from 'solid-js';
 import { Viewer3D } from './3Dviewer/Viewer3D';
-import { InputController } from './drone/InputController';
+import { DroneController } from './drone/DroneController';
 import { createDrone, Drone } from './drone/Drone';
 
 export function App() {
   let viewer3D: Viewer3D | null = null;
-  let inputController: InputController | null = null;
+  let droneController: DroneController | null = null;
   let drone: Drone | null = null;
 
   onMount(() => {
@@ -16,11 +16,11 @@ export function App() {
 
     drone = createDrone();
     viewer3D = new Viewer3D(containerRef, drone);
-    inputController = new InputController(containerRef, drone);
+    droneController = new DroneController(containerRef, drone);
 
     return () => {
       viewer3D?.dispose();
-      inputController?.dispose();
+      droneController?.dispose();
     };
   });
 

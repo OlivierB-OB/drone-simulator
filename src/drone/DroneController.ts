@@ -1,6 +1,6 @@
 import { Drone } from './Drone';
 
-export class InputController {
+export class DroneController {
   private containerRef: HTMLElement;
   private drone: Drone;
   private keydownHandler!: (event: KeyboardEvent) => void;
