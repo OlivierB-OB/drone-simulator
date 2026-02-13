@@ -39,7 +39,15 @@ bun run preview      # Preview production build locally
 ### Build & Testing
 
 ```bash
-bun run build        # Create optimized production build (output in dist/)
+bun run build           # Create optimized production build (output in dist/)
+bun run test            # Run all tests with vitest
+bun run test:ui         # Run tests with interactive UI
+bun run test:coverage   # Generate coverage report (text, json, html)
+```
+
+To run a single test file:
+```bash
+bun run test src/drone/Drone.test.ts
 ```
 
 ### Code Quality
@@ -59,6 +67,7 @@ bun run format:check # Check formatting without modifying files
 - **TypeScript** 5.9 - Type safety
 - **Three.js** 0.160 - 3D graphics rendering
 - **Vite** 7.3 - Build tool and dev server
+- **Vitest** 4.0 - Unit testing framework with happy-dom environment
 - **Bun** - JavaScript runtime and package manager
 
 ### Core Architecture Layers
@@ -84,8 +93,6 @@ Facade pattern wrapping Three.js components for cleaner API:
 - `CameraFacade.ts`: Wraps Three.js camera with aspect ratio updates
 - `SceneFacade.ts`: Wraps Three.js Scene
 - `RendererFacade.ts`: Wraps WebGLRenderer with resize handling
-
-Currently renders a simple rotating cube; will be replaced with drone visualization.
 
 #### 2a. **Animation Loop** (`src/core/AnimationLoop.ts`)
 
@@ -128,7 +135,7 @@ Centralized drone parameters:
    - Calls `drone.applyMove(deltaTime)` to update drone physics/location
    - Calls `viewer3D.render(deltaTime)` to render the updated scene
 3. `Drone` updates location based on movement flags and azimuth
-4. `Viewer3D` renders updated scene (currently just rotating cube)
+4. `Viewer3D` renders updated scene with drone visualization
 
 ### Key Patterns
 
@@ -138,3 +145,15 @@ Centralized drone parameters:
 - **Mercator projection**: Uses realistic geographic projection for GPS-based positioning
 - **Factory pattern**: `createDrone()` factory function for drone initialization
 - **Resource cleanup**: All components implement `dispose()` to clean up event listeners and Three.js resources
+
+## Testing
+
+Tests are located alongside their source files with `.test.ts` suffix and use Vitest:
+
+- **Drone.test.ts**: Comprehensive unit tests for drone physics, movement, and coordinate conversion
+  - Tests movement in all directions and combinations
+  - Verifies frame-rate independent movement
+  - Tests Mercator projection conversion
+  - Coverage includes edge cases (equator, prime meridian, southern hemisphere)
+
+The test environment uses happy-dom for lightweight DOM simulation. Run `bun run test:coverage` to generate coverage reports in text, JSON, and HTML formats.
