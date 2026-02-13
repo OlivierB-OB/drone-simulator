@@ -23,4 +23,10 @@ export default [
       '@typescript-eslint/explicit-module-boundary-types': 'off',
     },
   },
+  {
+    files: ['**/*.test.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 ];

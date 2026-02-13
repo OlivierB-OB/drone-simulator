@@ -3,9 +3,13 @@ import { PerspectiveCamera } from 'three';
 export class CameraFacade {
   private readonly camera: PerspectiveCamera;
 
-  constructor(width: number, height: number) {
-    this.camera = new PerspectiveCamera(75, width / height, 0.1, 1000);
-    this.camera.position.z = 5;
+  constructor(width: number, height: number, camera?: PerspectiveCamera) {
+    if (camera) {
+      this.camera = camera;
+    } else {
+      this.camera = new PerspectiveCamera(75, width / height, 0.1, 1000);
+      this.camera.position.z = 5;
+    }
   }
 
   getCamera(): PerspectiveCamera {

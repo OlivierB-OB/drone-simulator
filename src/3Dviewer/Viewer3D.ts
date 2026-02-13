@@ -10,13 +10,18 @@ export class Viewer3D {
   private resizeHandler: (() => void) | null = null;
   private cube: Mesh | null = null;
 
-  constructor(container: HTMLDivElement) {
+  constructor(
+    container: HTMLDivElement,
+    cameraFacade?: CameraFacade,
+    rendererFacade?: RendererFacade,
+    sceneFacade?: SceneFacade
+  ) {
     const width = container.clientWidth;
     const height = container.clientHeight;
 
-    this.cameraFacade = new CameraFacade(width, height);
-    this.sceneFacade = new SceneFacade();
-    this.rendererFacade = new RendererFacade(width, height);
+    this.cameraFacade = cameraFacade ?? new CameraFacade(width, height);
+    this.sceneFacade = sceneFacade ?? new SceneFacade();
+    this.rendererFacade = rendererFacade ?? new RendererFacade(width, height);
 
     container.appendChild(this.rendererFacade.getDomElement());
 

@@ -3,10 +3,14 @@ import { WebGLRenderer, Scene, Camera } from 'three';
 export class RendererFacade {
   private readonly renderer: WebGLRenderer;
 
-  constructor(width: number, height: number) {
-    this.renderer = new WebGLRenderer({ antialias: true });
-    this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
+  constructor(width: number, height: number, renderer?: WebGLRenderer) {
+    if (renderer) {
+      this.renderer = renderer;
+    } else {
+      this.renderer = new WebGLRenderer({ antialias: true });
+      this.renderer.setSize(width, height);
+      this.renderer.setPixelRatio(window.devicePixelRatio);
+    }
   }
 
   getDomElement(): HTMLCanvasElement {
