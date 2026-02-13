@@ -18,7 +18,7 @@ export function App() {
 
     drone = createDrone();
     viewer3D = new Viewer3D(containerRef);
-    animationLoop = new AnimationLoop(viewer3D, drone);
+    animationLoop = new AnimationLoop(viewer3D, drone, viewer3D.getCamera());
     animationLoop.start();
 
     droneController = new DroneController(containerRef, drone);

@@ -6,6 +6,7 @@ describe('AnimationLoop', () => {
   let animationLoop: AnimationLoop;
   let drone: Drone;
   let mockViewer3D: any;
+  let mockCamera: any;
 
   beforeEach(() => {
     drone = createDrone();
@@ -15,7 +16,13 @@ describe('AnimationLoop', () => {
       render: vi.fn(),
     };
 
-    animationLoop = new AnimationLoop(mockViewer3D, drone);
+    // Mock Camera
+    mockCamera = {
+      setPosition: vi.fn(),
+      setOrientation: vi.fn(),
+    };
+
+    animationLoop = new AnimationLoop(mockViewer3D, drone, mockCamera);
 
     // Mock requestAnimationFrame to capture the callback
     vi.stubGlobal(
@@ -104,8 +111,122 @@ describe('AnimationLoop', () => {
     });
   });
 
+  describe('camera coordination', () => {
+    it('should call camera.setPosition on animation frame', () => {
+      animationLoop.start();
+
+      const callback = (animationLoop as any).__testCallback;
+      if (callback) {
+        callback(100);
+        expect(mockCamera.setPosition).toHaveBeenCalled();
+      }
+    });
+
+    it('should call camera.setOrientation on animation frame', () => {
+      animationLoop.start();
+
+      const callback = (animationLoop as any).__testCallback;
+      if (callback) {
+        callback(100);
+        expect(mockCamera.setOrientation).toHaveBeenCalled();
+      }
+    });
+
+    it('should position camera at drone location plus 5 unit offset', () => {
+      const droneLocation = drone.getLocation();
+      const droneZ = drone.getZ();
+
+      animationLoop.start();
+
+      const callback = (animationLoop as any).__testCallback;
+      if (callback) {
+        callback(100);
+
+        expect(mockCamera.setPosition).toHaveBeenCalledWith(
+          droneLocation.x,
+          droneLocation.y,
+          droneZ + 5
+        );
+      }
+    });
+
+    it('should orient camera to drone azimuth', () => {
+      const droneAzimuth = drone.getAzimuth();
+
+      animationLoop.start();
+
+      const callback = (animationLoop as any).__testCallback;
+      if (callback) {
+        callback(100);
+
+        expect(mockCamera.setOrientation).toHaveBeenCalledWith(droneAzimuth);
+      }
+    });
+
+    it('should update camera position multiple times as drone moves', () => {
+      // Get initial position
+      const initialLocation = drone.getLocation();
+
+      animationLoop.start();
+
+      const callback = (animationLoop as any).__testCallback;
+      if (callback) {
+        // First call - verify camera is at initial position + 5
+        callback(0);
+        expect(mockCamera.setPosition).toHaveBeenCalledWith(
+          initialLocation.x,
+          initialLocation.y,
+          5
+        );
+
+        // Start moving forward for next frame
+        drone.startMovingForward();
+        mockCamera.setPosition.mockClear();
+
+        // Second call - with movement
+        callback(1000);
+
+        // Verify setPosition was called again (even if with slightly different values)
+        expect(mockCamera.setPosition).toHaveBeenCalled();
+      }
+    });
+
+    it('should execute in correct order: applyMove -> setPosition -> setOrientation -> render', () => {
+      const callOrder: string[] = [];
+      vi.spyOn(drone, 'applyMove').mockImplementation(() => {
+        callOrder.push('applyMove');
+      });
+      mockCamera.setPosition.mockImplementation(() => {
+        callOrder.push('setPosition');
+      });
+      mockCamera.setOrientation.mockImplementation(() => {
+        callOrder.push('setOrientation');
+      });
+      mockViewer3D.render.mockImplementation(() => {
+        callOrder.push('render');
+      });
+
+      animationLoop.start();
+
+      const callback = (animationLoop as any).__testCallback;
+      if (callback) {
+        // Only test the second call where delta time is non-zero
+        callback(0); // First call
+        callOrder.length = 0; // Clear the order
+        callback(100); // Second call
+
+        expect(callOrder).toEqual([
+          'applyMove',
+          'setPosition',
+          'setOrientation',
+          'render',
+        ]);
+      }
+    });
+  });
+
   describe('integration', () => {
-    it('should coordinate drone and rendering', () => {
+    it('should coordinate drone, camera, and rendering', () => {
       const droneSpy = vi.spyOn(drone, 'applyMove');
 
       animationLoop.start();
@@ -113,8 +234,10 @@ describe('AnimationLoop', () => {
       const callback = (animationLoop as any).__testCallback;
       if (callback) {
         callback(0);
-        // Verify both were called
+        // Verify all components were called
         expect(droneSpy).toHaveBeenCalled();
+        expect(mockCamera.setPosition).toHaveBeenCalled();
+        expect(mockCamera.setOrientation).toHaveBeenCalled();
         expect(mockViewer3D.render).toHaveBeenCalled();
       }
     });

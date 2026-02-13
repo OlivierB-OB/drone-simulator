@@ -27,6 +27,22 @@ describe('Drone', () => {
 
       expect(testDrone.getAzimuth()).toEqual(0);
     });
+
+    it('should initialize with given z-coordinate', () => {
+      const location: MercatorCoordinates = { x: 100, y: 200 };
+      const azimuth = 45;
+      const z = 10;
+      const testDrone = new Drone(location, azimuth, z);
+
+      expect(testDrone.getZ()).toEqual(z);
+    });
+
+    it('should default z to 0', () => {
+      const location: MercatorCoordinates = { x: 100, y: 200 };
+      const testDrone = new Drone(location);
+
+      expect(testDrone.getZ()).toEqual(0);
+    });
   });
 
   describe('getLocation', () => {
@@ -50,6 +66,25 @@ describe('Drone', () => {
     it('should return correct azimuth when initialized with angle', () => {
       const testDrone = new Drone(testLocation, 180);
       expect(testDrone.getAzimuth()).toEqual(180);
+    });
+  });
+
+  describe('getZ', () => {
+    it('should return the z-coordinate', () => {
+      expect(drone.getZ()).toEqual(0);
+    });
+
+    it('should return correct z-coordinate when initialized with value', () => {
+      const testDrone = new Drone(testLocation, 0, 5);
+      expect(testDrone.getZ()).toEqual(5);
+    });
+
+    it('should not change z-coordinate during movement', () => {
+      const testDrone = new Drone(testLocation, 0, 5);
+      testDrone.startMovingForward();
+      testDrone.applyMove(1);
+
+      expect(testDrone.getZ()).toEqual(5);
     });
   });
 

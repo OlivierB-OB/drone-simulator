@@ -37,6 +37,10 @@ export class Viewer3D {
     this.scene.add(this.cube);
   }
 
+  public getCamera(): Camera {
+    return this.camera;
+  }
+
   public render(): void {
     if (this.cube) {
       this.cube.rotation.x += 0.01;
