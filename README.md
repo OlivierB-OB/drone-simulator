@@ -80,11 +80,11 @@ drone-simulator/
 │   ├── index.tsx                 # SolidJS entry point
 │   ├── App.tsx                   # Main application component
 │   ├── config.ts                 # Drone configuration (speed, position, etc.)
-│   ├── 3Dviewer/                 # Three.js rendering system (Facades)
+│   ├── 3Dviewer/                 # Three.js rendering system
 │   │   ├── Viewer3D.ts
-│   │   ├── CameraFacade.ts
-│   │   ├── SceneFacade.ts
-│   │   └── RendererFacade.ts
+│   │   ├── Camera.ts
+│   │   ├── Scene.ts
+│   │   └── Renderer.ts
 │   ├── drone/                    # Drone simulation logic
 │   │   ├── Drone.ts              # Drone state and physics
 │   │   └── DroneController.ts    # Keyboard/mouse input handling

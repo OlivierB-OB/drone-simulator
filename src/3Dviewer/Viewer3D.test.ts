@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Viewer3D } from './Viewer3D';
-import { CameraFacade } from './CameraFacade';
-import { RendererFacade } from './RendererFacade';
-import { SceneFacade } from './SceneFacade';
+import { Camera } from './Camera';
+import { Renderer } from './Renderer';
+import { Scene } from './Scene';
 import * as THREE from 'three';
 
 describe('Viewer3D', () => {
@@ -11,9 +11,9 @@ describe('Viewer3D', () => {
   let mockCamera: THREE.PerspectiveCamera;
   let mockRenderer: any;
   let mockScene: THREE.Scene;
-  let cameraFacade: CameraFacade;
-  let rendererFacade: RendererFacade;
-  let sceneFacade: SceneFacade;
+  let camera: Camera;
+  let renderer: Renderer;
+  let scene: Scene;
 
   beforeEach(() => {
     // Create a container with specific dimensions
@@ -64,13 +64,13 @@ describe('Viewer3D', () => {
       }
     } as unknown as typeof THREE.Scene;
 
-    // Create facades with injected mock constructors
-    cameraFacade = new CameraFacade(800, 600, mockCameraConstructor);
-    rendererFacade = new RendererFacade(800, 600, mockRendererConstructor);
-    sceneFacade = new SceneFacade(mockSceneConstructor);
+    // Create camera, renderer, and scene with injected mock constructors
+    camera = new Camera(800, 600, mockCameraConstructor);
+    renderer = new Renderer(800, 600, mockRendererConstructor);
+    scene = new Scene(mockSceneConstructor);
 
-    // Create viewer with injected facades
-    viewer = new Viewer3D(container, cameraFacade, rendererFacade, sceneFacade);
+    // Create viewer with injected components
+    viewer = new Viewer3D(container, camera, renderer, scene);
   });
 
   afterEach(() => {
@@ -168,21 +168,21 @@ describe('Viewer3D', () => {
   });
 
   describe('dependency injection', () => {
-    it('should use injected camera facade', () => {
-      expect((viewer as any).cameraFacade).toBe(cameraFacade);
-      expect((viewer as any).cameraFacade.getCamera()).toBe(mockCamera);
+    it('should use injected camera', () => {
+      expect((viewer as any).camera).toBe(camera);
+      expect((viewer as any).camera.getCamera()).toBe(mockCamera);
     });
 
-    it('should use injected renderer facade', () => {
-      expect((viewer as any).rendererFacade).toBe(rendererFacade);
-      expect((viewer as any).rendererFacade.getDomElement()).toBe(
+    it('should use injected renderer', () => {
+      expect((viewer as any).renderer).toBe(renderer);
+      expect((viewer as any).renderer.getDomElement()).toBe(
         mockRenderer.domElement
       );
     });
 
-    it('should use injected scene facade', () => {
-      expect((viewer as any).sceneFacade).toBe(sceneFacade);
-      expect((viewer as any).sceneFacade.getScene()).toBe(mockScene);
+    it('should use injected scene', () => {
+      expect((viewer as any).scene).toBe(scene);
+      expect((viewer as any).scene.getScene()).toBe(mockScene);
     });
 
     it('should append renderer DOM element to container', () => {

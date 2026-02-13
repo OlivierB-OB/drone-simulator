@@ -1,14 +1,14 @@
-import { Scene, Color, Object3D } from 'three';
+import { Scene as ThreeScene, Color, Object3D } from 'three';
 
-export class SceneFacade {
-  private readonly scene: Scene;
+export class Scene {
+  private readonly scene: ThreeScene;
 
-  constructor(sceneConstructor: typeof Scene = Scene) {
+  constructor(sceneConstructor: typeof ThreeScene = ThreeScene) {
     this.scene = new sceneConstructor();
     this.scene.background = new Color(0x1a1a2e);
   }
 
-  getScene(): Scene {
+  getScene(): ThreeScene {
     return this.scene;
   }
 

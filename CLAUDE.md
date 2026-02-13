@@ -85,20 +85,20 @@ All four are instantiated in `onMount()` and properly disposed in cleanup.
 
 #### 2. **3D Rendering System** (`src/3Dviewer/`)
 
-Facade pattern wrapping Three.js components for cleaner API and testability:
+Wrapper pattern for Three.js components providing a cleaner API and testability:
 
 - `Viewer3D.ts`: Main orchestrator that handles rendering
   - Updates 3D scene each frame when called by AnimationLoop
   - Manages Three.js scene setup and cleanup
-  - Accepts optional injected facades for dependency injection (used in testing)
-- `CameraFacade.ts`: Wraps Three.js PerspectiveCamera
+  - Accepts optional injected wrapper components for dependency injection (used in testing)
+- `Camera.ts`: Wraps Three.js PerspectiveCamera
   - Accepts optional `cameraConstructor` parameter for constructor injection
   - Initializes with fixed parameters: FOV=75, near=0.1, far=1000, position.z=5
   - Updates aspect ratio on resize
-- `SceneFacade.ts`: Wraps Three.js Scene
+- `Scene.ts`: Wraps Three.js Scene
   - Accepts optional `sceneConstructor` parameter for constructor injection
   - Automatically sets dark navy background (0x1a1a2e)
-- `RendererFacade.ts`: Wraps WebGLRenderer
+- `Renderer.ts`: Wraps WebGLRenderer
   - Accepts optional `rendererConstructor` parameter for constructor injection
   - Always initializes with antialias enabled and device pixel ratio set
 
@@ -147,7 +147,7 @@ Centralized drone parameters:
 
 ### Key Patterns
 
-- **Facade pattern with constructor injection**: 3D viewer facades wrap Three.js components. Constructor parameters accept constructor functions (not instances) for dependency injection. This enables:
+- **Wrapper pattern with constructor injection**: 3D viewer components wrap Three.js classes. Constructor parameters accept constructor functions (not instances) for dependency injection. This enables:
   - Tests to inject mock constructors and verify initialization parameters
   - Decoupling from Three.js during testing
   - Always-consistent initialization logic (no conditional branches)
@@ -157,14 +157,14 @@ Centralized drone parameters:
 - **Factory pattern**: `createDrone()` factory function for drone initialization
 - **Resource cleanup**: All components implement `dispose()` to clean up event listeners and Three.js resources
 
-### Testing Strategy for Facades
+### Testing Strategy for Wrapper Components
 
-The facade classes use constructor injection to enable better testability:
+The wrapper classes use constructor injection to enable better testability:
 
-- Tests inject mock constructor **classes** (not instances) into facades
+- Tests inject mock constructor **classes** (not instances) into wrapper components
 - Mock constructors extend the real Three.js classes (e.g., `class MockCamera extends PerspectiveCamera`)
 - Constructor calls are tracked to verify correct initialization parameters
-- Example: `CameraFacade` must call its injected constructor with `(75, width/height, 0.1, 1000)`
+- Example: `Camera` must call its injected constructor with `(75, width/height, 0.1, 1000)`
 
 When testing, always use constructor classes rather than instances:
 ```typescript
@@ -176,7 +176,7 @@ const mockConstructor = class MockCamera extends THREE.PerspectiveCamera {
   }
 } as unknown as typeof THREE.PerspectiveCamera;
 
-facade = new CameraFacade(width, height, mockConstructor);
+camera = new Camera(width, height, mockConstructor);
 ```
 
 ## Testing
@@ -185,9 +185,9 @@ Tests are located alongside their source files with `.test.ts` suffix and use Vi
 
 ### Test Organization
 
-- **Facade tests** (`*Facade.test.ts`): Test Three.js wrapper initialization and functionality
-  - Use constructor injection to verify facade initialization parameters
-  - Example: Verify `CameraFacade` initializes with correct FOV, aspect ratio, near/far planes
+- **Component tests** (`Camera.test.ts`, `Scene.test.ts`, `Renderer.test.ts`): Test Three.js wrapper initialization and functionality
+  - Use constructor injection to verify component initialization parameters
+  - Example: Verify `Camera` initializes with correct FOV, aspect ratio, near/far planes
 - **Drone.test.ts**: Comprehensive unit tests for drone physics, movement, and coordinate conversion
   - Tests movement in all directions and combinations
   - Verifies frame-rate independent movement
@@ -195,7 +195,7 @@ Tests are located alongside their source files with `.test.ts` suffix and use Vi
   - Coverage includes edge cases (equator, prime meridian, southern hemisphere)
 - **DroneController.test.ts**: Tests input handling and event listener cleanup
 - **AnimationLoop.test.ts**: Tests frame timing and delta time calculations
-- **Viewer3D.test.ts**: Tests 3D scene orchestration with injected facades
+- **Viewer3D.test.ts**: Tests 3D scene orchestration with injected components
 
 ### Running Tests
 

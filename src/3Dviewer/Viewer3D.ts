@@ -1,29 +1,29 @@
 import { BoxGeometry, MeshBasicMaterial, Mesh } from 'three';
-import { CameraFacade } from './CameraFacade';
-import { SceneFacade } from './SceneFacade';
-import { RendererFacade } from './RendererFacade';
+import { Camera } from './Camera';
+import { Scene } from './Scene';
+import { Renderer } from './Renderer';
 
 export class Viewer3D {
-  private readonly cameraFacade: CameraFacade;
-  private readonly sceneFacade: SceneFacade;
-  private readonly rendererFacade: RendererFacade;
+  private readonly camera: Camera;
+  private readonly scene: Scene;
+  private readonly renderer: Renderer;
   private resizeHandler: (() => void) | null = null;
   private cube: Mesh | null = null;
 
   constructor(
     container: HTMLDivElement,
-    cameraFacade?: CameraFacade,
-    rendererFacade?: RendererFacade,
-    sceneFacade?: SceneFacade
+    camera?: Camera,
+    renderer?: Renderer,
+    scene?: Scene
   ) {
     const width = container.clientWidth;
     const height = container.clientHeight;
 
-    this.cameraFacade = cameraFacade ?? new CameraFacade(width, height);
-    this.sceneFacade = sceneFacade ?? new SceneFacade();
-    this.rendererFacade = rendererFacade ?? new RendererFacade(width, height);
+    this.camera = camera ?? new Camera(width, height);
+    this.scene = scene ?? new Scene();
+    this.renderer = renderer ?? new Renderer(width, height);
 
-    container.appendChild(this.rendererFacade.getDomElement());
+    container.appendChild(this.renderer.getDomElement());
 
     this.setupResizeHandler(container);
     this.initializeScene();
@@ -34,7 +34,7 @@ export class Viewer3D {
     const geometry = new BoxGeometry();
     const material = new MeshBasicMaterial({ color: 0x00ff00 });
     this.cube = new Mesh(geometry, material);
-    this.sceneFacade.add(this.cube);
+    this.scene.add(this.cube);
   }
 
   public render(): void {
@@ -42,31 +42,28 @@ export class Viewer3D {
       this.cube.rotation.x += 0.01;
       this.cube.rotation.y += 0.01;
     }
-    this.rendererFacade.render(
-      this.sceneFacade.getScene(),
-      this.cameraFacade.getCamera()
-    );
+    this.renderer.render(this.scene.getScene(), this.camera.getCamera());
   }
 
   private setupResizeHandler(container: HTMLDivElement): void {
     this.resizeHandler = () => {
       const width = container.clientWidth;
       const height = container.clientHeight;
-      this.cameraFacade.updateAspectRatio(width, height);
-      this.rendererFacade.setSize(width, height);
+      this.camera.updateAspectRatio(width, height);
+      this.renderer.setSize(width, height);
     };
     window.addEventListener('resize', this.resizeHandler);
   }
 
   dispose(): void {
     if (this.cube) {
-      this.sceneFacade.remove(this.cube);
+      this.scene.remove(this.cube);
       this.cube.geometry.dispose();
       (this.cube.material as MeshBasicMaterial).dispose();
     }
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
     }
-    this.rendererFacade.dispose();
+    this.renderer.dispose();
   }
 }

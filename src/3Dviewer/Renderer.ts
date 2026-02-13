@@ -1,6 +1,6 @@
 import { WebGLRenderer, Scene, Camera } from 'three';
 
-export class RendererFacade {
+export class Renderer {
   private readonly renderer: WebGLRenderer;
 
   constructor(

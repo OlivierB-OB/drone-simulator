@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { RendererFacade } from './RendererFacade';
+import { Renderer } from './Renderer';
 import { WebGLRenderer } from 'three';
 
-describe('RendererFacade', () => {
-  let facade: RendererFacade;
+describe('Renderer', () => {
+  let renderer: Renderer;
 
   beforeEach(() => {
     // Set device pixel ratio
@@ -25,7 +25,7 @@ describe('RendererFacade', () => {
     } as unknown as typeof WebGLRenderer;
 
     // Inject mock renderer constructor to avoid WebGL context errors
-    facade = new RendererFacade(1920, 1080, mockRendererConstructor);
+    renderer = new Renderer(1920, 1080, mockRendererConstructor);
   });
 
   afterEach(() => {
@@ -34,17 +34,17 @@ describe('RendererFacade', () => {
 
   describe('getDomElement()', () => {
     it('should return an HTMLCanvasElement', () => {
-      const element = facade.getDomElement();
+      const element = renderer.getDomElement();
       expect(element).toBeInstanceOf(HTMLCanvasElement);
     });
 
     it('should return a valid canvas element', () => {
-      const element = facade.getDomElement();
+      const element = renderer.getDomElement();
       expect(element).toBeInstanceOf(HTMLCanvasElement);
     });
 
     it('should have reasonable dimensions', () => {
-      const element = facade.getDomElement();
+      const element = renderer.getDomElement();
       expect(element.width).toBeGreaterThan(0);
       expect(element.height).toBeGreaterThan(0);
     });
@@ -52,19 +52,19 @@ describe('RendererFacade', () => {
 
   describe('render()', () => {
     it('should have render method', () => {
-      expect(typeof facade.render).toBe('function');
+      expect(typeof renderer.render).toBe('function');
     });
   });
 
   describe('setSize()', () => {
     it('should have setSize method', () => {
-      expect(typeof facade.setSize).toBe('function');
+      expect(typeof renderer.setSize).toBe('function');
     });
   });
 
   describe('dispose()', () => {
     it('should have dispose method', () => {
-      expect(typeof facade.dispose).toBe('function');
+      expect(typeof renderer.dispose).toBe('function');
     });
   });
 
@@ -83,8 +83,8 @@ describe('RendererFacade', () => {
         }
       } as unknown as typeof WebGLRenderer;
 
-      const injectedFacade = new RendererFacade(800, 600, mockConstructor);
-      const element = injectedFacade.getDomElement();
+      const injectedRenderer = new Renderer(800, 600, mockConstructor);
+      const element = injectedRenderer.getDomElement();
 
       expect(constructorCalls).toHaveLength(1);
       expect(constructorCalls[0]).toEqual({ antialias: true });
@@ -105,7 +105,7 @@ describe('RendererFacade', () => {
         }
       } as unknown as typeof WebGLRenderer;
 
-      new RendererFacade(800, 600, mockConstructor);
+      new Renderer(800, 600, mockConstructor);
 
       expect(constructorCalls).toHaveLength(1);
       expect(constructorCalls[0]).toEqual({ antialias: true });
@@ -125,7 +125,7 @@ describe('RendererFacade', () => {
         constructor() {}
       } as unknown as typeof WebGLRenderer;
 
-      new RendererFacade(800, 600, mockConstructor);
+      new Renderer(800, 600, mockConstructor);
 
       expect(setSizeCalls).toHaveLength(1);
       expect(setSizeCalls[0]).toEqual([800, 600]);
@@ -145,7 +145,7 @@ describe('RendererFacade', () => {
         constructor() {}
       } as unknown as typeof WebGLRenderer;
 
-      new RendererFacade(800, 600, mockConstructor);
+      new Renderer(800, 600, mockConstructor);
 
       expect(setPixelRatioCalls).toHaveLength(1);
       expect(setPixelRatioCalls[0]).toEqual([window.devicePixelRatio]);

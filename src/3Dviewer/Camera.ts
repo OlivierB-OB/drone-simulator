@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from 'three';
 
-export class CameraFacade {
+export class Camera {
   private readonly camera: PerspectiveCamera;
 
   constructor(

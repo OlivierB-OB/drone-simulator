@@ -1,37 +1,37 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { CameraFacade } from './CameraFacade';
+import { Camera } from './Camera';
 import * as THREE from 'three';
 
-describe('CameraFacade', () => {
-  let facade: CameraFacade;
+describe('Camera', () => {
+  let camera: Camera;
 
   beforeEach(() => {
-    facade = new CameraFacade(1920, 1080);
+    camera = new Camera(1920, 1080);
   });
 
   describe('constructor', () => {
     it('should create a PerspectiveCamera with correct parameters', () => {
-      const camera = facade.getCamera();
+      const cameraInstance = camera.getCamera();
 
-      expect(camera).toBeInstanceOf(THREE.PerspectiveCamera);
-      expect(camera.fov).toBe(75);
-      expect(camera.near).toBe(0.1);
-      expect(camera.far).toBe(1000);
+      expect(cameraInstance).toBeInstanceOf(THREE.PerspectiveCamera);
+      expect(cameraInstance.fov).toBe(75);
+      expect(cameraInstance.near).toBe(0.1);
+      expect(cameraInstance.far).toBe(1000);
     });
 
     it('should set correct aspect ratio based on dimensions', () => {
-      const camera = facade.getCamera();
+      const cameraInstance = camera.getCamera();
       const expectedAspect = 1920 / 1080;
 
-      expect(camera.aspect).toBeCloseTo(expectedAspect, 5);
+      expect(cameraInstance.aspect).toBeCloseTo(expectedAspect, 5);
     });
 
     it('should position camera at z=5', () => {
-      const camera = facade.getCamera();
+      const cameraInstance = camera.getCamera();
 
-      expect(camera.position.z).toBe(5);
-      expect(camera.position.x).toBe(0);
-      expect(camera.position.y).toBe(0);
+      expect(cameraInstance.position.z).toBe(5);
+      expect(cameraInstance.position.x).toBe(0);
+      expect(cameraInstance.position.y).toBe(0);
     });
 
     it('should accept optional injected camera constructor', () => {
@@ -44,7 +44,11 @@ describe('CameraFacade', () => {
         }
       } as unknown as typeof THREE.PerspectiveCamera;
 
-      const camera = new CameraFacade(1920, 1080, mockConstructor).getCamera();
+      const cameraInstance = new Camera(
+        1920,
+        1080,
+        mockConstructor
+      ).getCamera();
 
       expect(constructorCalls).toHaveLength(1);
       expect(constructorCalls[0]).toEqual({
@@ -53,8 +57,8 @@ describe('CameraFacade', () => {
         near: 0.1,
         far: 1000,
       });
-      expect(camera).toBeInstanceOf(THREE.PerspectiveCamera);
-      expect(camera.position.z).toBe(5);
+      expect(cameraInstance).toBeInstanceOf(THREE.PerspectiveCamera);
+      expect(cameraInstance.position.z).toBe(5);
     });
 
     it('should initialize camera with correct parameters through constructor', () => {
@@ -66,7 +70,7 @@ describe('CameraFacade', () => {
         }
       } as unknown as typeof THREE.PerspectiveCamera;
 
-      new CameraFacade(1920, 1080, mockConstructor);
+      new Camera(1920, 1080, mockConstructor);
 
       expect(constructorCalls).toHaveLength(1);
       expect(constructorCalls[0]).toEqual({
@@ -80,93 +84,93 @@ describe('CameraFacade', () => {
 
   describe('getCamera()', () => {
     it('should return the internal camera instance', () => {
-      const camera1 = facade.getCamera();
-      const camera2 = facade.getCamera();
+      const camera1 = camera.getCamera();
+      const camera2 = camera.getCamera();
 
       expect(camera1).toBe(camera2); // Should be same reference
     });
 
     it('should return a PerspectiveCamera', () => {
-      const camera = facade.getCamera();
-      expect(camera).toBeInstanceOf(THREE.PerspectiveCamera);
+      const cameraInstance = camera.getCamera();
+      expect(cameraInstance).toBeInstanceOf(THREE.PerspectiveCamera);
     });
   });
 
   describe('updateAspectRatio()', () => {
     it('should update aspect ratio based on new dimensions', () => {
-      const camera = facade.getCamera();
+      const cameraInstance = camera.getCamera();
       const updateProjectionMatrixSpy = vi.spyOn(
-        camera,
+        cameraInstance,
         'updateProjectionMatrix'
       );
 
-      facade.updateAspectRatio(1280, 720);
+      camera.updateAspectRatio(1280, 720);
 
       const expectedAspect = 1280 / 720;
-      expect(camera.aspect).toBeCloseTo(expectedAspect, 5);
+      expect(cameraInstance.aspect).toBeCloseTo(expectedAspect, 5);
       expect(updateProjectionMatrixSpy).toHaveBeenCalledOnce();
     });
 
     it('should handle square dimensions', () => {
-      const camera = facade.getCamera();
-      facade.updateAspectRatio(800, 800);
+      const cameraInstance = camera.getCamera();
+      camera.updateAspectRatio(800, 800);
 
-      expect(camera.aspect).toBe(1);
+      expect(cameraInstance.aspect).toBe(1);
     });
 
     it('should handle wide aspect ratios', () => {
-      const camera = facade.getCamera();
-      facade.updateAspectRatio(3840, 1080);
+      const cameraInstance = camera.getCamera();
+      camera.updateAspectRatio(3840, 1080);
 
-      expect(camera.aspect).toBeCloseTo(3.556, 3);
+      expect(cameraInstance.aspect).toBeCloseTo(3.556, 3);
     });
 
     it('should handle portrait dimensions', () => {
-      const camera = facade.getCamera();
-      facade.updateAspectRatio(1080, 1920);
+      const cameraInstance = camera.getCamera();
+      camera.updateAspectRatio(1080, 1920);
 
-      expect(camera.aspect).toBeCloseTo(0.5625, 5);
+      expect(cameraInstance.aspect).toBeCloseTo(0.5625, 5);
     });
 
     it('should update projection matrix after changing aspect ratio', () => {
-      const camera = facade.getCamera();
+      const cameraInstance = camera.getCamera();
       const updateProjectionMatrixSpy = vi.spyOn(
-        camera,
+        cameraInstance,
         'updateProjectionMatrix'
       );
 
-      facade.updateAspectRatio(2560, 1440);
+      camera.updateAspectRatio(2560, 1440);
 
       expect(updateProjectionMatrixSpy).toHaveBeenCalledOnce();
     });
 
     it('should handle multiple resize calls', () => {
-      const camera = facade.getCamera();
+      const cameraInstance = camera.getCamera();
       const updateProjectionMatrixSpy = vi.spyOn(
-        camera,
+        cameraInstance,
         'updateProjectionMatrix'
       );
 
-      facade.updateAspectRatio(1280, 720);
-      facade.updateAspectRatio(1920, 1080);
-      facade.updateAspectRatio(800, 600);
+      camera.updateAspectRatio(1280, 720);
+      camera.updateAspectRatio(1920, 1080);
+      camera.updateAspectRatio(800, 600);
 
       expect(updateProjectionMatrixSpy).toHaveBeenCalledTimes(3);
-      expect(camera.aspect).toBeCloseTo(800 / 600, 5);
+      expect(cameraInstance.aspect).toBeCloseTo(800 / 600, 5);
     });
   });
 
   describe('edge cases', () => {
     it('should handle very small dimensions', () => {
-      const camera = facade.getCamera();
-      expect(() => facade.updateAspectRatio(1, 1)).not.toThrow();
-      expect(camera.aspect).toBe(1);
+      const cameraInstance = camera.getCamera();
+      expect(() => camera.updateAspectRatio(1, 1)).not.toThrow();
+      expect(cameraInstance.aspect).toBe(1);
     });
 
     it('should handle very large dimensions', () => {
-      const camera = facade.getCamera();
-      expect(() => facade.updateAspectRatio(7680, 4320)).not.toThrow();
-      expect(camera.aspect).toBeCloseTo(7680 / 4320, 5);
+      const cameraInstance = camera.getCamera();
+      expect(() => camera.updateAspectRatio(7680, 4320)).not.toThrow();
+      expect(cameraInstance.aspect).toBeCloseTo(7680 / 4320, 5);
     });
   });
 });
