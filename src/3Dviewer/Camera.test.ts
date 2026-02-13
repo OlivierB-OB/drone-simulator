@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Camera } from './Camera';
+import { cameraConfig } from '../config';
 import * as THREE from 'three';
 
 describe('Camera', () => {
@@ -14,9 +15,9 @@ describe('Camera', () => {
       const cameraInstance = camera.getCamera();
 
       expect(cameraInstance).toBeInstanceOf(THREE.PerspectiveCamera);
-      expect(cameraInstance.fov).toBe(75);
-      expect(cameraInstance.near).toBe(0.1);
-      expect(cameraInstance.far).toBe(1000);
+      expect(cameraInstance.fov).toBe(cameraConfig.fov);
+      expect(cameraInstance.near).toBe(cameraConfig.near);
+      expect(cameraInstance.far).toBe(cameraConfig.far);
     });
 
     it('should set correct aspect ratio based on dimensions', () => {
@@ -44,10 +45,10 @@ describe('Camera', () => {
 
       expect(constructorCalls).toHaveLength(1);
       expect(constructorCalls[0]).toEqual({
-        fov: 75,
+        fov: cameraConfig.fov,
         aspect: 1920 / 1080,
-        near: 0.1,
-        far: 1000,
+        near: cameraConfig.near,
+        far: cameraConfig.far,
       });
       expect(cameraInstance).toBeInstanceOf(THREE.PerspectiveCamera);
     });
@@ -65,10 +66,10 @@ describe('Camera', () => {
 
       expect(constructorCalls).toHaveLength(1);
       expect(constructorCalls[0]).toEqual({
-        fov: 75,
+        fov: cameraConfig.fov,
         aspect: 1920 / 1080,
-        near: 0.1,
-        far: 1000,
+        near: cameraConfig.near,
+        far: cameraConfig.far,
       });
     });
   });

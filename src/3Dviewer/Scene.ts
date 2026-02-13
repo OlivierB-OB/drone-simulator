@@ -1,11 +1,12 @@
 import { Scene as ThreeScene, Color, Object3D } from 'three';
+import { sceneConfig } from '../config';
 
 export class Scene {
   private readonly scene: ThreeScene;
 
   constructor(sceneConstructor: typeof ThreeScene = ThreeScene) {
     this.scene = new sceneConstructor();
-    this.scene.background = new Color(0x1a1a2e);
+    this.scene.background = new Color(sceneConfig.backgroundColor);
   }
 
   getScene(): ThreeScene {

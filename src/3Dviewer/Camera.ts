@@ -1,4 +1,5 @@
 import { PerspectiveCamera } from 'three';
+import { cameraConfig } from '../config';
 
 export class Camera {
   private readonly camera: PerspectiveCamera;
@@ -8,7 +9,12 @@ export class Camera {
     height: number,
     cameraConstructor: typeof PerspectiveCamera = PerspectiveCamera
   ) {
-    this.camera = new cameraConstructor(75, width / height, 0.1, 1000);
+    this.camera = new cameraConstructor(
+      cameraConfig.fov,
+      width / height,
+      cameraConfig.near,
+      cameraConfig.far
+    );
   }
 
   getCamera(): PerspectiveCamera {

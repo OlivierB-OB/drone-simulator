@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Scene } from './Scene';
+import { sceneConfig } from '../config';
 import * as THREE from 'three';
 
 describe('Scene', () => {
@@ -17,7 +18,7 @@ describe('Scene', () => {
 
     it('should set background color to dark navy', () => {
       const sceneInstance = scene.getScene();
-      const expectedColor = new THREE.Color(0x1a1a2e);
+      const expectedColor = new THREE.Color(sceneConfig.backgroundColor);
 
       expect(sceneInstance.background?.getHex()).toBe(expectedColor.getHex());
     });
@@ -187,7 +188,7 @@ describe('Scene', () => {
       expect(constructorCalls).toHaveLength(1);
       expect(sceneInstance).toBeInstanceOf(THREE.Scene);
       expect(sceneInstance.background?.getHex()).toBe(
-        new THREE.Color(0x1a1a2e).getHex()
+        new THREE.Color(sceneConfig.backgroundColor).getHex()
       );
     });
 
@@ -198,7 +199,7 @@ describe('Scene', () => {
       const injectedScene = new Scene(mockConstructor);
 
       expect(injectedScene.getScene().background?.getHex()).toBe(
-        new THREE.Color(0x1a1a2e).getHex()
+        new THREE.Color(sceneConfig.backgroundColor).getHex()
       );
     });
 

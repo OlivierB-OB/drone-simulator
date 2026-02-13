@@ -139,5 +139,5 @@ const mercatorCoords = Drone.latLonToMercator(
 );
 
 export function createDrone(): Drone {
-  return new Drone(mercatorCoords, 0); // azimuth 0 = North
+  return new Drone(mercatorCoords, droneConfig.initialAzimuth);
 }
