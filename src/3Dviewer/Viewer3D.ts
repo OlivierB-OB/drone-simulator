@@ -43,7 +43,10 @@ export class Viewer3D {
       this.animationFrameId = requestAnimationFrame(animate);
 
       // Calculate delta time in seconds
-      const deltaTime = this.lastFrameTime === 0 ? 0 : (currentTime - this.lastFrameTime) / 1000;
+      const deltaTime =
+        this.lastFrameTime === 0
+          ? 0
+          : (currentTime - this.lastFrameTime) / 1000;
       this.lastFrameTime = currentTime;
 
       // Update drone position

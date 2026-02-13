@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "azure-devops": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx","-y", "@azure-devops/mcp", "slb-swt"
+      ]
+    }
+  }
+}
