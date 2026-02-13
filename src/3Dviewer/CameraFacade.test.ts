@@ -34,29 +34,47 @@ describe('CameraFacade', () => {
       expect(camera.position.y).toBe(0);
     });
 
-    it('should accept optional injected camera', () => {
-      const mockCamera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 100);
-      mockCamera.position.z = 10;
+    it('should accept optional injected camera constructor', () => {
+      // Create a wrapper class that delegates to a tracked constructor
+      const constructorCalls: any[] = [];
+      const mockConstructor = class MockCamera extends THREE.PerspectiveCamera {
+        constructor(fov: number, aspect: number, near: number, far: number) {
+          super(fov, aspect, near, far);
+          constructorCalls.push({ fov, aspect, near, far });
+        }
+      } as unknown as typeof THREE.PerspectiveCamera;
 
-      const injectedFacade = new CameraFacade(1920, 1080, mockCamera);
-      const camera = injectedFacade.getCamera();
+      const camera = new CameraFacade(1920, 1080, mockConstructor).getCamera();
 
-      expect(camera).toBe(mockCamera);
-      expect(camera.fov).toBe(60);
-      expect(camera.far).toBe(100);
-      expect(camera.position.z).toBe(10);
+      expect(constructorCalls).toHaveLength(1);
+      expect(constructorCalls[0]).toEqual({
+        fov: 75,
+        aspect: 1920 / 1080,
+        near: 0.1,
+        far: 1000,
+      });
+      expect(camera).toBeInstanceOf(THREE.PerspectiveCamera);
+      expect(camera.position.z).toBe(5);
     });
 
-    it('should use injected camera without overwriting position', () => {
-      const mockCamera = new THREE.PerspectiveCamera(75, 16 / 9, 0.1, 1000);
-      mockCamera.position.set(5, 10, 15);
+    it('should initialize camera with correct parameters through constructor', () => {
+      const constructorCalls: any[] = [];
+      const mockConstructor = class MockCamera extends THREE.PerspectiveCamera {
+        constructor(fov: number, aspect: number, near: number, far: number) {
+          super(fov, aspect, near, far);
+          constructorCalls.push({ fov, aspect, near, far });
+        }
+      } as unknown as typeof THREE.PerspectiveCamera;
 
-      const injectedFacade = new CameraFacade(1920, 1080, mockCamera);
-      const camera = injectedFacade.getCamera();
+      new CameraFacade(1920, 1080, mockConstructor);
 
-      expect(camera.position.x).toBe(5);
-      expect(camera.position.y).toBe(10);
-      expect(camera.position.z).toBe(15);
+      expect(constructorCalls).toHaveLength(1);
+      expect(constructorCalls[0]).toEqual({
+        fov: 75,
+        aspect: 1920 / 1080,
+        near: 0.1,
+        far: 1000,
+      });
     });
   });
 

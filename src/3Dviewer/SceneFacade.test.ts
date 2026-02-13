@@ -172,38 +172,57 @@ describe('SceneFacade', () => {
   });
 
   describe('dependency injection', () => {
-    it('should accept optional injected scene', () => {
-      const mockScene = new THREE.Scene();
-      mockScene.background = new THREE.Color(0xff0000);
+    it('should accept optional injected scene constructor and call it', () => {
+      const constructorCalls: any[] = [];
+      const mockConstructor = class MockScene extends THREE.Scene {
+        constructor() {
+          super();
+          constructorCalls.push({});
+        }
+      } as unknown as typeof THREE.Scene;
 
-      const injectedFacade = new SceneFacade(mockScene);
-      const scene = injectedFacade.getScene();
+      const facade = new SceneFacade(mockConstructor);
+      const scene = facade.getScene();
 
-      expect(scene).toBe(mockScene);
+      expect(constructorCalls).toHaveLength(1);
+      expect(scene).toBeInstanceOf(THREE.Scene);
       expect(scene.background?.getHex()).toBe(
-        new THREE.Color(0xff0000).getHex()
+        new THREE.Color(0x1a1a2e).getHex()
       );
     });
 
-    it('should use injected scene for add operations', () => {
-      const mockScene = new THREE.Scene();
-      const injectedFacade = new SceneFacade(mockScene);
+    it('should initialize scene with correct background color through constructor', () => {
+      const mockConstructor = class MockScene
+        extends THREE.Scene {} as unknown as typeof THREE.Scene;
 
-      const mesh = new THREE.Mesh();
-      injectedFacade.add(mesh);
+      const facade = new SceneFacade(mockConstructor);
 
-      expect(mockScene.children).toContain(mesh);
+      expect(facade.getScene().background?.getHex()).toBe(
+        new THREE.Color(0x1a1a2e).getHex()
+      );
     });
 
-    it('should use injected scene for remove operations', () => {
-      const mockScene = new THREE.Scene();
-      const injectedFacade = new SceneFacade(mockScene);
+    it('should use injected scene constructor for add operations', () => {
+      const mockConstructor = class MockScene
+        extends THREE.Scene {} as unknown as typeof THREE.Scene;
 
+      const facade = new SceneFacade(mockConstructor);
       const mesh = new THREE.Mesh();
-      injectedFacade.add(mesh);
-      injectedFacade.remove(mesh);
+      facade.add(mesh);
 
-      expect(mockScene.children).not.toContain(mesh);
+      expect(facade.getScene().children).toContain(mesh);
+    });
+
+    it('should use injected scene constructor for remove operations', () => {
+      const mockConstructor = class MockScene
+        extends THREE.Scene {} as unknown as typeof THREE.Scene;
+
+      const facade = new SceneFacade(mockConstructor);
+      const mesh = new THREE.Mesh();
+      facade.add(mesh);
+      facade.remove(mesh);
+
+      expect(facade.getScene().children).not.toContain(mesh);
     });
   });
 });

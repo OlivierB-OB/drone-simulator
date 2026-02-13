@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { RendererFacade } from './RendererFacade';
+import { WebGLRenderer } from 'three';
 
 describe('RendererFacade', () => {
   let facade: RendererFacade;
@@ -12,20 +13,19 @@ describe('RendererFacade', () => {
       value: 2,
     });
 
-    // Create mock WebGL renderer for testing
-    const mockRenderer = {
-      domElement: document.createElement('canvas'),
-      render: vi.fn(),
-      setSize: vi.fn(),
-      setPixelRatio: vi.fn(),
-      dispose: vi.fn(),
-    } as any;
+    // Create mock WebGL renderer constructor for testing
+    const mockRendererConstructor = class MockRenderer {
+      domElement = document.createElement('canvas');
+      render = vi.fn();
+      setSize = vi.fn();
+      setPixelRatio = vi.fn();
+      dispose = vi.fn();
 
-    mockRenderer.domElement.width = 1920;
-    mockRenderer.domElement.height = 1080;
+      constructor() {}
+    } as unknown as typeof WebGLRenderer;
 
-    // Inject mock renderer to avoid WebGL context errors
-    facade = new RendererFacade(1920, 1080, mockRenderer);
+    // Inject mock renderer constructor to avoid WebGL context errors
+    facade = new RendererFacade(1920, 1080, mockRendererConstructor);
   });
 
   afterEach(() => {
@@ -69,74 +69,86 @@ describe('RendererFacade', () => {
   });
 
   describe('dependency injection', () => {
-    it('should accept optional injected renderer', () => {
-      const mockRenderer = {
-        domElement: document.createElement('canvas'),
-        render: vi.fn(),
-        setSize: vi.fn(),
-        setPixelRatio: vi.fn(),
-        dispose: vi.fn(),
-      } as any;
+    it('should accept optional injected renderer constructor', () => {
+      const constructorCalls: any[] = [];
+      const mockConstructor = class MockRenderer {
+        domElement = document.createElement('canvas');
+        render = vi.fn();
+        setSize = vi.fn();
+        setPixelRatio = vi.fn();
+        dispose = vi.fn();
 
-      mockRenderer.domElement.width = 800;
-      mockRenderer.domElement.height = 600;
+        constructor(options?: any) {
+          constructorCalls.push(options);
+        }
+      } as unknown as typeof WebGLRenderer;
 
-      const injectedFacade = new RendererFacade(800, 600, mockRenderer);
+      const injectedFacade = new RendererFacade(800, 600, mockConstructor);
       const element = injectedFacade.getDomElement();
 
-      expect(element).toBe(mockRenderer.domElement);
-      expect(element.width).toBe(800);
-      expect(element.height).toBe(600);
+      expect(constructorCalls).toHaveLength(1);
+      expect(constructorCalls[0]).toEqual({ antialias: true });
+      expect(element).toBeInstanceOf(HTMLCanvasElement);
     });
 
-    it('should use injected renderer for render calls', () => {
-      const mockRenderer = {
-        domElement: document.createElement('canvas'),
-        render: vi.fn(),
-        setSize: vi.fn(),
-        setPixelRatio: vi.fn(),
-        dispose: vi.fn(),
-      } as any;
+    it('should initialize renderer with correct parameters through constructor', () => {
+      const constructorCalls: any[] = [];
+      const mockConstructor = class MockRenderer {
+        domElement = document.createElement('canvas');
+        render = vi.fn();
+        setSize = vi.fn();
+        setPixelRatio = vi.fn();
+        dispose = vi.fn();
 
-      const injectedFacade = new RendererFacade(800, 600, mockRenderer);
-      const mockScene = {} as any;
-      const mockCamera = {} as any;
+        constructor(options?: any) {
+          constructorCalls.push(options);
+        }
+      } as unknown as typeof WebGLRenderer;
 
-      injectedFacade.render(mockScene, mockCamera);
+      new RendererFacade(800, 600, mockConstructor);
 
-      expect(mockRenderer.render).toHaveBeenCalledWith(mockScene, mockCamera);
+      expect(constructorCalls).toHaveLength(1);
+      expect(constructorCalls[0]).toEqual({ antialias: true });
     });
 
-    it('should use injected renderer for setSize calls', () => {
-      const mockRenderer = {
-        domElement: document.createElement('canvas'),
-        render: vi.fn(),
-        setSize: vi.fn(),
-        setPixelRatio: vi.fn(),
-        dispose: vi.fn(),
-      } as any;
+    it('should call setSize with correct dimensions on constructor', () => {
+      const setSizeCalls: any[] = [];
+      const mockConstructor = class MockRenderer {
+        domElement = document.createElement('canvas');
+        render = vi.fn();
+        setSize = vi.fn((...args: any[]) => {
+          setSizeCalls.push(args);
+        });
+        setPixelRatio = vi.fn();
+        dispose = vi.fn();
 
-      const injectedFacade = new RendererFacade(800, 600, mockRenderer);
+        constructor() {}
+      } as unknown as typeof WebGLRenderer;
 
-      injectedFacade.setSize(1024, 768);
+      new RendererFacade(800, 600, mockConstructor);
 
-      expect(mockRenderer.setSize).toHaveBeenCalledWith(1024, 768);
+      expect(setSizeCalls).toHaveLength(1);
+      expect(setSizeCalls[0]).toEqual([800, 600]);
     });
 
-    it('should use injected renderer for dispose calls', () => {
-      const mockRenderer = {
-        domElement: document.createElement('canvas'),
-        render: vi.fn(),
-        setSize: vi.fn(),
-        setPixelRatio: vi.fn(),
-        dispose: vi.fn(),
-      } as any;
+    it('should call setPixelRatio with device pixel ratio on constructor', () => {
+      const setPixelRatioCalls: any[] = [];
+      const mockConstructor = class MockRenderer {
+        domElement = document.createElement('canvas');
+        render = vi.fn();
+        setSize = vi.fn();
+        setPixelRatio = vi.fn((...args: any[]) => {
+          setPixelRatioCalls.push(args);
+        });
+        dispose = vi.fn();
 
-      const injectedFacade = new RendererFacade(800, 600, mockRenderer);
+        constructor() {}
+      } as unknown as typeof WebGLRenderer;
 
-      injectedFacade.dispose();
+      new RendererFacade(800, 600, mockConstructor);
 
-      expect(mockRenderer.dispose).toHaveBeenCalledOnce();
+      expect(setPixelRatioCalls).toHaveLength(1);
+      expect(setPixelRatioCalls[0]).toEqual([window.devicePixelRatio]);
     });
   });
 });

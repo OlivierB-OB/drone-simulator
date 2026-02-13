@@ -3,13 +3,9 @@ import { Scene, Color, Object3D } from 'three';
 export class SceneFacade {
   private readonly scene: Scene;
 
-  constructor(scene?: Scene) {
-    if (scene) {
-      this.scene = scene;
-    } else {
-      this.scene = new Scene();
-      this.scene.background = new Color(0x1a1a2e);
-    }
+  constructor(sceneConstructor: typeof Scene = Scene) {
+    this.scene = new sceneConstructor();
+    this.scene.background = new Color(0x1a1a2e);
   }
 
   getScene(): Scene {

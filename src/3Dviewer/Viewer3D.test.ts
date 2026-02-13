@@ -32,27 +32,42 @@ describe('Viewer3D', () => {
     });
     document.body.appendChild(container);
 
-    // Create mock Three.js objects
-    mockCamera = new THREE.PerspectiveCamera(75, 800 / 600, 0.1, 1000);
-    mockCamera.position.z = 5;
+    // Create mock Three.js constructor classes
+    const mockCameraConstructor = class MockCamera
+      extends THREE.PerspectiveCamera
+    {
+      constructor(fov: number, aspect: number, near: number, far: number) {
+        super(fov, aspect, near, far);
+        mockCamera = this as unknown as THREE.PerspectiveCamera;
+      }
+    } as unknown as typeof THREE.PerspectiveCamera;
 
-    mockRenderer = {
-      domElement: document.createElement('canvas'),
-      render: vi.fn(),
-      setSize: vi.fn(),
-      setPixelRatio: vi.fn(),
-      dispose: vi.fn(),
-    };
-    mockRenderer.domElement.width = 800;
-    mockRenderer.domElement.height = 600;
+    const mockRendererConstructor = class MockRenderer {
+      domElement = document.createElement('canvas');
+      render = vi.fn();
+      setSize = vi.fn();
+      setPixelRatio = vi.fn();
+      dispose = vi.fn();
 
-    mockScene = new THREE.Scene();
-    mockScene.background = new THREE.Color(0x1a1a2e);
+      constructor() {
+        mockRenderer = this as unknown as typeof mockRenderer;
+        this.domElement.width = 800;
+        this.domElement.height = 600;
+      }
+    } as unknown as typeof THREE.WebGLRenderer;
 
-    // Create facades with injected mocks
-    cameraFacade = new CameraFacade(800, 600, mockCamera);
-    rendererFacade = new RendererFacade(800, 600, mockRenderer);
-    sceneFacade = new SceneFacade(mockScene);
+    const mockSceneConstructor = class MockScene extends THREE.Scene {
+      constructor() {
+        super();
+        mockScene = this as unknown as THREE.Scene;
+        this.background = new THREE.Color(0x1a1a2e);
+      }
+    } as unknown as typeof THREE.Scene;
+
+    // Create facades with injected mock constructors
+    cameraFacade = new CameraFacade(800, 600, mockCameraConstructor);
+    rendererFacade = new RendererFacade(800, 600, mockRendererConstructor);
+    sceneFacade = new SceneFacade(mockSceneConstructor);
 
     // Create viewer with injected facades
     viewer = new Viewer3D(container, cameraFacade, rendererFacade, sceneFacade);

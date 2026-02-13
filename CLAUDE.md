@@ -85,14 +85,22 @@ All four are instantiated in `onMount()` and properly disposed in cleanup.
 
 #### 2. **3D Rendering System** (`src/3Dviewer/`)
 
-Facade pattern wrapping Three.js components for cleaner API:
+Facade pattern wrapping Three.js components for cleaner API and testability:
 
 - `Viewer3D.ts`: Main orchestrator that handles rendering
   - Updates 3D scene each frame when called by AnimationLoop
   - Manages Three.js scene setup and cleanup
-- `CameraFacade.ts`: Wraps Three.js camera with aspect ratio updates
+  - Accepts optional injected facades for dependency injection (used in testing)
+- `CameraFacade.ts`: Wraps Three.js PerspectiveCamera
+  - Accepts optional `cameraConstructor` parameter for constructor injection
+  - Initializes with fixed parameters: FOV=75, near=0.1, far=1000, position.z=5
+  - Updates aspect ratio on resize
 - `SceneFacade.ts`: Wraps Three.js Scene
-- `RendererFacade.ts`: Wraps WebGLRenderer with resize handling
+  - Accepts optional `sceneConstructor` parameter for constructor injection
+  - Automatically sets dark navy background (0x1a1a2e)
+- `RendererFacade.ts`: Wraps WebGLRenderer
+  - Accepts optional `rendererConstructor` parameter for constructor injection
+  - Always initializes with antialias enabled and device pixel ratio set
 
 #### 2a. **Animation Loop** (`src/core/AnimationLoop.ts`)
 
@@ -139,21 +147,63 @@ Centralized drone parameters:
 
 ### Key Patterns
 
-- **Facade pattern**: 3D viewer components wrap Three.js (Camera, Scene, Renderer) for cleaner contracts
+- **Facade pattern with constructor injection**: 3D viewer facades wrap Three.js components. Constructor parameters accept constructor functions (not instances) for dependency injection. This enables:
+  - Tests to inject mock constructors and verify initialization parameters
+  - Decoupling from Three.js during testing
+  - Always-consistent initialization logic (no conditional branches)
 - **Animation loop separation**: `AnimationLoop` decouples frame timing from rendering and physics
 - **Frame-rate independence**: Delta time in seconds ensures consistent physics regardless of FPS
 - **Mercator projection**: Uses realistic geographic projection for GPS-based positioning
 - **Factory pattern**: `createDrone()` factory function for drone initialization
 - **Resource cleanup**: All components implement `dispose()` to clean up event listeners and Three.js resources
 
+### Testing Strategy for Facades
+
+The facade classes use constructor injection to enable better testability:
+
+- Tests inject mock constructor **classes** (not instances) into facades
+- Mock constructors extend the real Three.js classes (e.g., `class MockCamera extends PerspectiveCamera`)
+- Constructor calls are tracked to verify correct initialization parameters
+- Example: `CameraFacade` must call its injected constructor with `(75, width/height, 0.1, 1000)`
+
+When testing, always use constructor classes rather than instances:
+```typescript
+// ✓ Correct: Pass constructor function
+const mockConstructor = class MockCamera extends THREE.PerspectiveCamera {
+  constructor(fov, aspect, near, far) {
+    super(fov, aspect, near, far);
+    constructorCalls.push({ fov, aspect, near, far });
+  }
+} as unknown as typeof THREE.PerspectiveCamera;
+
+facade = new CameraFacade(width, height, mockConstructor);
+```
+
 ## Testing
 
-Tests are located alongside their source files with `.test.ts` suffix and use Vitest:
+Tests are located alongside their source files with `.test.ts` suffix and use Vitest with happy-dom environment.
 
+### Test Organization
+
+- **Facade tests** (`*Facade.test.ts`): Test Three.js wrapper initialization and functionality
+  - Use constructor injection to verify facade initialization parameters
+  - Example: Verify `CameraFacade` initializes with correct FOV, aspect ratio, near/far planes
 - **Drone.test.ts**: Comprehensive unit tests for drone physics, movement, and coordinate conversion
   - Tests movement in all directions and combinations
   - Verifies frame-rate independent movement
   - Tests Mercator projection conversion
   - Coverage includes edge cases (equator, prime meridian, southern hemisphere)
+- **DroneController.test.ts**: Tests input handling and event listener cleanup
+- **AnimationLoop.test.ts**: Tests frame timing and delta time calculations
+- **Viewer3D.test.ts**: Tests 3D scene orchestration with injected facades
 
-The test environment uses happy-dom for lightweight DOM simulation. Run `bun run test:coverage` to generate coverage reports in text, JSON, and HTML formats.
+### Running Tests
+
+```bash
+bun run test              # Run all tests
+bun run test:ui           # Interactive test UI
+bun run test:coverage     # Generate coverage reports (text, json, html)
+bun run test src/drone/Drone.test.ts  # Run single test file
+```
+
+The test environment uses happy-dom for lightweight DOM simulation without a full browser. Run `bun run test:coverage` to generate coverage reports in text, JSON, and HTML formats.
