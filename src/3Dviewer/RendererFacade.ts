@@ -9,10 +9,6 @@ export class RendererFacade {
     this.renderer.setPixelRatio(window.devicePixelRatio);
   }
 
-  getRenderer(): WebGLRenderer {
-    return this.renderer;
-  }
-
   getDomElement(): HTMLCanvasElement {
     return this.renderer.domElement;
   }

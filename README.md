@@ -1,6 +1,6 @@
 # Drone Simulator
 
-A static React web application built with TypeScript, Vite, ESLint, and Prettier.
+A 3D drone simulator web application built with SolidJS, Three.js, TypeScript, Vite, ESLint, and Prettier.
 
 ## Prerequisites
 
@@ -77,22 +77,34 @@ bun run format:check
 ```
 drone-simulator/
 ├── src/
-│   ├── index.tsx           # React entry point
-│   ├── App.tsx             # Main component
-│   └── styles.css          # Global styles
-├── index.html              # HTML template
-├── vite.config.ts          # Vite configuration
-├── tsconfig.json           # TypeScript configuration
-├── eslint.config.js        # ESLint configuration
-├── .prettierrc.json        # Prettier configuration
-└── package.json            # Dependencies and scripts
+│   ├── index.tsx                 # SolidJS entry point
+│   ├── App.tsx                   # Main application component
+│   ├── config.ts                 # Drone configuration (speed, position, etc.)
+│   ├── 3Dviewer/                 # Three.js rendering system (Facades)
+│   │   ├── Viewer3D.ts
+│   │   ├── CameraFacade.ts
+│   │   ├── SceneFacade.ts
+│   │   └── RendererFacade.ts
+│   ├── drone/                    # Drone simulation logic
+│   │   ├── Drone.ts              # Drone state and physics
+│   │   └── DroneController.ts    # Keyboard/mouse input handling
+│   ├── core/                     # Core systems
+│   │   └── AnimationLoop.ts      # Frame timing and loop management
+│   └── styles.css                # Global styles
+├── index.html                    # HTML template
+├── vite.config.ts                # Vite configuration
+├── tsconfig.json                 # TypeScript configuration
+├── eslint.config.js              # ESLint configuration
+├── .prettierrc.json              # Prettier configuration
+└── package.json                  # Dependencies and scripts
 ```
 
 ## Tech Stack
 
-- **React** 19 - UI library
+- **SolidJS** 1.9 - Reactive UI library
+- **Three.js** 0.160 - 3D graphics rendering
 - **TypeScript** 5.9 - Type safety
-- **Vite** 7 - Build tool and dev server
+- **Vite** 7.3 - Build tool and dev server
 - **ESLint** 10 - Code linting
 - **Prettier** 3.8 - Code formatting
 - **Bun** - JavaScript runtime and package manager

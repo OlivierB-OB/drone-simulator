@@ -54,21 +54,14 @@ export class Viewer3D {
   }
 
   dispose(): void {
+    if (this.cube) {
+      this.sceneFacade.remove(this.cube);
+      this.cube.geometry.dispose();
+      (this.cube.material as MeshBasicMaterial).dispose();
+    }
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
     }
     this.rendererFacade.dispose();
-  }
-
-  getCamera(): CameraFacade {
-    return this.cameraFacade;
-  }
-
-  getScene(): SceneFacade {
-    return this.sceneFacade;
-  }
-
-  getRenderer(): RendererFacade {
-    return this.rendererFacade;
   }
 }
