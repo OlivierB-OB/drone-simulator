@@ -1,7 +1,7 @@
 import { Scene, Color, Object3D } from 'three';
 
 export class SceneFacade {
-  private scene: Scene;
+  private readonly scene: Scene;
 
   constructor() {
     this.scene = new Scene();

@@ -6,8 +6,8 @@ export interface MercatorCoordinates {
 }
 
 export class Drone {
-  private location: MercatorCoordinates;
-  private azimuth: number; // in degrees, 0 = North
+  private readonly location: MercatorCoordinates;
+  private readonly azimuth: number; // in degrees, 0 = North
   private isMovingForward: boolean = false;
   private isMovingBackward: boolean = false;
   private isMovingLeft: boolean = false;

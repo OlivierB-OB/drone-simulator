@@ -1,7 +1,7 @@
 import { PerspectiveCamera } from 'three';
 
 export class CameraFacade {
-  private camera: PerspectiveCamera;
+  private readonly camera: PerspectiveCamera;
 
   constructor(width: number, height: number) {
     this.camera = new PerspectiveCamera(75, width / height, 0.1, 1000);

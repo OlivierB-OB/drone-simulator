@@ -1,8 +1,8 @@
 import { Drone } from './Drone';
 
 export class DroneController {
-  private containerRef: HTMLElement;
-  private drone: Drone;
+  private containerRef: HTMLElement | null;
+  private readonly drone: Drone;
   private keydownHandler!: (event: KeyboardEvent) => void;
   private keyupHandler!: (event: KeyboardEvent) => void;
   private mousemoveHandler!: (event: MouseEvent) => void;
@@ -69,7 +69,9 @@ export class DroneController {
 
       lastX = currentX;
     };
-    this.containerRef.addEventListener('mousemove', this.mousemoveHandler);
+    if (this.containerRef) {
+      this.containerRef.addEventListener('mousemove', this.mousemoveHandler);
+    }
   }
 
   private setupMouseWheelListeners() {
@@ -80,13 +82,18 @@ export class DroneController {
         console.log('Mouse wheel moved: down');
       }
     };
-    this.containerRef.addEventListener('wheel', this.wheelHandler);
+    if (this.containerRef) {
+      this.containerRef.addEventListener('wheel', this.wheelHandler);
+    }
   }
 
   public dispose() {
     document.removeEventListener('keydown', this.keydownHandler);
     document.removeEventListener('keyup', this.keyupHandler);
-    this.containerRef.removeEventListener('mousemove', this.mousemoveHandler);
-    this.containerRef.removeEventListener('wheel', this.wheelHandler);
+    if (this.containerRef) {
+      this.containerRef.removeEventListener('mousemove', this.mousemoveHandler);
+      this.containerRef.removeEventListener('wheel', this.wheelHandler);
+      this.containerRef = null;
+    }
   }
 }

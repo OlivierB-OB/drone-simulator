@@ -1,20 +1,16 @@
 import { BoxGeometry, MeshBasicMaterial, Mesh } from 'three';
-import { Drone } from '../drone/Drone';
 import { CameraFacade } from './CameraFacade';
 import { SceneFacade } from './SceneFacade';
 import { RendererFacade } from './RendererFacade';
 
 export class Viewer3D {
-  private cameraFacade: CameraFacade;
-  private sceneFacade: SceneFacade;
-  private rendererFacade: RendererFacade;
-  private animationFrameId: number | null = null;
+  private readonly cameraFacade: CameraFacade;
+  private readonly sceneFacade: SceneFacade;
+  private readonly rendererFacade: RendererFacade;
   private resizeHandler: (() => void) | null = null;
-  private drone: Drone | null = null;
-  private lastFrameTime: number = 0;
+  private cube: Mesh | null = null;
 
-  constructor(container: HTMLDivElement, drone?: Drone) {
-    this.drone = drone || null;
+  constructor(container: HTMLDivElement) {
     const width = container.clientWidth;
     const height = container.clientHeight;
 
@@ -28,40 +24,23 @@ export class Viewer3D {
     this.initializeScene();
   }
 
-  private initializeScene(): void {
+  public initializeScene(): void {
     // Add a simple cube for now
     const geometry = new BoxGeometry();
     const material = new MeshBasicMaterial({ color: 0x00ff00 });
-    const cube = new Mesh(geometry, material);
-    this.sceneFacade.add(cube);
-
-    this.startAnimation(cube);
+    this.cube = new Mesh(geometry, material);
+    this.sceneFacade.add(this.cube);
   }
 
-  private startAnimation(cube: Mesh): void {
-    const animate = (currentTime: number) => {
-      this.animationFrameId = requestAnimationFrame(animate);
-
-      // Calculate delta time in seconds
-      const deltaTime =
-        this.lastFrameTime === 0
-          ? 0
-          : (currentTime - this.lastFrameTime) / 1000;
-      this.lastFrameTime = currentTime;
-
-      // Update drone position
-      if (this.drone) {
-        this.drone.applyMove(deltaTime);
-      }
-
-      cube.rotation.x += 0.01;
-      cube.rotation.y += 0.01;
-      this.rendererFacade.render(
-        this.sceneFacade.getScene(),
-        this.cameraFacade.getCamera()
-      );
-    };
-    animate(0);
+  public render(): void {
+    if (this.cube) {
+      this.cube.rotation.x += 0.01;
+      this.cube.rotation.y += 0.01;
+    }
+    this.rendererFacade.render(
+      this.sceneFacade.getScene(),
+      this.cameraFacade.getCamera()
+    );
   }
 
   private setupResizeHandler(container: HTMLDivElement): void {
@@ -77,9 +56,6 @@ export class Viewer3D {
   dispose(): void {
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
-    }
-    if (this.animationFrameId !== null) {
-      cancelAnimationFrame(this.animationFrameId);
     }
     this.rendererFacade.dispose();
   }

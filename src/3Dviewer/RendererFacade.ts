@@ -1,7 +1,7 @@
 import { WebGLRenderer, Scene, Camera } from 'three';
 
 export class RendererFacade {
-  private renderer: WebGLRenderer;
+  private readonly renderer: WebGLRenderer;
 
   constructor(width: number, height: number) {
     this.renderer = new WebGLRenderer({ antialias: true });
