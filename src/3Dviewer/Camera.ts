@@ -9,7 +9,6 @@ export class Camera {
     cameraConstructor: typeof PerspectiveCamera = PerspectiveCamera
   ) {
     this.camera = new cameraConstructor(75, width / height, 0.1, 1000);
-    this.camera.position.z = 5;
   }
 
   getCamera(): PerspectiveCamera {

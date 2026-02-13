@@ -31,11 +31,15 @@ export class AnimationLoop {
 
       // Update camera position and orientation from drone state
       const droneLocation = this.drone.getLocation();
-      const droneZ = this.drone.getZ();
+      const droneElevation = this.drone.getElevation();
       const droneAzimuth = this.drone.getAzimuth();
 
       // Position camera 5 units above drone
-      this.camera.setPosition(droneLocation.x, droneLocation.y, droneZ + 5);
+      this.camera.setPosition(
+        droneLocation.x,
+        droneLocation.y,
+        droneElevation + 5
+      );
 
       // Orient camera to look in drone's heading with 30° downward tilt
       this.camera.setOrientation(droneAzimuth);

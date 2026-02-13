@@ -8,7 +8,7 @@ export interface MercatorCoordinates {
 export class Drone {
   private readonly location: MercatorCoordinates;
   private readonly azimuth: number; // in degrees, 0 = North
-  private readonly z: number; // altitude in meters, 0 = ground level
+  private readonly elevation: number; // altitude in meters, 0 = ground level
   private isMovingForward: boolean = false;
   private isMovingBackward: boolean = false;
   private isMovingLeft: boolean = false;
@@ -17,11 +17,11 @@ export class Drone {
   constructor(
     location: MercatorCoordinates,
     azimuth: number = 0,
-    z: number = 0
+    elevation: number = 0
   ) {
     this.location = location;
     this.azimuth = azimuth;
-    this.z = z;
+    this.elevation = elevation;
   }
 
   getLocation(): MercatorCoordinates {
@@ -32,8 +32,8 @@ export class Drone {
     return this.azimuth;
   }
 
-  getZ(): number {
-    return this.z;
+  getElevation(): number {
+    return this.elevation;
   }
 
   startMovingForward(): void {

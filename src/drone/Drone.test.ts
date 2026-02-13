@@ -28,20 +28,20 @@ describe('Drone', () => {
       expect(testDrone.getAzimuth()).toEqual(0);
     });
 
-    it('should initialize with given z-coordinate', () => {
+    it('should initialize with given elevation', () => {
       const location: MercatorCoordinates = { x: 100, y: 200 };
       const azimuth = 45;
-      const z = 10;
-      const testDrone = new Drone(location, azimuth, z);
+      const elevation = 10;
+      const testDrone = new Drone(location, azimuth, elevation);
 
-      expect(testDrone.getZ()).toEqual(z);
+      expect(testDrone.getElevation()).toEqual(elevation);
     });
 
-    it('should default z to 0', () => {
+    it('should default elevation to 0', () => {
       const location: MercatorCoordinates = { x: 100, y: 200 };
       const testDrone = new Drone(location);
 
-      expect(testDrone.getZ()).toEqual(0);
+      expect(testDrone.getElevation()).toEqual(0);
     });
   });
 
@@ -69,22 +69,22 @@ describe('Drone', () => {
     });
   });
 
-  describe('getZ', () => {
-    it('should return the z-coordinate', () => {
-      expect(drone.getZ()).toEqual(0);
+  describe('getElevation', () => {
+    it('should return the elevation', () => {
+      expect(drone.getElevation()).toEqual(0);
     });
 
-    it('should return correct z-coordinate when initialized with value', () => {
+    it('should return correct elevation when initialized with value', () => {
       const testDrone = new Drone(testLocation, 0, 5);
-      expect(testDrone.getZ()).toEqual(5);
+      expect(testDrone.getElevation()).toEqual(5);
     });
 
-    it('should not change z-coordinate during movement', () => {
+    it('should not change elevation during movement', () => {
       const testDrone = new Drone(testLocation, 0, 5);
       testDrone.startMovingForward();
       testDrone.applyMove(1);
 
-      expect(testDrone.getZ()).toEqual(5);
+      expect(testDrone.getElevation()).toEqual(5);
     });
   });
 

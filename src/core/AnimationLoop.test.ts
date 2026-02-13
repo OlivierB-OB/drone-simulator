@@ -134,7 +134,7 @@ describe('AnimationLoop', () => {
 
     it('should position camera at drone location plus 5 unit offset', () => {
       const droneLocation = drone.getLocation();
-      const droneZ = drone.getZ();
+      const droneElevation = drone.getElevation();
 
       animationLoop.start();
 
@@ -145,7 +145,7 @@ describe('AnimationLoop', () => {
         expect(mockCamera.setPosition).toHaveBeenCalledWith(
           droneLocation.x,
           droneLocation.y,
-          droneZ + 5
+          droneElevation + 5
         );
       }
     });

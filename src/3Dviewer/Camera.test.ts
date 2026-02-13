@@ -26,14 +26,6 @@ describe('Camera', () => {
       expect(cameraInstance.aspect).toBeCloseTo(expectedAspect, 5);
     });
 
-    it('should position camera at z=5', () => {
-      const cameraInstance = camera.getCamera();
-
-      expect(cameraInstance.position.z).toBe(5);
-      expect(cameraInstance.position.x).toBe(0);
-      expect(cameraInstance.position.y).toBe(0);
-    });
-
     it('should accept optional injected camera constructor', () => {
       // Create a wrapper class that delegates to a tracked constructor
       const constructorCalls: any[] = [];
@@ -58,7 +50,6 @@ describe('Camera', () => {
         far: 1000,
       });
       expect(cameraInstance).toBeInstanceOf(THREE.PerspectiveCamera);
-      expect(cameraInstance.position.z).toBe(5);
     });
 
     it('should initialize camera with correct parameters through constructor', () => {
