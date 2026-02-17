@@ -15,6 +15,7 @@ export class TerrainObjectFactory {
   /**
    * Create a TerrainObject from a TerrainGeometryObject.
    * Creates a new mesh with a MeshPhongMaterial and wraps it in a TerrainObject.
+   * Positions the mesh at the tile's Mercator coordinates.
    */
   createTerrainObject(geometryObject: TerrainGeometryObject): TerrainObject {
     const material = new this.materialConstructor({
@@ -28,6 +29,13 @@ export class TerrainObjectFactory {
       geometryObject.getGeometry(),
       material
     );
+
+    // Position mesh at tile center in Mercator space
+    const bounds = geometryObject.getMercatorBounds();
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerZ = (bounds.minY + bounds.maxY) / 2;
+    mesh.position.set(centerX, 0, centerZ);
+
     return new TerrainObject(geometryObject.getTileKey(), mesh);
   }
 }

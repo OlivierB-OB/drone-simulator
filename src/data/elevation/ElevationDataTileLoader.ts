@@ -92,14 +92,18 @@ export class ElevationDataTileLoader {
       const arrayBuffer = await response.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
 
-      // Parse PNG to extract raster data
-      // PNG format: 256×256 pixels, 3 bytes per pixel (RGB)
-      const tileSize = 256;
-      const expectedSize = tileSize * tileSize * 3; // 196,608 bytes
+      // Decode PNG image to extract RGB pixel data
+      const imageData = await ElevationDataTileLoader.decodePNG(uint8Array);
 
-      if (uint8Array.length < expectedSize) {
+      if (!imageData) {
+        throw new Error('Failed to decode PNG image');
+      }
+
+      // Validate decoded image dimensions
+      const tileSize = 256;
+      if (imageData.width !== tileSize || imageData.height !== tileSize) {
         throw new Error(
-          `Invalid tile size: expected at least ${expectedSize} bytes, got ${uint8Array.length}`
+          `Invalid tile dimensions: expected 256×256, got ${imageData.width}×${imageData.height}`
         );
       }
 
@@ -111,10 +115,15 @@ export class ElevationDataTileLoader {
         const rowData: number[] = [];
 
         for (let col = 0; col < tileSize; col++) {
-          // Extract RGB values
-          const r = uint8Array[pixelIndex++] ?? 0;
-          const g = uint8Array[pixelIndex++] ?? 0;
-          const b = uint8Array[pixelIndex++] ?? 0;
+          // Extract RGB values (skip alpha channel if present)
+          const r = imageData.data[pixelIndex++] ?? 0;
+          const g = imageData.data[pixelIndex++] ?? 0;
+          const b = imageData.data[pixelIndex++] ?? 0;
+
+          // Skip alpha channel if present (RGBA format)
+          if (imageData.data.length === tileSize * tileSize * 4) {
+            pixelIndex++;
+          }
 
           // Decode elevation from Terrarium RGB encoding
           // elevation = (R × 256 + G + B/256) - 32768
@@ -143,6 +152,64 @@ export class ElevationDataTileLoader {
         });
       }
       throw error;
+    }
+  }
+
+  /**
+   * Decodes a PNG image using the HTML5 Canvas API.
+   * Works in browser environments and returns ImageData with RGBA channels.
+   *
+   * @param pngData - PNG file as Uint8Array
+   * @returns ImageData with pixel data or null if decoding fails
+   */
+  private static async decodePNG(pngData: Uint8Array): Promise<{
+    data: Uint8ClampedArray;
+    width: number;
+    height: number;
+  } | null> {
+    try {
+      // Create a blob from the PNG data
+      const blob = new Blob([new Uint8Array(pngData)], { type: 'image/png' });
+      const url = URL.createObjectURL(blob);
+
+      return new Promise((resolve) => {
+        const image = new Image();
+
+        image.onload = () => {
+          // Create canvas and draw image
+          const canvas = document.createElement('canvas');
+          canvas.width = image.width;
+          canvas.height = image.height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            URL.revokeObjectURL(url);
+            resolve(null);
+            return;
+          }
+
+          ctx.drawImage(image, 0, 0);
+
+          // Extract pixel data
+          const imageData = ctx.getImageData(0, 0, image.width, image.height);
+          URL.revokeObjectURL(url);
+
+          resolve({
+            data: imageData.data,
+            width: image.width,
+            height: image.height,
+          });
+        };
+
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(null);
+        };
+
+        image.src = url;
+      });
+    } catch {
+      return null;
     }
   }
 

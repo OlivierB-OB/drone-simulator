@@ -40,10 +40,11 @@ export class AnimationLoop {
 
       this.terrainObjectManager.refresh();
 
+      // Position camera in terrain coordinate space: X=Mercator X, Y=elevation, Z=Mercator Y
       this.camera.setPosition(
         droneLocation.x,
-        droneLocation.y,
-        droneElevation + 5
+        droneElevation + 5,
+        droneLocation.y
       );
 
       this.camera.setOrientation(droneAzimuth);

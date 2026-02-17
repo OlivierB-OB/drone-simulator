@@ -36,14 +36,15 @@ export class TerrainGeometryFactory {
     const cellHeight = height / (tileSize - 1);
 
     // Create vertices array (X, Y, Z coordinates)
+    // Y-axis is vertical (elevation), Z-axis is tile Y coordinate
     const vertices: number[] = [];
     for (let y = 0; y < tileSize; y++) {
       for (let x = 0; x < tileSize; x++) {
         const posX = x * cellWidth - width / 2;
-        const posY = y * cellHeight - height / 2;
-        const elevation = data[y][x] ?? 0;
+        const posY = data[y][x] ?? 0; // Elevation is vertical (Y-axis)
+        const posZ = y * cellHeight - height / 2;
 
-        vertices.push(posX, posY, elevation);
+        vertices.push(posX, posY, posZ);
       }
     }
 

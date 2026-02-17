@@ -107,38 +107,62 @@ describe('ElevationDataTileLoader', () => {
       ).rejects.toThrow(/Failed to fetch tile/);
     });
 
-    it('throws error when tile data is too small', async () => {
-      // Create an ArrayBuffer that's too small (< 196608 bytes for 256×256 RGB)
-      const smallBuffer = new ArrayBuffer(1000);
-
-      (global.fetch as any) = vi.fn().mockResolvedValueOnce({
-        ok: true,
-        arrayBuffer: async () => smallBuffer,
-      });
-
-      const coordinates: TileCoordinates = { z: 13, x: 4520, y: 3102 };
-
-      await expect(
-        ElevationDataTileLoader.loadTile(coordinates)
-      ).rejects.toThrow(/Invalid tile size/);
-    });
-
     it('successfully parses valid tile data', async () => {
-      // Create valid 256×256 RGB tile data (196,608 bytes)
+      // Create valid RGBA image data (256×256 × 4 bytes for RGBA)
       const tileSize = 256;
-      const buffer = new ArrayBuffer(tileSize * tileSize * 3);
-      const uint8Array = new Uint8Array(buffer);
+      const mockImageData = {
+        data: new Uint8ClampedArray(tileSize * tileSize * 4),
+        width: tileSize,
+        height: tileSize,
+      };
 
-      // Fill with test pattern: increasing elevation from 0 to max
-      for (let i = 0; i < uint8Array.length; i += 3) {
-        uint8Array[i] = 128; // R
-        uint8Array[i + 1] = 64; // G
-        uint8Array[i + 2] = 32; // B
+      // Fill with test pattern
+      for (let i = 0; i < mockImageData.data.length; i += 4) {
+        mockImageData.data[i] = 128; // R
+        mockImageData.data[i + 1] = 64; // G
+        mockImageData.data[i + 2] = 32; // B
+        mockImageData.data[i + 3] = 255; // A
       }
 
+      vi.stubGlobal(
+        'Image',
+        class {
+          src: string = '';
+          onload?: () => void;
+          width = tileSize;
+          height = tileSize;
+
+          constructor() {
+            setTimeout(() => this.onload?.(), 0);
+          }
+        }
+      );
+
+      vi.stubGlobal('URL', {
+        createObjectURL: vi.fn(() => 'blob:mock'),
+        revokeObjectURL: vi.fn(),
+      });
+
+      const canvasMock = {
+        width: tileSize,
+        height: tileSize,
+        getContext: vi.fn(() => ({
+          drawImage: vi.fn(),
+          getImageData: () => mockImageData,
+        })),
+      };
+
+      vi.stubGlobal('document', {
+        createElement: vi.fn(() => canvasMock),
+      });
+
+      const validPNG = new Uint8Array([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+      ]);
+
       (global.fetch as any) = vi.fn().mockResolvedValueOnce({
         ok: true,
-        arrayBuffer: async () => buffer,
+        arrayBuffer: async () => validPNG.buffer,
       });
 
       const coordinates: TileCoordinates = { z: 13, x: 4520, y: 3102 };
@@ -153,26 +177,67 @@ describe('ElevationDataTileLoader', () => {
       expect(tile.mercatorBounds).toBeDefined();
     });
 
-    it('correctly decodes elevation from RGB values', async () => {
+    it('correctly decodes elevation from RGBA values', async () => {
       const tileSize = 256;
-      const buffer = new ArrayBuffer(tileSize * tileSize * 3);
-      const uint8Array = new Uint8Array(buffer);
+      const mockImageData = {
+        data: new Uint8ClampedArray(tileSize * tileSize * 4),
+        width: tileSize,
+        height: tileSize,
+      };
 
       // Set first pixel to known elevation: (200 × 256 + 100 + 128/256) - 32768 = 19968
-      uint8Array[0] = 200; // R
-      uint8Array[1] = 100; // G
-      uint8Array[2] = 128; // B
+      mockImageData.data[0] = 200; // R
+      mockImageData.data[1] = 100; // G
+      mockImageData.data[2] = 128; // B
+      mockImageData.data[3] = 255; // A
 
-      // Rest of tile is zeros
-      for (let i = 3; i < uint8Array.length; i += 3) {
-        uint8Array[i] = 0;
-        uint8Array[i + 1] = 0;
-        uint8Array[i + 2] = 0;
+      // Rest is zeros
+      for (let i = 4; i < mockImageData.data.length; i += 4) {
+        mockImageData.data[i] = 0;
+        mockImageData.data[i + 1] = 0;
+        mockImageData.data[i + 2] = 0;
+        mockImageData.data[i + 3] = 255;
       }
+
+      vi.stubGlobal(
+        'Image',
+        class {
+          src: string = '';
+          onload?: () => void;
+          width = tileSize;
+          height = tileSize;
+
+          constructor() {
+            setTimeout(() => this.onload?.(), 0);
+          }
+        }
+      );
+
+      vi.stubGlobal('URL', {
+        createObjectURL: vi.fn(() => 'blob:mock'),
+        revokeObjectURL: vi.fn(),
+      });
+
+      const canvasMock = {
+        width: tileSize,
+        height: tileSize,
+        getContext: vi.fn(() => ({
+          drawImage: vi.fn(),
+          getImageData: () => mockImageData,
+        })),
+      };
+
+      vi.stubGlobal('document', {
+        createElement: vi.fn(() => canvasMock),
+      });
+
+      const validPNG = new Uint8Array([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+      ]);
 
       (global.fetch as any) = vi.fn().mockResolvedValueOnce({
         ok: true,
-        arrayBuffer: async () => buffer,
+        arrayBuffer: async () => validPNG.buffer,
       });
 
       const coordinates: TileCoordinates = { z: 13, x: 4520, y: 3102 };
@@ -204,14 +269,54 @@ describe('ElevationDataTileLoader', () => {
 
     it('succeeds on retry after initial failure', async () => {
       const tileSize = 256;
-      const validBuffer = new ArrayBuffer(tileSize * tileSize * 3);
+      const mockImageData = {
+        data: new Uint8ClampedArray(tileSize * tileSize * 4),
+        width: tileSize,
+        height: tileSize,
+      };
+
+      vi.stubGlobal(
+        'Image',
+        class {
+          src: string = '';
+          onload?: () => void;
+          width = tileSize;
+          height = tileSize;
+
+          constructor() {
+            setTimeout(() => this.onload?.(), 0);
+          }
+        }
+      );
+
+      vi.stubGlobal('URL', {
+        createObjectURL: vi.fn(() => 'blob:mock'),
+        revokeObjectURL: vi.fn(),
+      });
+
+      const canvasMock = {
+        width: tileSize,
+        height: tileSize,
+        getContext: vi.fn(() => ({
+          drawImage: vi.fn(),
+          getImageData: () => mockImageData,
+        })),
+      };
+
+      vi.stubGlobal('document', {
+        createElement: vi.fn(() => canvasMock),
+      });
+
+      const validPNG = new Uint8Array([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+      ]);
 
       (global.fetch as any) = vi
         .fn()
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce({
           ok: true,
-          arrayBuffer: async () => validBuffer,
+          arrayBuffer: async () => validPNG.buffer,
         });
 
       const coordinates: TileCoordinates = { z: 13, x: 4520, y: 3102 };

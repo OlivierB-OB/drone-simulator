@@ -167,10 +167,11 @@ describe('AnimationLoop', () => {
       if (callback) {
         callback(100);
 
+        // Camera coordinates: X=Mercator X, Y=elevation, Z=Mercator Y
         expect(mockCamera.setPosition).toHaveBeenCalledWith(
           droneLocation.x,
-          droneLocation.y,
-          droneElevation + 5
+          droneElevation + 5,
+          droneLocation.y
         );
       }
     });
@@ -191,17 +192,18 @@ describe('AnimationLoop', () => {
     it('should update camera position multiple times as drone moves', () => {
       // Get initial position
       const initialLocation = drone.getLocation();
+      const initialElevation = drone.getElevation();
 
       animationLoop.start();
 
       const callback = (animationLoop as any).__testCallback;
       if (callback) {
-        // First call - verify camera is at initial position + 5
+        // First call - verify camera is at initial position + 5 elevation offset
         callback(0);
         expect(mockCamera.setPosition).toHaveBeenCalledWith(
           initialLocation.x,
-          initialLocation.y,
-          5
+          initialElevation + 5,
+          initialLocation.y
         );
 
         // Start moving forward for next frame

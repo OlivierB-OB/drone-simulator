@@ -69,7 +69,11 @@ export class TerrainGeometryObjectManager {
       const tile = currentTiles.get(key);
       if (tile) {
         const geometry = this.factory.createGeometry(tile);
-        const terrainGeometry = new TerrainGeometryObject(key, geometry);
+        const terrainGeometry = new TerrainGeometryObject(
+          key,
+          geometry,
+          tile.mercatorBounds
+        );
         this.objects.set(key, terrainGeometry);
       }
     }

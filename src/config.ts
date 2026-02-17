@@ -27,7 +27,8 @@ export const cameraConfig = {
   near: 0.1,
 
   // Maximum distance from camera to render (far clipping plane)
-  far: 1000,
+  // Set to 100km to accommodate terrain tiles positioned far from origin in Mercator space
+  far: 100000,
 };
 
 export const sceneConfig = {

@@ -8,10 +8,15 @@ describe('TerrainObjectFactory', () => {
   let geometryObject: TerrainGeometryObject;
   let geometry: BufferGeometry;
   const tileKey = '9:261:168';
+  const mercatorBounds = { minX: 0, maxX: 1000, minY: 0, maxY: 1000 };
 
   beforeEach(() => {
     geometry = new BufferGeometry();
-    geometryObject = new TerrainGeometryObject(tileKey, geometry);
+    geometryObject = new TerrainGeometryObject(
+      tileKey,
+      geometry,
+      mercatorBounds
+    );
   });
 
   describe('constructor', () => {
@@ -80,6 +85,16 @@ describe('TerrainObjectFactory', () => {
       expect(terrainObject1.getMesh().material).not.toBe(
         terrainObject2.getMesh().material
       );
+    });
+
+    it('should position mesh at tile center in Mercator space', () => {
+      const terrainObject = factory.createTerrainObject(geometryObject);
+      const mesh = terrainObject.getMesh();
+
+      // Expected center: (0+1000)/2 = 500 for both X and Z (Y is 0)
+      expect(mesh.position.x).toBe(500);
+      expect(mesh.position.y).toBe(0);
+      expect(mesh.position.z).toBe(500);
     });
   });
 });

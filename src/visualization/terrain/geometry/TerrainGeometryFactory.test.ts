@@ -121,16 +121,16 @@ describe('TerrainGeometryFactory', () => {
       const geometry = factory.createGeometry(tile);
       const positions = geometry.getAttribute('position');
 
-      // Verify Z values vary (not all flat)
+      // Verify Y values vary (elevation on Y-axis, not all flat)
       const positionArray = positions.array as Float32Array;
-      const zValues = [];
-      for (let i = 2; i < positionArray.length; i += 3) {
-        zValues.push(positionArray[i]);
+      const yValues = [];
+      for (let i = 1; i < positionArray.length; i += 3) {
+        yValues.push(positionArray[i]);
       }
 
-      const minZ = Math.min(...zValues);
-      const maxZ = Math.max(...zValues);
-      expect(maxZ).toBeGreaterThan(minZ);
+      const minY = Math.min(...yValues);
+      const maxY = Math.max(...yValues);
+      expect(maxY).toBeGreaterThan(minY);
     });
   });
 

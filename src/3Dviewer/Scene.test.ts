@@ -55,6 +55,7 @@ describe('Scene', () => {
 
     it('should handle multiple objects', () => {
       const sceneInstance = scene.getScene();
+      const initialChildCount = sceneInstance.children.length; // Account for lights added in constructor
 
       const mesh1 = new THREE.Mesh();
       const mesh2 = new THREE.Mesh();
@@ -67,7 +68,7 @@ describe('Scene', () => {
       expect(sceneInstance.children).toContain(mesh1);
       expect(sceneInstance.children).toContain(mesh2);
       expect(sceneInstance.children).toContain(mesh3);
-      expect(sceneInstance.children.length).toBe(3);
+      expect(sceneInstance.children.length).toBe(initialChildCount + 3);
     });
 
     it('should add various object types', () => {
@@ -104,6 +105,7 @@ describe('Scene', () => {
 
     it('should handle removing multiple objects', () => {
       const sceneInstance = scene.getScene();
+      const initialChildCount = sceneInstance.children.length; // Account for lights added in constructor
 
       const mesh1 = new THREE.Mesh();
       const mesh2 = new THREE.Mesh();
@@ -119,7 +121,7 @@ describe('Scene', () => {
       expect(sceneInstance.children).not.toContain(mesh1);
       expect(sceneInstance.children).toContain(mesh2);
       expect(sceneInstance.children).not.toContain(mesh3);
-      expect(sceneInstance.children.length).toBe(1);
+      expect(sceneInstance.children.length).toBe(initialChildCount + 1);
     });
 
     it('should handle removing non-existent objects gracefully', () => {
@@ -149,6 +151,7 @@ describe('Scene', () => {
 
     it('should maintain correct scene state after mixed operations', () => {
       const sceneInstance = scene.getScene();
+      const initialChildCount = sceneInstance.children.length; // Account for lights added in constructor
 
       const meshA = new THREE.Mesh();
       const meshB = new THREE.Mesh();
@@ -157,17 +160,17 @@ describe('Scene', () => {
       scene.add(meshA);
       scene.add(meshB);
       scene.add(meshC);
-      expect(sceneInstance.children.length).toBe(3);
+      expect(sceneInstance.children.length).toBe(initialChildCount + 3);
 
       scene.remove(meshB);
-      expect(sceneInstance.children.length).toBe(2);
+      expect(sceneInstance.children.length).toBe(initialChildCount + 2);
 
       scene.add(meshB);
-      expect(sceneInstance.children.length).toBe(3);
+      expect(sceneInstance.children.length).toBe(initialChildCount + 3);
 
       scene.remove(meshA);
       scene.remove(meshC);
-      expect(sceneInstance.children.length).toBe(1);
+      expect(sceneInstance.children.length).toBe(initialChildCount + 1);
       expect(sceneInstance.children).toContain(meshB);
     });
   });
