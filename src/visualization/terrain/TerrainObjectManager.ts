@@ -1,4 +1,3 @@
-import { ElevationDataManager } from '../../data/elevation/ElevationDataManager';
 import { Scene } from '../../3Dviewer/Scene';
 import { TerrainObject } from './TerrainObject';
 import { TerrainObjectFactory } from './TerrainObjectFactory';
@@ -39,12 +38,10 @@ export class TerrainObjectManager {
    * 2. Removes objects for geometries no longer in geometryManager
    * 3. Creates objects for new geometries in geometryManager
    * 4. Automatically adds/removes objects from the scene
-   *
-   * @param elevationDataManager - The elevation data manager (passed to geometryManager.refresh)
    */
-  refresh(elevationDataManager: ElevationDataManager): void {
+  refresh(): void {
     // First, refresh the geometry manager to sync with elevation data
-    this.geometryManager.refresh(elevationDataManager);
+    this.geometryManager.refresh();
 
     // Get current geometries from geometry manager
     const currentGeometries = this.geometryManager.getAllGeometries();

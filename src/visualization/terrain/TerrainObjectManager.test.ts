@@ -21,19 +21,22 @@ describe('TerrainObjectManager', () => {
       remove: vi.fn(),
     } as unknown as Scene;
 
-    // Create real geometry manager with mock factory
-    const mockGeometryFactory = {
-      createGeometry: vi.fn(() => new BufferGeometry()),
-    } as any;
-    mockGeometryManager = new TerrainGeometryObjectManager(mockGeometryFactory);
-
-    // Create real factory (will use real constructors)
-    mockFactory = new TerrainObjectFactory();
-
     // Create mock elevation manager
     mockElevationManager = {
       getTileCache: vi.fn(() => new Map()),
     };
+
+    // Create real geometry manager with mock elevation manager and factory
+    const mockGeometryFactory = {
+      createGeometry: vi.fn(() => new BufferGeometry()),
+    } as any;
+    mockGeometryManager = new TerrainGeometryObjectManager(
+      mockElevationManager,
+      mockGeometryFactory
+    );
+
+    // Create real factory (will use real constructors)
+    mockFactory = new TerrainObjectFactory();
 
     manager = new TerrainObjectManager(
       mockScene,
@@ -72,7 +75,7 @@ describe('TerrainObjectManager', () => {
       const tiles = new Map([['9:261:168', tile]]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
 
-      manager.refresh(mockElevationManager);
+      manager.refresh();
 
       expect(mockScene.add).toHaveBeenCalled();
       expect(manager.getAllObjects()).toHaveLength(1);
@@ -88,7 +91,7 @@ describe('TerrainObjectManager', () => {
         ['9:262:168', tile2],
       ]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
-      manager.refresh(mockElevationManager);
+      manager.refresh();
 
       expect(manager.getAllObjects()).toHaveLength(2);
 
@@ -96,7 +99,7 @@ describe('TerrainObjectManager', () => {
       vi.clearAllMocks();
       tiles = new Map([['9:261:168', tile1]]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
-      manager.refresh(mockElevationManager);
+      manager.refresh();
 
       expect(mockScene.remove).toHaveBeenCalled();
       expect(manager.getAllObjects()).toHaveLength(1);
@@ -108,13 +111,13 @@ describe('TerrainObjectManager', () => {
       mockElevationManager.getTileCache.mockReturnValue(tiles);
 
       // First refresh
-      manager.refresh(mockElevationManager);
+      manager.refresh();
       expect(mockScene.add).toHaveBeenCalledTimes(1);
 
       // Second refresh without changes
       vi.clearAllMocks();
       mockElevationManager.getTileCache.mockReturnValue(tiles);
-      manager.refresh(mockElevationManager);
+      manager.refresh();
 
       expect(mockScene.add).not.toHaveBeenCalled();
       expect(mockScene.remove).not.toHaveBeenCalled();
@@ -131,7 +134,7 @@ describe('TerrainObjectManager', () => {
         ['9:262:168', tile2],
       ]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
-      manager.refresh(mockElevationManager);
+      manager.refresh();
 
       // Second refresh: keep tile 1, remove tile 2, add tile 3
       vi.clearAllMocks();
@@ -140,7 +143,7 @@ describe('TerrainObjectManager', () => {
         ['9:263:168', tile3],
       ]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
-      manager.refresh(mockElevationManager);
+      manager.refresh();
 
       expect(mockScene.add).toHaveBeenCalledOnce(); // tile 3
       expect(mockScene.remove).toHaveBeenCalledOnce(); // tile 2
@@ -152,7 +155,7 @@ describe('TerrainObjectManager', () => {
       const tiles = new Map([['9:261:168', tile]]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
 
-      manager.refresh(mockElevationManager);
+      manager.refresh();
 
       const addCalls = (mockScene.add as any).mock.calls;
       expect(addCalls.length).toBeGreaterThan(0);
@@ -169,13 +172,13 @@ describe('TerrainObjectManager', () => {
         ['9:262:168', tile2],
       ]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
-      manager.refresh(mockElevationManager);
+      manager.refresh();
 
       // Remove one tile
       vi.clearAllMocks();
       tiles = new Map([['9:261:168', tile1]]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
-      manager.refresh(mockElevationManager);
+      manager.refresh();
 
       const removeCalls = (mockScene.remove as any).mock.calls;
       expect(removeCalls.length).toBeGreaterThan(0);
@@ -189,7 +192,7 @@ describe('TerrainObjectManager', () => {
       const tiles = new Map([['9:261:168', tile]]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
 
-      manager.refresh(mockElevationManager);
+      manager.refresh();
       const terrainObject = manager.getTerrainObject('9:261:168');
 
       expect(terrainObject).toBeDefined();
@@ -218,7 +221,7 @@ describe('TerrainObjectManager', () => {
       ]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
 
-      manager.refresh(mockElevationManager);
+      manager.refresh();
       const objects = manager.getAllObjects();
 
       expect(objects).toHaveLength(2);
@@ -235,7 +238,7 @@ describe('TerrainObjectManager', () => {
       let tiles = new Map([['9:261:168', tile1]]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
 
-      manager.refresh(mockElevationManager);
+      manager.refresh();
       expect(manager.getAllObjects()).toHaveLength(1);
 
       const tile2 = createMockTile('9:262:168');
@@ -245,7 +248,7 @@ describe('TerrainObjectManager', () => {
       ]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
 
-      manager.refresh(mockElevationManager);
+      manager.refresh();
       expect(manager.getAllObjects()).toHaveLength(2);
     });
   });
@@ -260,7 +263,7 @@ describe('TerrainObjectManager', () => {
       ]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
 
-      manager.refresh(mockElevationManager);
+      manager.refresh();
 
       // Spy on dispose for terrain objects
       const objects = manager.getAllObjects();
@@ -284,7 +287,7 @@ describe('TerrainObjectManager', () => {
       ]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
 
-      manager.refresh(mockElevationManager);
+      manager.refresh();
       vi.clearAllMocks();
 
       manager.dispose();
@@ -297,7 +300,7 @@ describe('TerrainObjectManager', () => {
       const tiles = new Map([['9:261:168', tile]]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
 
-      manager.refresh(mockElevationManager);
+      manager.refresh();
       expect(manager.getAllObjects()).toHaveLength(1);
 
       manager.dispose();

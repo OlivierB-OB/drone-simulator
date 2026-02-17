@@ -11,10 +11,15 @@ import type { TileKey } from './types';
 export class TerrainGeometryObjectManager {
   private readonly objects: Map<TileKey, TerrainGeometryObject>;
   private readonly factory: TerrainGeometryFactory;
+  private readonly elevationDataManager: ElevationDataManager;
 
-  constructor(factory?: TerrainGeometryFactory) {
+  constructor(
+    elevationDataManager: ElevationDataManager,
+    factory?: TerrainGeometryFactory
+  ) {
     this.objects = new Map();
     this.factory = factory ?? new TerrainGeometryFactory();
+    this.elevationDataManager = elevationDataManager;
   }
 
   /**
@@ -27,12 +32,10 @@ export class TerrainGeometryObjectManager {
    *
    * Note: Does not create meshes or modify the scene. The caller is responsible
    * for combining geometry with material and adding to the scene.
-   *
-   * @param elevationDataManager - The elevation data manager containing loaded tiles
    */
-  refresh(elevationDataManager: ElevationDataManager): void {
+  refresh(): void {
     // Get current tiles from elevation data manager
-    const currentTiles = elevationDataManager.getTileCache();
+    const currentTiles = this.elevationDataManager.getTileCache();
     const currentTileKeys = new Set(currentTiles.keys());
     const managedTileKeys = new Set(this.objects.keys());
 
