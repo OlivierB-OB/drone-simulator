@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Drone, createDrone } from './Drone';
-import type { MercatorCoordinates } from './Drone';
 import { droneConfig } from '../config';
+import type { MercatorCoordinates } from '../gis/types';
 
 describe('Drone', () => {
   let drone: Drone;

@@ -34,3 +34,14 @@ export const sceneConfig = {
   // Background color (dark navy)
   backgroundColor: 0x1a1a2e,
 };
+
+export const elevationConfig = {
+  // Web Mercator zoom level for terrain tiles (13 ≈ 25m resolution per pixel)
+  zoomLevel: 13,
+
+  // Number of tiles in each direction from center (3 = 7×7 grid of tiles)
+  ringRadius: 3,
+
+  // Maximum concurrent tile downloads (prevents network saturation)
+  maxConcurrentLoads: 3,
+};

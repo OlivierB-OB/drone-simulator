@@ -7,6 +7,8 @@ describe('AnimationLoop', () => {
   let drone: Drone;
   let mockViewer3D: any;
   let mockCamera: any;
+  let mockElevationData: any;
+  let mockContextData: any;
 
   beforeEach(() => {
     drone = createDrone();
@@ -22,7 +24,23 @@ describe('AnimationLoop', () => {
       setOrientation: vi.fn(),
     };
 
-    animationLoop = new AnimationLoop(mockViewer3D, drone, mockCamera);
+    // Mock ElevationDataManager
+    mockElevationData = {
+      setLocation: vi.fn(),
+    };
+
+    // Mock ContextDataManager
+    mockContextData = {
+      setLocation: vi.fn(),
+    };
+
+    animationLoop = new AnimationLoop(
+      mockViewer3D,
+      drone,
+      mockElevationData,
+      mockContextData,
+      mockCamera
+    );
 
     // Mock requestAnimationFrame to capture the callback
     vi.stubGlobal(
