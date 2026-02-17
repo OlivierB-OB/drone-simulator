@@ -192,6 +192,13 @@ export class ElevationDataManager {
   }
 
   /**
+   * Gets the current tile cache map.
+   */
+  getTileCache(): Map<string, ElevationDataTile> {
+    return this.tileCache;
+  }
+
+  /**
    * Cleans up resources and cancels pending tile loads.
    */
   dispose(): void {
