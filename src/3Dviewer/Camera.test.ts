@@ -224,8 +224,8 @@ describe('Camera', () => {
 
       camera.setOrientation(90);
 
-      // Azimuth 90° = yaw 90° (π/2 radians), pitch -30°
-      expect(cameraInstance.rotation.y).toBeCloseTo((90 * Math.PI) / 180, 5);
+      // Azimuth 90° = yaw -90° (-π/2 radians), pitch -30°
+      expect(cameraInstance.rotation.y).toBeCloseTo((-90 * Math.PI) / 180, 5);
       expect(cameraInstance.rotation.x).toBeCloseTo((-30 * Math.PI) / 180, 5);
       expect(cameraInstance.rotation.z).toBe(0);
     });
@@ -235,8 +235,8 @@ describe('Camera', () => {
 
       camera.setOrientation(180);
 
-      // Azimuth 180° = yaw 180° (π radians), pitch -30°
-      expect(cameraInstance.rotation.y).toBeCloseTo((180 * Math.PI) / 180, 5);
+      // Azimuth 180° = yaw -180° (-π radians), pitch -30°
+      expect(cameraInstance.rotation.y).toBeCloseTo((-180 * Math.PI) / 180, 5);
       expect(cameraInstance.rotation.x).toBeCloseTo((-30 * Math.PI) / 180, 5);
       expect(cameraInstance.rotation.z).toBe(0);
     });
@@ -246,8 +246,8 @@ describe('Camera', () => {
 
       camera.setOrientation(270);
 
-      // Azimuth 270° = yaw 270° (3π/2 radians), pitch -30°
-      expect(cameraInstance.rotation.y).toBeCloseTo((270 * Math.PI) / 180, 5);
+      // Azimuth 270° = yaw -270° (-3π/2 radians), pitch -30°
+      expect(cameraInstance.rotation.y).toBeCloseTo((-270 * Math.PI) / 180, 5);
       expect(cameraInstance.rotation.x).toBeCloseTo((-30 * Math.PI) / 180, 5);
       expect(cameraInstance.rotation.z).toBe(0);
     });
@@ -273,8 +273,8 @@ describe('Camera', () => {
       // Check that both pitch and roll are correct
       expect(cameraInstance.rotation.x).toBeCloseTo((-30 * Math.PI) / 180, 5);
       expect(cameraInstance.rotation.z).toBe(0);
-      // For yaw, 360° = 2π radians
-      expect(cameraInstance.rotation.y).toBeCloseTo((360 * Math.PI) / 180, 5);
+      // For yaw, 360° = -2π radians (negated)
+      expect(cameraInstance.rotation.y).toBeCloseTo((-360 * Math.PI) / 180, 5);
     });
 
     it('should set rotation order to YXZ', () => {
@@ -293,11 +293,11 @@ describe('Camera', () => {
       expect(cameraInstance.rotation.y).toBeCloseTo(0, 5);
 
       camera.setOrientation(180);
-      expect(cameraInstance.rotation.y).toBeCloseTo(Math.PI, 5);
+      expect(cameraInstance.rotation.y).toBeCloseTo(-Math.PI, 5);
       expect(cameraInstance.rotation.x).toBeCloseTo(expectedPitch, 5);
 
       camera.setOrientation(90);
-      expect(cameraInstance.rotation.y).toBeCloseTo(Math.PI / 2, 5);
+      expect(cameraInstance.rotation.y).toBeCloseTo(-Math.PI / 2, 5);
       expect(cameraInstance.rotation.x).toBeCloseTo(expectedPitch, 5);
     });
   });
@@ -331,7 +331,7 @@ describe('Camera', () => {
 
       camera.setOrientation(720); // 2 full rotations
 
-      expect(cameraInstance.rotation.y).toBeCloseTo((720 * Math.PI) / 180, 5);
+      expect(cameraInstance.rotation.y).toBeCloseTo((-720 * Math.PI) / 180, 5);
       expect(cameraInstance.rotation.x).toBeCloseTo(expectedPitch, 5);
     });
   });

@@ -47,8 +47,8 @@ export const elevationConfig = {
   // Web Mercator zoom level for terrain tiles (13 ≈ 25m resolution per pixel)
   zoomLevel: 13,
 
-  // Number of tiles in each direction from center (3 = 7×7 grid of tiles)
-  ringRadius: 3,
+  // Number of tiles in each direction from center (1 = 3×3 grid of tiles)
+  ringRadius: 1,
 
   // Maximum concurrent tile downloads (prevents network saturation)
   maxConcurrentLoads: 3,
