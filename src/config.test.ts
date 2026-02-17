@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { droneConfig } from './config';
+import { droneConfig, debugConfig } from './config';
 
 describe('droneConfig', () => {
   describe('structure', () => {
@@ -107,6 +107,39 @@ describe('droneConfig', () => {
           true
         );
       });
+    });
+  });
+});
+
+describe('debugConfig', () => {
+  describe('structure', () => {
+    it('should have showAxisHelper property', () => {
+      expect(debugConfig.showAxisHelper).toBeDefined();
+      expect(typeof debugConfig.showAxisHelper).toBe('boolean');
+    });
+
+    it('should have axesHelperSize property', () => {
+      expect(debugConfig.axesHelperSize).toBeDefined();
+      expect(typeof debugConfig.axesHelperSize).toBe('number');
+    });
+
+    it('should have useSimpleTerrainMaterial property', () => {
+      expect(debugConfig.useSimpleTerrainMaterial).toBeDefined();
+      expect(typeof debugConfig.useSimpleTerrainMaterial).toBe('boolean');
+    });
+  });
+
+  describe('defaults', () => {
+    it('should have showAxisHelper set to true by default', () => {
+      expect(debugConfig.showAxisHelper).toBe(true);
+    });
+
+    it('should have axesHelperSize set to 500 by default', () => {
+      expect(debugConfig.axesHelperSize).toBe(500);
+    });
+
+    it('should have useSimpleTerrainMaterial set to false by default', () => {
+      expect(debugConfig.useSimpleTerrainMaterial).toBe(false);
     });
   });
 });

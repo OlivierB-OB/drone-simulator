@@ -1,7 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { Mesh, BufferGeometry, MeshPhongMaterial } from 'three';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import {
+  Mesh,
+  BufferGeometry,
+  MeshPhongMaterial,
+  MeshBasicMaterial,
+} from 'three';
 import { TerrainObjectFactory } from './TerrainObjectFactory';
 import { TerrainGeometryObject } from './geometry/TerrainGeometryObject';
+import { debugConfig } from '../../config';
 
 describe('TerrainObjectFactory', () => {
   let factory: TerrainObjectFactory;
@@ -95,6 +101,23 @@ describe('TerrainObjectFactory', () => {
       expect(mesh.position.x).toBe(500);
       expect(mesh.position.y).toBe(0);
       expect(mesh.position.z).toBe(500);
+    });
+
+    describe('debug wireframe mode', () => {
+      const originalUseSimple = debugConfig.useSimpleTerrainMaterial;
+
+      afterEach(() => {
+        (debugConfig as any).useSimpleTerrainMaterial = originalUseSimple;
+      });
+
+      it('should use wireframe rendering for debug material', () => {
+        (debugConfig as any).useSimpleTerrainMaterial = true;
+        const terrainObject = factory.createTerrainObject(geometryObject);
+        const mesh = terrainObject.getMesh();
+        const material = mesh.material as MeshBasicMaterial;
+
+        expect(material.wireframe).toBe(true);
+      });
     });
   });
 });

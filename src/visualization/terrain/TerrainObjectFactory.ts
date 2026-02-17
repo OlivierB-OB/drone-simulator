@@ -1,4 +1,5 @@
-import { Mesh, MeshPhongMaterial } from 'three';
+import { Mesh, MeshPhongMaterial, MeshBasicMaterial } from 'three';
+import { debugConfig } from '../../config';
 import { TerrainObject } from './TerrainObject';
 import { TerrainGeometryObject } from './geometry/TerrainGeometryObject';
 
@@ -14,16 +15,18 @@ export class TerrainObjectFactory {
 
   /**
    * Create a TerrainObject from a TerrainGeometryObject.
-   * Creates a new mesh with a MeshPhongMaterial and wraps it in a TerrainObject.
+   * Creates a new mesh with a MeshPhongMaterial (or MeshBasicMaterial in debug mode) and wraps it in a TerrainObject.
    * Positions the mesh at the tile's Mercator coordinates.
    */
   createTerrainObject(geometryObject: TerrainGeometryObject): TerrainObject {
-    const material = new this.materialConstructor({
-      color: 0x2d5016,
-      specular: 0x101010,
-      shininess: 100,
-      flatShading: false,
-    });
+    const material = debugConfig.useSimpleTerrainMaterial
+      ? new MeshBasicMaterial({ color: 0x2d5016, wireframe: true })
+      : new this.materialConstructor({
+          color: 0x2d5016,
+          specular: 0x101010,
+          shininess: 100,
+          flatShading: false,
+        });
 
     const mesh = new this.meshConstructor(
       geometryObject.getGeometry(),

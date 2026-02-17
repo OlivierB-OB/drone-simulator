@@ -45,11 +45,22 @@ export const sceneConfig = {
 
 export const elevationConfig = {
   // Web Mercator zoom level for terrain tiles (13 ≈ 25m resolution per pixel)
-  zoomLevel: 13,
+  zoomLevel: 15,
 
   // Number of tiles in each direction from center (1 = 3×3 grid of tiles)
   ringRadius: 1,
 
   // Maximum concurrent tile downloads (prevents network saturation)
   maxConcurrentLoads: 3,
+};
+
+export const debugConfig = {
+  // Show visual axes helper for debugging coordinate system (red=X, green=Y, blue=Z)
+  showAxisHelper: true,
+
+  // Size of the axes helper visualization
+  axesHelperSize: 500,
+
+  // Use simple unlit mesh material for terrain instead of realistic phong shading
+  useSimpleTerrainMaterial: false,
 };

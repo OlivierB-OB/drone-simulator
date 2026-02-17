@@ -4,8 +4,10 @@ import {
   Object3D,
   AmbientLight,
   DirectionalLight,
+  AxesHelper,
 } from 'three';
-import { sceneConfig } from '../config';
+import { sceneConfig, debugConfig, droneConfig } from '../config';
+import { Drone } from '../drone/Drone';
 
 export class Scene {
   private readonly scene: ThreeScene;
@@ -25,6 +27,18 @@ export class Scene {
     const directionalLight = new DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(1, 1, 1).normalize();
     this.scene.add(directionalLight);
+
+    // Debug axes helper: red=X, green=Y, blue=Z
+    // Position at the drone's initial location in Mercator coordinates
+    if (debugConfig.showAxisHelper) {
+      const axisHelper = new AxesHelper(debugConfig.axesHelperSize);
+      const mercatorCoords = Drone.latLonToMercator(
+        droneConfig.initialCoordinates.latitude,
+        droneConfig.initialCoordinates.longitude
+      );
+      axisHelper.position.set(mercatorCoords.x, 0, mercatorCoords.y);
+      this.scene.add(axisHelper);
+    }
   }
 
   getScene(): ThreeScene {
