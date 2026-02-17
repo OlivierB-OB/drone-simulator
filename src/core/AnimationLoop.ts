@@ -3,6 +3,7 @@ import { Drone } from '../drone/Drone';
 import { Camera } from '../3Dviewer/Camera';
 import type { ElevationDataManager } from '../data/elevation/ElevationDataManager';
 import type { ContextDataManager } from '../data/contextual/ContextDataManager';
+import type { TerrainObjectManager } from '../visualization/terrain/TerrainObjectManager';
 
 export class AnimationLoop {
   private animationFrameId: number | null = null;
@@ -13,7 +14,8 @@ export class AnimationLoop {
     private readonly drone: Drone,
     private readonly elevationData: ElevationDataManager,
     private readonly contextData: ContextDataManager,
-    private readonly camera: Camera
+    private readonly camera: Camera,
+    private readonly terrainObjectManager: TerrainObjectManager
   ) {}
 
   public start(): void {
@@ -35,6 +37,8 @@ export class AnimationLoop {
 
       this.elevationData.setLocation(droneLocation);
       this.contextData.setLocation(droneLocation);
+
+      this.terrainObjectManager.refresh();
 
       this.camera.setPosition(
         droneLocation.x,

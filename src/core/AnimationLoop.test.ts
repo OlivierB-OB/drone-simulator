@@ -9,6 +9,7 @@ describe('AnimationLoop', () => {
   let mockCamera: any;
   let mockElevationData: any;
   let mockContextData: any;
+  let mockTerrainObjectManager: any;
 
   beforeEach(() => {
     drone = createDrone();
@@ -34,12 +35,18 @@ describe('AnimationLoop', () => {
       setLocation: vi.fn(),
     };
 
+    // Mock TerrainObjectManager
+    mockTerrainObjectManager = {
+      refresh: vi.fn(),
+    };
+
     animationLoop = new AnimationLoop(
       mockViewer3D,
       drone,
       mockElevationData,
       mockContextData,
-      mockCamera
+      mockCamera,
+      mockTerrainObjectManager
     );
 
     // Mock requestAnimationFrame to capture the callback
@@ -209,10 +216,13 @@ describe('AnimationLoop', () => {
       }
     });
 
-    it('should execute in correct order: applyMove -> setPosition -> setOrientation -> render', () => {
+    it('should execute in correct order: applyMove -> refresh -> setPosition -> setOrientation -> render', () => {
       const callOrder: string[] = [];
       vi.spyOn(drone, 'applyMove').mockImplementation(() => {
         callOrder.push('applyMove');
+      });
+      mockTerrainObjectManager.refresh.mockImplementation(() => {
+        callOrder.push('refresh');
       });
       mockCamera.setPosition.mockImplementation(() => {
         callOrder.push('setPosition');
@@ -235,6 +245,7 @@ describe('AnimationLoop', () => {
 
         expect(callOrder).toEqual([
           'applyMove',
+          'refresh',
           'setPosition',
           'setOrientation',
           'render',

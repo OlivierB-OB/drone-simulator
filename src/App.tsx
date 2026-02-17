@@ -5,6 +5,8 @@ import { createDrone, Drone } from './drone/Drone';
 import { AnimationLoop } from './core/AnimationLoop';
 import { ContextDataManager } from './data/contextual/ContextDataManager';
 import { ElevationDataManager } from './data/elevation/ElevationDataManager';
+import { TerrainGeometryObjectManager } from './visualization/terrain/geometry/TerrainGeometryObjectManager';
+import { TerrainObjectManager } from './visualization/terrain/TerrainObjectManager';
 
 export function App() {
   let viewer3D: Viewer3D | null = null;
@@ -13,6 +15,8 @@ export function App() {
   let drone: Drone | null = null;
   let elevationData: ElevationDataManager | null = null;
   let contextData: ContextDataManager | null = null;
+  let terrainGeometryManager: TerrainGeometryObjectManager | null = null;
+  let terrainObjectManager: TerrainObjectManager | null = null;
 
   onMount(() => {
     const containerRef = document.getElementById(
@@ -24,12 +28,20 @@ export function App() {
     elevationData = new ElevationDataManager(drone.getLocation());
     contextData = new ContextDataManager(drone.getLocation());
     viewer3D = new Viewer3D(containerRef);
+
+    terrainGeometryManager = new TerrainGeometryObjectManager(elevationData);
+    terrainObjectManager = new TerrainObjectManager(
+      viewer3D.getScene(),
+      terrainGeometryManager
+    );
+
     animationLoop = new AnimationLoop(
       viewer3D,
       drone,
       elevationData,
       contextData,
-      viewer3D.getCamera()
+      viewer3D.getCamera(),
+      terrainObjectManager
     );
     animationLoop.start();
 
@@ -41,6 +53,8 @@ export function App() {
       droneController?.dispose();
       elevationData?.dispose();
       contextData?.dispose();
+      terrainGeometryManager?.dispose();
+      terrainObjectManager?.dispose();
     };
   });
 
