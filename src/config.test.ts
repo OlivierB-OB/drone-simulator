@@ -13,9 +13,9 @@ describe('droneConfig', () => {
       expect(typeof droneConfig.movementSpeed).toBe('number');
     });
 
-    it('should have rotationSpeed property', () => {
-      expect(droneConfig.rotationSpeed).toBeDefined();
-      expect(typeof droneConfig.rotationSpeed).toBe('number');
+    it('should have mouseSensitivity property', () => {
+      expect(droneConfig.mouseSensitivity).toBeDefined();
+      expect(typeof droneConfig.mouseSensitivity).toBe('number');
     });
   });
 
@@ -68,19 +68,19 @@ describe('droneConfig', () => {
     });
   });
 
-  describe('rotationSpeed', () => {
+  describe('mouseSensitivity', () => {
     it('should be a positive number', () => {
-      expect(droneConfig.rotationSpeed).toBeGreaterThan(0);
+      expect(droneConfig.mouseSensitivity).toBeGreaterThan(0);
     });
 
-    it('should be realistic for a drone', () => {
-      // Realistic drone rotation: 30-90°/s
-      expect(droneConfig.rotationSpeed).toBeGreaterThanOrEqual(30);
-      expect(droneConfig.rotationSpeed).toBeLessThanOrEqual(90);
+    it('should be reasonable for mouse input', () => {
+      // Mouse sensitivity should be between 0.1 and 2.0 degrees per pixel
+      expect(droneConfig.mouseSensitivity).toBeGreaterThanOrEqual(0.1);
+      expect(droneConfig.mouseSensitivity).toBeLessThanOrEqual(2.0);
     });
 
-    it('should be 60 degrees per second', () => {
-      expect(droneConfig.rotationSpeed).toBe(60);
+    it('should be 0.5 degrees per pixel', () => {
+      expect(droneConfig.mouseSensitivity).toBe(0.5);
     });
   });
 
@@ -91,7 +91,7 @@ describe('droneConfig', () => {
 
       expect(config1).toBe(config2); // Same reference
       expect(config1.movementSpeed).toBe(config2.movementSpeed);
-      expect(config1.rotationSpeed).toBe(config2.rotationSpeed);
+      expect(config1.mouseSensitivity).toBe(config2.mouseSensitivity);
       expect(config1.initialCoordinates).toBe(config2.initialCoordinates);
     });
 
@@ -99,7 +99,7 @@ describe('droneConfig', () => {
       const requiredProps = [
         'initialCoordinates',
         'movementSpeed',
-        'rotationSpeed',
+        'mouseSensitivity',
       ];
 
       requiredProps.forEach((prop) => {

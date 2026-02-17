@@ -1,3 +1,4 @@
+import { droneConfig } from '../config';
 import { Drone } from './Drone';
 
 export class DroneController {
@@ -60,11 +61,11 @@ export class DroneController {
 
     this.mousemoveHandler = (event: MouseEvent) => {
       const currentX = event.clientX;
+      const deltaX = currentX - lastX;
 
-      if (currentX < lastX) {
-        console.log('Mouse moved: toward the left');
-      } else if (currentX > lastX) {
-        console.log('Mouse moved: toward the right');
+      if (deltaX !== 0) {
+        const deltaDegrees = deltaX * droneConfig.mouseSensitivity;
+        this.drone.rotateAzimuth(deltaDegrees);
       }
 
       lastX = currentX;
@@ -76,11 +77,9 @@ export class DroneController {
 
   private setupMouseWheelListeners() {
     this.wheelHandler = (event: WheelEvent) => {
-      if (event.deltaY < 0) {
-        console.log('Mouse wheel moved: up');
-      } else if (event.deltaY > 0) {
-        console.log('Mouse wheel moved: down');
-      }
+      const elevationDelta =
+        (event.deltaY < 0 ? 1 : -1) * droneConfig.wheelElevationSensitivity;
+      this.drone.changeElevation(elevationDelta);
     };
     if (this.containerRef) {
       this.containerRef.addEventListener('wheel', this.wheelHandler);

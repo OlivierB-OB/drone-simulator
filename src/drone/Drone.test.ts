@@ -69,6 +69,48 @@ describe('Drone', () => {
     });
   });
 
+  describe('rotateAzimuth', () => {
+    it('should increase azimuth with positive delta', () => {
+      drone.rotateAzimuth(45);
+      expect(drone.getAzimuth()).toEqual(45);
+    });
+
+    it('should decrease azimuth with negative delta', () => {
+      const testDrone = new Drone(testLocation, 90);
+      testDrone.rotateAzimuth(-30);
+      expect(testDrone.getAzimuth()).toEqual(60);
+    });
+
+    it('should wrap around at 360 degrees', () => {
+      const testDrone = new Drone(testLocation, 350);
+      testDrone.rotateAzimuth(20);
+      expect(testDrone.getAzimuth()).toEqual(10);
+    });
+
+    it('should handle large positive rotations', () => {
+      drone.rotateAzimuth(450);
+      expect(drone.getAzimuth()).toEqual(90);
+    });
+
+    it('should handle large negative rotations', () => {
+      const testDrone = new Drone(testLocation, 45);
+      testDrone.rotateAzimuth(-405);
+      expect(testDrone.getAzimuth()).toEqual(0);
+    });
+
+    it('should handle zero delta', () => {
+      const testDrone = new Drone(testLocation, 90);
+      testDrone.rotateAzimuth(0);
+      expect(testDrone.getAzimuth()).toEqual(90);
+    });
+
+    it('should wrap correctly from 359 to 0', () => {
+      const testDrone = new Drone(testLocation, 359);
+      testDrone.rotateAzimuth(1);
+      expect(testDrone.getAzimuth()).toEqual(0);
+    });
+  });
+
   describe('getElevation', () => {
     it('should return the elevation', () => {
       expect(drone.getElevation()).toEqual(0);
@@ -85,6 +127,43 @@ describe('Drone', () => {
       testDrone.applyMove(1);
 
       expect(testDrone.getElevation()).toEqual(5);
+    });
+  });
+
+  describe('changeElevation', () => {
+    it('should increase elevation with positive delta', () => {
+      const testDrone = new Drone(testLocation, 0, 10);
+      testDrone.changeElevation(5);
+      expect(testDrone.getElevation()).toEqual(15);
+    });
+
+    it('should decrease elevation with negative delta', () => {
+      const testDrone = new Drone(testLocation, 0, 20);
+      testDrone.changeElevation(-5);
+      expect(testDrone.getElevation()).toEqual(15);
+    });
+
+    it('should respect minimum elevation bound', () => {
+      const testDrone = new Drone(testLocation, 0, 2);
+      testDrone.changeElevation(-5);
+      expect(testDrone.getElevation()).toEqual(droneConfig.elevationMinimum);
+    });
+
+    it('should respect maximum elevation bound', () => {
+      const testDrone = new Drone(testLocation, 0, 495);
+      testDrone.changeElevation(10);
+      expect(testDrone.getElevation()).toEqual(droneConfig.elevationMaximum);
+    });
+
+    it('should clamp at zero when going below minimum', () => {
+      drone.changeElevation(-10);
+      expect(drone.getElevation()).toEqual(0);
+    });
+
+    it('should clamp at maximum when exceeding limit', () => {
+      const testDrone = new Drone(testLocation, 0, 450);
+      testDrone.changeElevation(100);
+      expect(testDrone.getElevation()).toEqual(500);
     });
   });
 

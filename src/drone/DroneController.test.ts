@@ -98,79 +98,84 @@ describe('DroneController', () => {
 
   describe('Mouse Input', () => {
     it('should listen to mousemove events on container', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const rotateSpy = vi.spyOn(drone, 'rotateAzimuth');
 
-      // First event initializes lastX and logs movement from 0
       const event = new MouseEvent('mousemove', { clientX: 100 });
       container.dispatchEvent(event);
 
-      // First event from lastX=0 to clientX=100 logs right movement
-      expect(consoleSpy).toHaveBeenCalledWith('Mouse moved: toward the right');
+      // First movement from 0 to 100 = 100px * 0.5 sensitivity = 50 degrees
+      expect(rotateSpy).toHaveBeenCalled();
 
-      consoleSpy.mockClear();
+      rotateSpy.mockClear();
 
-      // Second event with movement logs
       const rightEvent = new MouseEvent('mousemove', { clientX: 150 });
       container.dispatchEvent(rightEvent);
-      expect(consoleSpy).toHaveBeenCalledWith('Mouse moved: toward the right');
-
-      consoleSpy.mockRestore();
+      // Second movement from 100 to 150 = 50px * 0.5 = 25 degrees
+      expect(rotateSpy).toHaveBeenCalledWith(25);
     });
 
-    it('should detect left mouse movement', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    it('should detect left mouse movement and rotate counter-clockwise', () => {
+      const rotateSpy = vi.spyOn(drone, 'rotateAzimuth');
 
       // Set baseline
       let event = new MouseEvent('mousemove', { clientX: 100 });
       container.dispatchEvent(event);
 
-      // Move left
+      rotateSpy.mockClear();
+
+      // Move left (clientX decreases)
       event = new MouseEvent('mousemove', { clientX: 50 });
       container.dispatchEvent(event);
 
-      expect(consoleSpy).toHaveBeenCalledWith('Mouse moved: toward the left');
-
-      consoleSpy.mockRestore();
+      // 50 - 100 = -50px * 0.5 = -25 degrees (counter-clockwise)
+      expect(rotateSpy).toHaveBeenCalledWith(-25);
     });
 
-    it('should detect right mouse movement', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    it('should detect right mouse movement and rotate clockwise', () => {
+      const rotateSpy = vi.spyOn(drone, 'rotateAzimuth');
 
       // Set baseline
       let event = new MouseEvent('mousemove', { clientX: 100 });
       container.dispatchEvent(event);
 
-      // Move right
+      rotateSpy.mockClear();
+
+      // Move right (clientX increases)
       event = new MouseEvent('mousemove', { clientX: 150 });
       container.dispatchEvent(event);
 
-      expect(consoleSpy).toHaveBeenCalledWith('Mouse moved: toward the right');
-
-      consoleSpy.mockRestore();
+      // 150 - 100 = 50px * 0.5 = 25 degrees (clockwise)
+      expect(rotateSpy).toHaveBeenCalledWith(25);
     });
   });
 
   describe('Mouse Wheel Input', () => {
-    it('should detect wheel scroll up', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    it('should increase elevation on wheel scroll up', () => {
+      const elevationSpy = vi.spyOn(drone, 'changeElevation');
 
       const event = new WheelEvent('wheel', { deltaY: -100 });
       container.dispatchEvent(event);
 
-      expect(consoleSpy).toHaveBeenCalledWith('Mouse wheel moved: up');
-
-      consoleSpy.mockRestore();
+      expect(elevationSpy).toHaveBeenCalledWith(5);
     });
 
-    it('should detect wheel scroll down', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    it('should decrease elevation on wheel scroll down', () => {
+      const elevationSpy = vi.spyOn(drone, 'changeElevation');
 
       const event = new WheelEvent('wheel', { deltaY: 100 });
       container.dispatchEvent(event);
 
-      expect(consoleSpy).toHaveBeenCalledWith('Mouse wheel moved: down');
+      expect(elevationSpy).toHaveBeenCalledWith(-5);
+    });
 
-      consoleSpy.mockRestore();
+    it('should use wheelElevationSensitivity from config', () => {
+      const elevationSpy = vi.spyOn(drone, 'changeElevation');
+
+      const event = new WheelEvent('wheel', { deltaY: -50 });
+      container.dispatchEvent(event);
+
+      // Positive deltaY < 0 means wheel up, so positive elevation change
+      expect(elevationSpy).toHaveBeenCalledWith(5);
     });
   });
 
@@ -186,27 +191,23 @@ describe('DroneController', () => {
     });
 
     it('should remove mouse event listeners', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const rotateSpy = vi.spyOn(drone, 'rotateAzimuth');
       controller.dispose();
 
       const event = new MouseEvent('mousemove', { clientX: 100 });
       container.dispatchEvent(event);
 
-      expect(consoleSpy).not.toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      expect(rotateSpy).not.toHaveBeenCalled();
     });
 
     it('should remove wheel event listeners', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const elevationSpy = vi.spyOn(drone, 'changeElevation');
       controller.dispose();
 
       const event = new WheelEvent('wheel', { deltaY: 100 });
       container.dispatchEvent(event);
 
-      expect(consoleSpy).not.toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      expect(elevationSpy).not.toHaveBeenCalled();
     });
 
     it('should nullify container reference', () => {

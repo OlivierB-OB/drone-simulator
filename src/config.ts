@@ -15,8 +15,15 @@ export const droneConfig = {
   // Movement speed in meters per second (realistic drone cruising speed: 10-15 m/s)
   movementSpeed: 12,
 
-  // Rotation speed in degrees per second (realistic drone rotation: 30-90°/s)
-  rotationSpeed: 60,
+  // Mouse sensitivity for azimuth control (degrees per pixel of mouse movement)
+  mouseSensitivity: 0.5,
+
+  // Elevation bounds in meters (0 = ground level)
+  elevationMinimum: 0,
+  elevationMaximum: 500,
+
+  // Elevation change per mouse wheel tick in meters
+  wheelElevationSensitivity: 5,
 };
 
 export const cameraConfig = {
