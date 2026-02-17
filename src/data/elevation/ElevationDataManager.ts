@@ -9,7 +9,6 @@ import { ElevationDataTileLoader } from './ElevationDataTileLoader';
  * loads/unloads tiles as the drone moves.
  */
 export class ElevationDataManager {
-  private currentLocation: MercatorCoordinates;
   private currentTileCenter: TileCoordinates | null = null;
   private tileCache: Map<string, ElevationDataTile> = new Map();
   private pendingLoads: Map<string, Promise<ElevationDataTile | null>> =
@@ -18,7 +17,6 @@ export class ElevationDataManager {
   private abortController: AbortController = new AbortController();
 
   constructor(initialLocation: MercatorCoordinates) {
-    this.currentLocation = initialLocation;
     this.initializeTileRing(initialLocation);
   }
 
@@ -27,8 +25,6 @@ export class ElevationDataManager {
    * Called each animation frame by AnimationLoop.
    */
   setLocation(location: MercatorCoordinates): void {
-    this.currentLocation = location;
-
     const newTileCenter = ElevationDataTileLoader.getTileCoordinates(
       location,
       elevationConfig.zoomLevel
