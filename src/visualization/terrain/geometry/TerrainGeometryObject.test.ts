@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BufferGeometry } from 'three';
-import { TerrainMeshObject } from './TerrainMeshObject';
+import { TerrainGeometryObject } from './TerrainGeometryObject';
 
-describe('TerrainMeshObject', () => {
+describe('TerrainGeometryObject', () => {
   let geometry: BufferGeometry;
   const tileKey = '9:261:168';
 
@@ -15,31 +15,31 @@ describe('TerrainMeshObject', () => {
 
   describe('constructor', () => {
     it('should store the tile key and geometry', () => {
-      const terrainMesh = new TerrainMeshObject(tileKey, geometry);
+      const terrainGeometry = new TerrainGeometryObject(tileKey, geometry);
 
-      expect(terrainMesh.getTileKey()).toBe(tileKey);
-      expect(terrainMesh.getGeometry()).toBe(geometry);
+      expect(terrainGeometry.getTileKey()).toBe(tileKey);
+      expect(terrainGeometry.getGeometry()).toBe(geometry);
     });
   });
 
   describe('getTileKey', () => {
     it('should return the tile key in z:x:y format', () => {
-      const terrainMesh = new TerrainMeshObject(tileKey, geometry);
-      expect(terrainMesh.getTileKey()).toBe('9:261:168');
+      const terrainGeometry = new TerrainGeometryObject(tileKey, geometry);
+      expect(terrainGeometry.getTileKey()).toBe('9:261:168');
     });
   });
 
   describe('getGeometry', () => {
     it('should return the BufferGeometry instance', () => {
-      const terrainMesh = new TerrainMeshObject(tileKey, geometry);
-      expect(terrainMesh.getGeometry()).toBe(geometry);
+      const terrainGeometry = new TerrainGeometryObject(tileKey, geometry);
+      expect(terrainGeometry.getGeometry()).toBe(geometry);
     });
   });
 
   describe('dispose', () => {
     it('should dispose of geometry', () => {
-      const terrainMesh = new TerrainMeshObject(tileKey, geometry);
-      terrainMesh.dispose();
+      const terrainGeometry = new TerrainGeometryObject(tileKey, geometry);
+      terrainGeometry.dispose();
 
       expect(geometry.dispose).toHaveBeenCalled();
     });

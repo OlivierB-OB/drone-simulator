@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { BufferGeometry } from 'three';
-import { TerrainMeshFactory } from './TerrainMeshFactory';
-import type { ElevationDataTile } from '../../data/elevation/types';
+import { TerrainGeometryFactory } from './TerrainGeometryFactory';
+import type { ElevationDataTile } from '../../../data/elevation/types';
 
-describe('TerrainMeshFactory', () => {
-  let factory: TerrainMeshFactory;
+describe('TerrainGeometryFactory', () => {
+  let factory: TerrainGeometryFactory;
 
   beforeEach(() => {
-    factory = new TerrainMeshFactory();
+    factory = new TerrainGeometryFactory();
   });
 
   describe('createGeometry', () => {

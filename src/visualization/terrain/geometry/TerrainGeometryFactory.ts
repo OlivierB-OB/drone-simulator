@@ -1,11 +1,11 @@
 import { BufferGeometry, BufferAttribute } from 'three';
-import type { ElevationDataTile } from '../../data/elevation/types';
+import type { ElevationDataTile } from '../../../data/elevation/types';
 
 /**
  * Factory for creating Three.js terrain geometry from elevation tiles.
  * Generates BufferGeometry with vertex normals for realistic lighting.
  */
-export class TerrainMeshFactory {
+export class TerrainGeometryFactory {
   /**
    * Create BufferGeometry from an elevation tile.
    *

@@ -5,7 +5,7 @@ import type { TileKey } from './types';
  * Represents a single terrain geometry created from an elevation tile.
  * Holds a reference to the Three.js BufferGeometry and its associated tile identifier.
  */
-export class TerrainMeshObject {
+export class TerrainGeometryObject {
   private readonly geometry: BufferGeometry;
   private readonly tileKey: TileKey;
 

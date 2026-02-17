@@ -1,20 +1,20 @@
-import { ElevationDataManager } from '../../data/elevation/ElevationDataManager';
-import { TerrainMeshObject } from './TerrainMeshObject';
-import { TerrainMeshFactory } from './TerrainMeshFactory';
+import { ElevationDataManager } from '../../../data/elevation/ElevationDataManager';
+import { TerrainGeometryObject } from './TerrainGeometryObject';
+import { TerrainGeometryFactory } from './TerrainGeometryFactory';
 import type { TileKey } from './types';
 
 /**
- * Manages a collection of TerrainMeshObject instances that contain elevation tile geometry.
+ * Manages a collection of TerrainGeometryObject instances that contain elevation tile geometry.
  * Synchronizes geometry with the tiles loaded in ElevationDataManager.
  * Does not manage scene or material creation.
  */
-export class TerrainMeshObjectManager {
-  private readonly objects: Map<TileKey, TerrainMeshObject>;
-  private readonly factory: TerrainMeshFactory;
+export class TerrainGeometryObjectManager {
+  private readonly objects: Map<TileKey, TerrainGeometryObject>;
+  private readonly factory: TerrainGeometryFactory;
 
-  constructor(factory?: TerrainMeshFactory) {
+  constructor(factory?: TerrainGeometryFactory) {
     this.objects = new Map();
-    this.factory = factory ?? new TerrainMeshFactory();
+    this.factory = factory ?? new TerrainGeometryFactory();
   }
 
   /**
@@ -54,9 +54,9 @@ export class TerrainMeshObjectManager {
 
     // Remove old geometry
     for (const key of tilesToRemove) {
-      const terrainMesh = this.objects.get(key);
-      if (terrainMesh) {
-        terrainMesh.dispose();
+      const terrainGeometry = this.objects.get(key);
+      if (terrainGeometry) {
+        terrainGeometry.dispose();
         this.objects.delete(key);
       }
     }
@@ -66,37 +66,39 @@ export class TerrainMeshObjectManager {
       const tile = currentTiles.get(key);
       if (tile) {
         const geometry = this.factory.createGeometry(tile);
-        const terrainMesh = new TerrainMeshObject(key, geometry);
-        this.objects.set(key, terrainMesh);
+        const terrainGeometry = new TerrainGeometryObject(key, geometry);
+        this.objects.set(key, terrainGeometry);
       }
     }
   }
 
   /**
-   * Get a terrain mesh object by its tile key
+   * Get a terrain geometry object by its tile key
    *
    * @param tileKey - Tile identifier in "z:x:y" format
-   * @returns The TerrainMeshObject if found, undefined otherwise
+   * @returns The TerrainGeometryObject if found, undefined otherwise
    */
-  getTerrainMeshObject(tileKey: TileKey): TerrainMeshObject | undefined {
+  getTerrainGeometryObject(
+    tileKey: TileKey
+  ): TerrainGeometryObject | undefined {
     return this.objects.get(tileKey);
   }
 
   /**
-   * Get all managed terrain mesh objects
+   * Get all managed terrain geometry objects
    *
-   * @returns Array of all TerrainMeshObject instances
+   * @returns Array of all TerrainGeometryObject instances
    */
-  getAllMeshes(): TerrainMeshObject[] {
+  getAllGeometries(): TerrainGeometryObject[] {
     return Array.from(this.objects.values());
   }
 
   /**
-   * Clean up all meshes and clear the collection
+   * Clean up all geometries and clear the collection
    */
   dispose(): void {
-    for (const terrainMesh of this.objects.values()) {
-      terrainMesh.dispose();
+    for (const terrainGeometry of this.objects.values()) {
+      terrainGeometry.dispose();
     }
     this.objects.clear();
   }
