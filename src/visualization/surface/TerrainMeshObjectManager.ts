@@ -1,15 +1,15 @@
 import { ElevationDataManager } from '../../data/elevation/ElevationDataManager';
-import { SurfaceMeshObject } from './SurfaceMeshObject';
+import { TerrainMeshObject } from './TerrainMeshObject';
 import { TerrainMeshFactory } from './TerrainMeshFactory';
 import type { TileKey } from './types';
 
 /**
- * Manages a collection of SurfaceMeshObject instances that contain elevation tile geometry.
+ * Manages a collection of TerrainMeshObject instances that contain elevation tile geometry.
  * Synchronizes geometry with the tiles loaded in ElevationDataManager.
  * Does not manage scene or material creation.
  */
-export class SurfaceMeshObjectManager {
-  private readonly objects: Map<TileKey, SurfaceMeshObject>;
+export class TerrainMeshObjectManager {
+  private readonly objects: Map<TileKey, TerrainMeshObject>;
   private readonly factory: TerrainMeshFactory;
 
   constructor(factory?: TerrainMeshFactory) {
@@ -18,7 +18,7 @@ export class SurfaceMeshObjectManager {
   }
 
   /**
-   * Synchronize surface geometry with tiles in ElevationDataManager.
+   * Synchronize terrain geometry with tiles in ElevationDataManager.
    *
    * This method:
    * 1. Gets current tile set from elevationDataManager
@@ -54,9 +54,9 @@ export class SurfaceMeshObjectManager {
 
     // Remove old geometry
     for (const key of tilesToRemove) {
-      const surfaceMesh = this.objects.get(key);
-      if (surfaceMesh) {
-        surfaceMesh.dispose();
+      const terrainMesh = this.objects.get(key);
+      if (terrainMesh) {
+        terrainMesh.dispose();
         this.objects.delete(key);
       }
     }
@@ -66,28 +66,28 @@ export class SurfaceMeshObjectManager {
       const tile = currentTiles.get(key);
       if (tile) {
         const geometry = this.factory.createGeometry(tile);
-        const surfaceMesh = new SurfaceMeshObject(key, geometry);
-        this.objects.set(key, surfaceMesh);
+        const terrainMesh = new TerrainMeshObject(key, geometry);
+        this.objects.set(key, terrainMesh);
       }
     }
   }
 
   /**
-   * Get a surface mesh object by its tile key
+   * Get a terrain mesh object by its tile key
    *
    * @param tileKey - Tile identifier in "z:x:y" format
-   * @returns The SurfaceMeshObject if found, undefined otherwise
+   * @returns The TerrainMeshObject if found, undefined otherwise
    */
-  getSurfaceMeshObject(tileKey: TileKey): SurfaceMeshObject | undefined {
+  getTerrainMeshObject(tileKey: TileKey): TerrainMeshObject | undefined {
     return this.objects.get(tileKey);
   }
 
   /**
-   * Get all managed surface mesh objects
+   * Get all managed terrain mesh objects
    *
-   * @returns Array of all SurfaceMeshObject instances
+   * @returns Array of all TerrainMeshObject instances
    */
-  getAllMeshes(): SurfaceMeshObject[] {
+  getAllMeshes(): TerrainMeshObject[] {
     return Array.from(this.objects.values());
   }
 
@@ -95,8 +95,8 @@ export class SurfaceMeshObjectManager {
    * Clean up all meshes and clear the collection
    */
   dispose(): void {
-    for (const surfaceMesh of this.objects.values()) {
-      surfaceMesh.dispose();
+    for (const terrainMesh of this.objects.values()) {
+      terrainMesh.dispose();
     }
     this.objects.clear();
   }

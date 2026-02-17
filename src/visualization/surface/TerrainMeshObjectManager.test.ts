@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BufferGeometry } from 'three';
-import { SurfaceMeshObjectManager } from './SurfaceMeshObjectManager';
-import { SurfaceMeshObject } from './SurfaceMeshObject';
+import { TerrainMeshObjectManager } from './TerrainMeshObjectManager';
+import { TerrainMeshObject } from './TerrainMeshObject';
 import { TerrainMeshFactory } from './TerrainMeshFactory';
 import type { ElevationDataTile } from '../../data/elevation/types';
 
-describe('SurfaceMeshObjectManager', () => {
-  let manager: SurfaceMeshObjectManager;
+describe('TerrainMeshObjectManager', () => {
+  let manager: TerrainMeshObjectManager;
   let mockFactory: TerrainMeshFactory;
   let mockElevationManager: any;
 
@@ -21,12 +21,12 @@ describe('SurfaceMeshObjectManager', () => {
       getTileCache: vi.fn(() => new Map()),
     };
 
-    manager = new SurfaceMeshObjectManager(mockFactory);
+    manager = new TerrainMeshObjectManager(mockFactory);
   });
 
   describe('constructor', () => {
     it('should initialize with empty objects map', () => {
-      const newManager = new SurfaceMeshObjectManager();
+      const newManager = new TerrainMeshObjectManager();
       expect(newManager.getAllMeshes()).toEqual([]);
     });
 
@@ -35,7 +35,7 @@ describe('SurfaceMeshObjectManager', () => {
     });
 
     it('should create default factory if not provided', () => {
-      const newManager = new SurfaceMeshObjectManager();
+      const newManager = new TerrainMeshObjectManager();
       expect(newManager).toBeDefined();
     });
   });
@@ -133,23 +133,23 @@ describe('SurfaceMeshObjectManager', () => {
     });
   });
 
-  describe('getSurfaceMeshObject', () => {
-    it('should return the surface mesh object for a tile key', () => {
+  describe('getTerrainMeshObject', () => {
+    it('should return the terrain mesh object for a tile key', () => {
       const tile: ElevationDataTile = createMockTile('9:261:168');
       const tiles = new Map([['9:261:168', tile]]);
       mockElevationManager.getTileCache.mockReturnValue(tiles);
 
       manager.refresh(mockElevationManager);
-      const surfaceMesh = manager.getSurfaceMeshObject('9:261:168');
+      const terrainMesh = manager.getTerrainMeshObject('9:261:168');
 
-      expect(surfaceMesh).toBeDefined();
-      expect(surfaceMesh).toBeInstanceOf(SurfaceMeshObject);
-      expect(surfaceMesh?.getTileKey()).toBe('9:261:168');
+      expect(terrainMesh).toBeDefined();
+      expect(terrainMesh).toBeInstanceOf(TerrainMeshObject);
+      expect(terrainMesh?.getTileKey()).toBe('9:261:168');
     });
 
     it('should return undefined for non-existent tile key', () => {
-      const surfaceMesh = manager.getSurfaceMeshObject('9:999:999');
-      expect(surfaceMesh).toBeUndefined();
+      const terrainMesh = manager.getTerrainMeshObject('9:999:999');
+      expect(terrainMesh).toBeUndefined();
     });
   });
 
@@ -174,8 +174,8 @@ describe('SurfaceMeshObjectManager', () => {
       expect(meshes).toHaveLength(2);
       expect(meshes).toEqual(
         expect.arrayContaining([
-          expect.any(SurfaceMeshObject),
-          expect.any(SurfaceMeshObject),
+          expect.any(TerrainMeshObject),
+          expect.any(TerrainMeshObject),
         ])
       );
     });
