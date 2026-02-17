@@ -7,7 +7,7 @@ import type { MercatorCoordinates } from '../../gis/types';
 
 /**
  * Factory for loading and parsing elevation data tiles from AWS Terrain Tiles.
- * Uses Mapbox Terrain RGB format (PNG-encoded elevation).
+ * Uses Terrarium format (PNG-encoded elevation with RGB channels).
  */
 export class ElevationDataTileLoader {
   /**
@@ -78,9 +78,9 @@ export class ElevationDataTileLoader {
   ): Promise<ElevationDataTile> {
     const { z, x, y } = coordinates;
 
-    // Mapbox Terrain RGB tile URL (free, no API key required)
-    // Using public CDN endpoint
-    const url = `https://a.tiles.mapbox.com/raster/v1/mapbox.terrain-rgb/${z}/${x}/${y}.pngraw`;
+    // AWS Terrain Tiles - Terrarium format (free, no API key required)
+    // Using S3 endpoint with Terrarium RGB encoding
+    const url = `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
 
     try {
       const response = await fetch(url);
@@ -116,7 +116,7 @@ export class ElevationDataTileLoader {
           const g = uint8Array[pixelIndex++] ?? 0;
           const b = uint8Array[pixelIndex++] ?? 0;
 
-          // Decode elevation from Mapbox Terrain RGB encoding
+          // Decode elevation from Terrarium RGB encoding
           // elevation = (R × 256 + G + B/256) - 32768
           const elevation = r * 256 + g + b / 256 - 32768;
 
