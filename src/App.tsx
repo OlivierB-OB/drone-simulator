@@ -3,12 +3,16 @@ import { Viewer3D } from './3Dviewer/Viewer3D';
 import { DroneController } from './drone/DroneController';
 import { createDrone, Drone } from './drone/Drone';
 import { AnimationLoop } from './core/AnimationLoop';
+import { ContextDataManager } from './data/contextual/ContextDataManager';
+import { ElevationDataManager } from './data/elevation/ElevationDataManager';
 
 export function App() {
   let viewer3D: Viewer3D | null = null;
   let droneController: DroneController | null = null;
   let animationLoop: AnimationLoop | null = null;
   let drone: Drone | null = null;
+  let elevationData: ElevationDataManager | null = null;
+  let contextData: ContextDataManager | null = null;
 
   onMount(() => {
     const containerRef = document.getElementById(
@@ -17,8 +21,16 @@ export function App() {
     if (!containerRef) return;
 
     drone = createDrone();
+    elevationData = new ElevationDataManager(drone.getLocation());
+    contextData = new ContextDataManager(drone.getLocation());
     viewer3D = new Viewer3D(containerRef);
-    animationLoop = new AnimationLoop(viewer3D, drone, viewer3D.getCamera());
+    animationLoop = new AnimationLoop(
+      viewer3D,
+      drone,
+      elevationData,
+      contextData,
+      viewer3D.getCamera()
+    );
     animationLoop.start();
 
     droneController = new DroneController(containerRef, drone);
@@ -27,6 +39,8 @@ export function App() {
       animationLoop?.dispose();
       viewer3D?.dispose();
       droneController?.dispose();
+      elevationData?.dispose();
+      contextData?.dispose();
     };
   });
 

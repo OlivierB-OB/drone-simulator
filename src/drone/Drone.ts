@@ -1,9 +1,5 @@
 import { droneConfig } from '../config';
-
-export interface MercatorCoordinates {
-  x: number;
-  y: number;
-}
+import type { MercatorCoordinates } from '../gis/types';
 
 export class Drone {
   private readonly location: MercatorCoordinates;
