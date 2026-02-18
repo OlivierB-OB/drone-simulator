@@ -6,12 +6,76 @@ import {
   MeshPhongMaterial,
   Group,
   Vector3,
+  CanvasTexture,
   type Object3D,
 } from 'three';
 
 interface DroneGeometryResult {
   group: Group;
   rotors: Mesh[];
+}
+
+/**
+ * Generate a radial stripe texture for rotor animation.
+ * Creates alternating light/dark stripes that radiate outward.
+ * Returns null in test environments where canvas 2D context is unavailable.
+ */
+function generateRotorTexture(): CanvasTexture | null {
+  try {
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return null;
+    }
+
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY);
+
+    // Draw radial stripes
+    const stripeWidth = 12; // pixels per stripe
+    const lightColor = '#CCCCCC';
+    const darkColor = '#222222';
+
+    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 16) {
+      // Draw lines from center outward
+      const x1 = centerX + Math.cos(angle) * 0;
+      const y1 = centerY + Math.sin(angle) * 0;
+      const x2 = centerX + Math.cos(angle) * maxRadius;
+      const y2 = centerY + Math.sin(angle) * maxRadius;
+
+      ctx.strokeStyle = lightColor;
+      ctx.lineWidth = stripeWidth;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      // Dark stripe offset
+      const angle2 = angle + Math.PI / 32;
+      const x3 = centerX + Math.cos(angle2) * 0;
+      const y3 = centerY + Math.sin(angle2) * 0;
+      const x4 = centerX + Math.cos(angle2) * maxRadius;
+      const y4 = centerY + Math.sin(angle2) * maxRadius;
+
+      ctx.strokeStyle = darkColor;
+      ctx.lineWidth = stripeWidth;
+      ctx.beginPath();
+      ctx.moveTo(x3, y3);
+      ctx.lineTo(x4, y4);
+      ctx.stroke();
+    }
+
+    const texture = new CanvasTexture(canvas);
+    return texture;
+  } catch {
+    // Silently fail in test environments
+    return null;
+  }
 }
 
 function createDroneGeometry(): DroneGeometryResult {
@@ -63,9 +127,11 @@ function createDroneGeometry(): DroneGeometryResult {
     color: 0x333333,
     shininess: 50,
   });
+  const rotorTexture = generateRotorTexture();
   const rotorMaterial = new MeshPhongMaterial({
-    color: 0x111111,
-    shininess: 30,
+    ...(rotorTexture && { map: rotorTexture }),
+    shininess: rotorTexture ? 5 : 30,
+    color: rotorTexture ? 0xffffff : 0x111111,
     transparent: true,
     opacity: 0.7,
   });
@@ -187,11 +253,14 @@ export class DroneObject {
     this.group.rotation.x = 0;
     this.group.rotation.z = 0;
 
-    // Animate rotors: 10 rotations per second = 20π rad/sec
-    const rotorSpeed = 20 * Math.PI;
+    // Animate rotors: scroll texture UV instead of rotating geometry
+    // This creates the illusion of spinning without geometry rotation
+    const rotorSpeed = 0.5; // texture offset units per second
     this.rotorMeshes.forEach((rotor) => {
-      rotor.rotation.y =
-        (rotor.rotation.y + rotorSpeed * deltaTime) % (2 * Math.PI);
+      const material = rotor.material as MeshPhongMaterial;
+      if (material.map) {
+        material.map.offset.x += rotorSpeed * deltaTime;
+      }
     });
   }
 
