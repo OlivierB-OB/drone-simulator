@@ -7,7 +7,7 @@ import { ContextDataManager } from './data/contextual/ContextDataManager';
 import { ElevationDataManager } from './data/elevation/ElevationDataManager';
 import { TerrainGeometryObjectManager } from './visualization/terrain/geometry/TerrainGeometryObjectManager';
 import { TerrainObjectManager } from './visualization/terrain/TerrainObjectManager';
-import { DroneObject } from './visualization/DroneObject';
+import { DroneObject } from './visualization/drone/DroneObject';
 
 export function App() {
   let viewer3D: Viewer3D | null = null;

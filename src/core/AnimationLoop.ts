@@ -4,7 +4,7 @@ import { Camera } from '../3Dviewer/Camera';
 import type { ElevationDataManager } from '../data/elevation/ElevationDataManager';
 import type { ContextDataManager } from '../data/contextual/ContextDataManager';
 import type { TerrainObjectManager } from '../visualization/terrain/TerrainObjectManager';
-import type { DroneObject } from '../visualization/DroneObject';
+import type { DroneObject } from '../visualization/drone/DroneObject';
 
 export class AnimationLoop {
   private animationFrameId: number | null = null;
