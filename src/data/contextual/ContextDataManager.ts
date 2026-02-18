@@ -3,6 +3,7 @@ import type { TileCoordinates } from '../elevation/types';
 import type { ContextDataTile } from './types';
 import { contextDataConfig } from '../../config';
 import { ContextDataTileLoader } from './ContextDataTileLoader';
+import { OverpassStatusManager } from './OverpassStatusManager';
 
 /**
  * Manages context data (OSM features) loading and caching.
@@ -12,12 +13,25 @@ import { ContextDataTileLoader } from './ContextDataTileLoader';
 export class ContextDataManager {
   private currentTileCenter: TileCoordinates | null = null;
   private tileCache: Map<string, ContextDataTile> = new Map();
-  private pendingLoads: Map<string, Promise<ContextDataTile | null>> =
-    new Map();
+  private pendingQueue: string[] = [];
+  private loadPromises: Map<string, Promise<ContextDataTile | null>> = new Map();
   private loadingCount: number = 0;
   private abortController: AbortController = new AbortController();
+  private lastRequestTime: number = 0;
+  private readonly throttleDelayMs: number = 200;
+  private statusManager: OverpassStatusManager | null = null;
 
   constructor(initialLocation: MercatorCoordinates) {
+    // Initialize status manager if enabled
+    if (contextDataConfig.statusCheckEnabled) {
+      this.statusManager = new OverpassStatusManager(
+        contextDataConfig.statusEndpoint,
+        contextDataConfig.statusCheckIntervalMs,
+        contextDataConfig.statusCheckTimeoutMs,
+        contextDataConfig.statusCacheTtlMs
+      );
+    }
+
     this.initializeTileRing(initialLocation);
   }
 
@@ -78,54 +92,62 @@ export class ContextDataManager {
     for (const [key] of this.tileCache.entries()) {
       if (!desiredTiles.has(key)) {
         this.tileCache.delete(key);
-        this.pendingLoads.delete(key);
+        this.loadPromises.delete(key);
       }
     }
 
     // Load tiles that are needed but not yet loaded
     for (const key of desiredTiles) {
-      if (!this.tileCache.has(key) && !this.pendingLoads.has(key)) {
+      if (!this.tileCache.has(key) && !this.loadPromises.has(key)) {
         this.loadTileAsync(key);
       }
     }
   }
 
   /**
-   * Loads a tile asynchronously, respecting concurrency limits.
-   * Queues the tile if max concurrent loads is reached.
+   * Loads a tile asynchronously, respecting concurrency limits and request throttling.
+   * Queues the tile if max concurrent loads is reached or throttle delay hasn't passed.
+   * Returns a promise that resolves when the tile is loaded or the load fails.
    */
-  private loadTileAsync(key: string): void {
-    if (this.pendingLoads.has(key)) {
-      return; // Already pending
+  private loadTileAsync(key: string): Promise<ContextDataTile | null> {
+    if (this.loadPromises.has(key)) {
+      return this.loadPromises.get(key)!;
     }
 
     const [z, x, y] = this.parseTileKey(key);
     const coordinates = { z, x, y };
 
-    // Check if we can load now or need to queue
-    if (this.loadingCount < contextDataConfig.maxConcurrentLoads) {
-      this.startLoad(key, coordinates);
-    } else {
-      // Queue for later when a slot opens
-      const promise = new Promise<ContextDataTile | null>((resolve) => {
-        // Try periodically until slot opens
-        const interval = setInterval(async () => {
-          if (this.loadingCount < contextDataConfig.maxConcurrentLoads) {
-            clearInterval(interval);
-            const tile = await this.startLoad(key, coordinates);
+    const promise = new Promise<ContextDataTile | null>((resolve) => {
+      // Check if we can load now (both concurrency and throttle constraints)
+      if (
+        this.loadingCount < contextDataConfig.maxConcurrentLoads &&
+        Date.now() - this.lastRequestTime >= this.throttleDelayMs
+      ) {
+        this.startLoad(key, coordinates).then(resolve);
+      } else {
+        // Queue for later when slot opens and throttle allows
+        this.pendingQueue.push(key);
+
+        // Poll the cache to detect when the tile is loaded
+        const pollInterval = setInterval(() => {
+          const tile = this.tileCache.get(key);
+          if (tile) {
+            clearInterval(pollInterval);
             resolve(tile);
           }
         }, 100);
 
         // Give up after 30 seconds
         setTimeout(() => {
-          clearInterval(interval);
+          clearInterval(pollInterval);
           resolve(null);
         }, 30000);
-      });
+      }
+    });
 
-      this.pendingLoads.set(key, promise);
-    }
+    this.loadPromises.set(key, promise);
+    this.processQueuedTiles();
+    return promise;
   }
 
   /**
@@ -136,11 +158,14 @@ export class ContextDataManager {
     coordinates: TileCoordinates
   ): Promise<ContextDataTile | null> {
     this.loadingCount++;
+    this.lastRequestTime = Date.now();
 
     const tile = await ContextDataTileLoader.loadTileWithRetry(
       coordinates,
       contextDataConfig.overpassEndpoint,
-      contextDataConfig.queryTimeout
+      contextDataConfig.queryTimeout,
+      3,
+      this.statusManager ?? undefined
     );
 
     this.loadingCount--;
@@ -149,18 +174,34 @@ export class ContextDataManager {
       this.tileCache.set(key, tile);
     }
 
-    this.pendingLoads.delete(key);
+    this.loadPromises.delete(key);
     this.processQueuedTiles();
 
     return tile;
   }
 
   /**
-   * Processes any queued tiles that couldn't load due to concurrency limits.
+   * Processes the next tile in the pending queue if constraints allow.
+   * Called automatically when a load completes.
+   * Only starts one tile at a time to prevent thundering herd.
    */
   private processQueuedTiles(): void {
-    // This is called automatically when a load completes
-    // No explicit queuing needed - loadTileAsync handles it
+    if (this.pendingQueue.length === 0) {
+      return;
+    }
+
+    // Check if we can start another load
+    if (
+      this.loadingCount < contextDataConfig.maxConcurrentLoads &&
+      Date.now() - this.lastRequestTime >= this.throttleDelayMs
+    ) {
+      const key = this.pendingQueue.shift();
+      if (key) {
+        const [z, x, y] = this.parseTileKey(key);
+        const coordinates = { z, x, y };
+        this.startLoad(key, coordinates);
+      }
+    }
   }
 
   /**
@@ -194,6 +235,13 @@ export class ContextDataManager {
    */
   getTile(key: string): ContextDataTile | null {
     return this.tileCache.get(key) || null;
+  }
+
+  /**
+   * Gets the tile cache Map
+   */
+  getTileCache(): Map<string, ContextDataTile> {
+    return this.tileCache;
   }
 
   /**
@@ -232,7 +280,9 @@ export class ContextDataManager {
   dispose(): void {
     this.abortController.abort();
     this.tileCache.clear();
-    this.pendingLoads.clear();
+    this.pendingQueue = [];
+    this.loadPromises.clear();
     this.loadingCount = 0;
+    this.statusManager?.dispose();
   }
 }

@@ -1,17 +1,20 @@
 import type {
   ContextDataTile,
-  Building,
-  Road,
-  Railway,
-  Water,
-  Airport,
-  Vegetation,
-  LandUseArea,
+  BuildingVisual,
+  RoadVisual,
+  RailwayVisual,
+  WaterVisual,
+  VegetationVisual,
+  AirportVisual,
   Point,
   LineString,
+  Polygon,
+  HexColor,
 } from './types';
 import type { TileCoordinates, MercatorBounds } from '../elevation/types';
 import type { MercatorCoordinates } from '../../gis/types';
+import { colorPalette } from '../../config';
+import type { OverpassStatusManager } from './OverpassStatusManager';
 
 /**
  * Factory for loading and parsing context data tiles from OSM Overpass API.
@@ -142,16 +145,33 @@ out geom;`;
    * @param coordinates - Tile coordinates to load
    * @param endpoint - Overpass API endpoint
    * @param timeout - Query timeout in milliseconds
+   * @param statusManager - Optional OverpassStatusManager for respecting API rate limits
    * @returns Loaded context tile
    * @throws Error if tile cannot be loaded or parsed
    */
   static async loadTile(
     coordinates: TileCoordinates,
     endpoint: string,
-    timeout: number
+    timeout: number,
+    statusManager?: OverpassStatusManager
   ): Promise<ContextDataTile> {
     const bounds = this.getTileMercatorBounds(coordinates);
     const query = this.generateOverpassQuery(bounds);
+
+    // If status manager is available, wait for next available slot
+    if (statusManager) {
+      const nextSlot = await statusManager.getNextAvailableSlot();
+      if (nextSlot) {
+        const now = new Date();
+        const waitMs = nextSlot.getTime() - now.getTime();
+        if (waitMs > 0) {
+          console.debug(
+            `[ContextDataTileLoader] Waiting ${waitMs}ms for Overpass API slot`
+          );
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+        }
+      }
+    }
 
     try {
       const response = await fetch(endpoint, {
@@ -166,9 +186,11 @@ out geom;`;
       if (!response.ok) {
         // Check for rate limiting
         if (response.status === 429) {
-          throw new Error(
+          const error = new Error(
             `Overpass API rate limited (429): ${response.statusText}`
           );
+          (error as Error & { statusCode: number }).statusCode = 429;
+          throw error;
         }
         throw new Error(`Overpass API error: ${response.statusText}`);
       }
@@ -183,6 +205,7 @@ out geom;`;
         mercatorBounds: bounds,
         zoomLevel: coordinates.z,
         features,
+        colorPalette,
       };
     } catch (error) {
       if (error instanceof Error) {
@@ -199,6 +222,7 @@ out geom;`;
 
   /**
    * Parses OSM JSON response data and groups features by type.
+   * Only extracts visual properties; ignores non-rendering attributes.
    */
   private static parseOSMData(
     osmData: Record<string, unknown>,
@@ -212,7 +236,6 @@ out geom;`;
       waters: [],
       airports: [],
       vegetation: [],
-      landUse: [],
     };
 
     if (!Array.isArray(osmData.elements)) {
@@ -247,13 +270,93 @@ out geom;`;
   }
 
   /**
+   * Gets color for a building type
+   */
+  private static getColorForBuilding(buildingType: string): HexColor {
+    const typeNormalized = buildingType.toLowerCase();
+    const colors = colorPalette.buildings as Record<string, HexColor>;
+    return colors[typeNormalized] || colors.default;
+  }
+
+  /**
+   * Gets width category for a road type
+   */
+  private static getRoadWidthCategory(
+    roadType: string
+  ): 'large' | 'medium' | 'small' {
+    const type = roadType.toLowerCase();
+    if (['motorway', 'trunk', 'primary'].includes(type)) return 'large';
+    if (['secondary', 'tertiary'].includes(type)) return 'medium';
+    return 'small';
+  }
+
+  /**
+   * Gets color for a road type
+   */
+  private static getColorForRoad(roadType: string): HexColor {
+    const typeNormalized = roadType.toLowerCase();
+    const colors = colorPalette.roads as Record<string, HexColor>;
+    return colors[typeNormalized] || colors.default;
+  }
+
+  /**
+   * Gets color for a railway type
+   */
+  private static getColorForRailway(railwayType: string): HexColor {
+    const typeNormalized = railwayType.toLowerCase();
+    const colors = colorPalette.railways as Record<string, HexColor>;
+    return colors[typeNormalized] || colors.default;
+  }
+
+  /**
+   * Gets track count from gauge or defaults to 1
+   */
+  private static getTrackCount(gauge?: string): number {
+    if (!gauge) return 1;
+    // Standard gauge (1435mm) typically has 1-2 tracks per line
+    // Narrow gauge might have different properties, default to 1
+    return 1;
+  }
+
+  /**
+   * Gets color for a water type
+   */
+  private static getColorForWater(waterType: string): HexColor {
+    const typeNormalized = waterType.toLowerCase();
+    const colors = colorPalette.waters as Record<string, HexColor>;
+    return colors[typeNormalized] || colors.default;
+  }
+
+  /**
+   * Gets height category from numeric height
+   */
+  private static getHeightCategory(
+    height?: number
+  ): 'tall' | 'medium' | 'short' {
+    if (!height) return 'medium';
+    if (height > 20) return 'tall';
+    if (height > 5) return 'medium';
+    return 'short';
+  }
+
+  /**
+   * Gets color for vegetation type
+   */
+  private static getColorForVegetation(vegType: string): HexColor {
+    const typeNormalized = vegType.toLowerCase();
+    const colors = colorPalette.vegetation as Record<string, HexColor>;
+    return colors[typeNormalized] || colors.default;
+  }
+
+  /**
    * Processes a way element from OSM data.
+   * Extracts only visual properties, ignores non-rendering attributes.
    */
   private static processWay(
     element: Record<string, unknown>,
     nodeMap: Map<number, { lat: number; lng: number }>,
-    bounds: MercatorBounds,
-    zoomLevel: number,
+    _bounds: MercatorBounds,
+    _zoomLevel: number,
     features: ContextDataTile['features']
   ): void {
     const id = String(element.id);
@@ -283,39 +386,51 @@ out geom;`;
       coordinates,
     };
 
-    // Classify feature by tags
+    // Classify feature by tags and extract only visual properties
     if (tags.building) {
-      const building: Building = {
-        id,
-        geometry: lineGeometry,
-        tags,
-        name: tags.name,
-        type: tags['building:type'] || tags.building,
-        height: tags.height ? parseFloat(tags.height) : undefined,
-        levels: tags['building:levels']
-          ? parseInt(tags['building:levels'], 10)
-          : undefined,
-      };
-      features.buildings.push(building);
+      // Filter: require height OR levels for visual rendering
+      const height = tags.height ? parseFloat(tags.height) : undefined;
+      const levels = tags['building:levels']
+        ? parseInt(tags['building:levels'], 10)
+        : undefined;
+
+      if (height !== undefined || levels !== undefined) {
+        const buildingType = tags['building:type'] || tags.building || 'other';
+        const building: BuildingVisual = {
+          id,
+          geometry: lineGeometry,
+          type: buildingType,
+          height,
+          levelCount: levels,
+          color: this.getColorForBuilding(buildingType),
+        };
+        features.buildings.push(building);
+      }
     } else if (tags.highway) {
-      const road: Road = {
-        id,
-        geometry: lineGeometry,
-        tags,
-        name: tags.name,
-        type: tags.highway,
-        maxSpeed: tags.maxspeed ? parseInt(tags.maxspeed, 10) : undefined,
-        oneWay: tags.oneway === 'yes',
-      };
-      features.roads.push(road);
+      // Filter: skip footways, paths (no visual distinction)
+      const highwayType = tags.highway.toLowerCase();
+      if (!['footway', 'path'].includes(highwayType)) {
+        const lanes = tags.lanes
+          ? parseInt(tags.lanes, 10)
+          : undefined;
+        const road: RoadVisual = {
+          id,
+          geometry: lineGeometry,
+          type: tags.highway,
+          widthCategory: this.getRoadWidthCategory(tags.highway),
+          laneCount: lanes,
+          color: this.getColorForRoad(tags.highway),
+        };
+        features.roads.push(road);
+      }
     } else if (tags.railway) {
-      const railway: Railway = {
+      const railwayType = tags.railway || 'rail';
+      const railway: RailwayVisual = {
         id,
         geometry: lineGeometry,
-        tags,
-        name: tags.name,
-        type: tags.railway,
-        gauge: tags.gauge,
+        type: railwayType,
+        trackCount: this.getTrackCount(tags.gauge),
+        color: this.getColorForRailway(railwayType),
       };
       features.railways.push(railway);
     } else if (
@@ -329,77 +444,62 @@ out geom;`;
       // Detect if this is a closed water area (lake, pond, etc.)
       const firstCoord = coordinates[0];
       const lastCoord = coordinates[coordinates.length - 1];
-      const isClosed =
+      const isClosedRing =
         coordinates.length >= 2 &&
         firstCoord &&
         lastCoord &&
         firstCoord[0] === lastCoord[0] &&
         firstCoord[1] === lastCoord[1];
 
-      // Determine water type from tags
-      const waterType =
+      // Determine water type from tags (always has a default)
+      const waterType: string =
         tags.waterway ||
         tags.water ||
         tags['natural'] ||
         tags.landuse ||
         'water';
 
-      const water: Water = {
+      const water: WaterVisual = {
         id,
         geometry: lineGeometry,
-        tags,
-        name: tags.name,
         type: waterType,
-        area: isClosed ? true : undefined,
-        isNatural:
-          tags['natural'] === 'water'
-            ? true
-            : tags.landuse === 'water'
-              ? false
-              : undefined,
+        isArea: isClosedRing || false,
+        color: this.getColorForWater(waterType),
       };
       features.waters.push(water);
     } else if (tags.aeroway === 'aerodrome') {
-      const airport: Airport = {
+      const airportType: string = tags.aeroway || 'aerodrome';
+      const airport: AirportVisual = {
         id,
         geometry: lineGeometry,
-        tags,
-        name: tags.name || 'Unknown Airport',
-        iata: tags['iata:code'],
-        icao: tags['icao:code'],
-        type: tags.aeroway,
+        type: airportType,
+        color: colorPalette.airport,
       };
       features.airports.push(airport);
     } else if (tags.natural) {
-      const vegetation: Vegetation = {
+      const vegType: string = tags.natural || 'vegetation';
+      const height = tags.height ? parseFloat(tags.height) : undefined;
+      const vegetation: VegetationVisual = {
         id,
         geometry: lineGeometry,
-        tags,
-        name: tags.name,
-        type: tags.natural,
-        height: tags.height ? parseFloat(tags.height) : undefined,
+        type: vegType,
+        height,
+        heightCategory: this.getHeightCategory(height),
+        color: this.getColorForVegetation(vegType),
       };
       features.vegetation.push(vegetation);
-    } else if (tags.landuse) {
-      const landUse: LandUseArea = {
-        id,
-        geometry: lineGeometry,
-        tags,
-        name: tags.name,
-        type: tags.landuse,
-      };
-      features.landUse.push(landUse);
     }
   }
 
   /**
    * Processes a node element from OSM data.
+   * Extracts only visual properties, ignores non-rendering attributes.
    */
   private static processNode(
     element: Record<string, unknown>,
-    nodeMap: Map<number, { lat: number; lng: number }>,
-    bounds: MercatorBounds,
-    zoomLevel: number,
+    _nodeMap: Map<number, { lat: number; lng: number }>,
+    _bounds: MercatorBounds,
+    _zoomLevel: number,
     features: ContextDataTile['features']
   ): void {
     const id = String(element.id);
@@ -417,52 +517,57 @@ out geom;`;
       coordinates: [x, y],
     };
 
-    // Classify node features
+    // Classify node features and extract only visual properties
     if (tags.aeroway === 'aerodrome') {
-      const airport: Airport = {
+      const airport: AirportVisual = {
         id,
         geometry: pointGeometry,
-        tags,
-        name: tags.name || 'Unknown Airport',
-        iata: tags['iata:code'],
-        icao: tags['icao:code'],
-        type: tags.aeroway,
+        type: tags.aeroway || 'aerodrome',
+        color: colorPalette.airport,
       };
       features.airports.push(airport);
     } else if (tags['natural'] === 'tree') {
-      const vegetation: Vegetation = {
+      const height = tags.height ? parseFloat(tags.height) : undefined;
+      const vegetation: VegetationVisual = {
         id,
         geometry: pointGeometry,
-        tags,
-        name: tags.name,
         type: 'tree',
-        height: tags.height ? parseFloat(tags.height) : undefined,
+        height,
+        heightCategory: this.getHeightCategory(height),
+        color: this.getColorForVegetation('tree'),
       };
       features.vegetation.push(vegetation);
     } else if (tags.building) {
-      const building: Building = {
-        id,
-        geometry: pointGeometry,
-        tags,
-        name: tags.name,
-        type: tags['building:type'] || tags.building,
-        height: tags.height ? parseFloat(tags.height) : undefined,
-        levels: tags['building:levels']
-          ? parseInt(tags['building:levels'], 10)
-          : undefined,
-      };
-      features.buildings.push(building);
+      // Filter: require height OR levels for visual rendering
+      const height = tags.height ? parseFloat(tags.height) : undefined;
+      const levels = tags['building:levels']
+        ? parseInt(tags['building:levels'], 10)
+        : undefined;
+
+      if (height !== undefined || levels !== undefined) {
+        const buildingType = tags['building:type'] || tags.building || 'other';
+        const building: BuildingVisual = {
+          id,
+          geometry: pointGeometry,
+          type: buildingType,
+          height,
+          levelCount: levels,
+          color: this.getColorForBuilding(buildingType),
+        };
+        features.buildings.push(building);
+      }
     }
   }
 
   /**
    * Processes a relation element from OSM data.
+   * Extracts only visual properties, ignores non-rendering attributes.
    */
   private static processRelation(
     element: Record<string, unknown>,
-    nodeMap: Map<number, { lat: number; lng: number }>,
-    bounds: MercatorBounds,
-    zoomLevel: number,
+    _nodeMap: Map<number, { lat: number; lng: number }>,
+    _bounds: MercatorBounds,
+    _zoomLevel: number,
     features: ContextDataTile['features']
   ): void {
     const id = String(element.id);
@@ -499,35 +604,38 @@ out geom;`;
       coordinates.push(firstCoord);
     }
 
-    // Classify based on tags
+    const polygonGeometry: Polygon = {
+      type: 'Polygon',
+      coordinates: [coordinates],
+    };
+
+    // Classify based on tags and extract only visual properties
     if (tags.building) {
-      const building: Building = {
-        id,
-        geometry: {
-          type: 'Polygon',
-          coordinates: [coordinates],
-        },
-        tags,
-        name: tags.name,
-        type: tags['building:type'] || tags.building,
-        height: tags.height ? parseFloat(tags.height) : undefined,
-        levels: tags['building:levels']
-          ? parseInt(tags['building:levels'], 10)
-          : undefined,
-      };
-      features.buildings.push(building);
+      // Filter: require height OR levels for visual rendering
+      const height = tags.height ? parseFloat(tags.height) : undefined;
+      const levels = tags['building:levels']
+        ? parseInt(tags['building:levels'], 10)
+        : undefined;
+
+      if (height !== undefined || levels !== undefined) {
+        const buildingType = tags['building:type'] || tags.building || 'other';
+        const building: BuildingVisual = {
+          id,
+          geometry: polygonGeometry,
+          type: buildingType,
+          height,
+          levelCount: levels,
+          color: this.getColorForBuilding(buildingType),
+        };
+        features.buildings.push(building);
+      }
     } else if (tags.aeroway === 'aerodrome') {
-      const airport: Airport = {
+      const airportType: string = tags.aeroway || 'aerodrome';
+      const airport: AirportVisual = {
         id,
-        geometry: {
-          type: 'Polygon',
-          coordinates: [coordinates],
-        },
-        tags,
-        name: tags.name || 'Unknown Airport',
-        iata: tags['iata:code'],
-        icao: tags['icao:code'],
-        type: tags.aeroway,
+        geometry: polygonGeometry,
+        type: airportType,
+        color: colorPalette.airport,
       };
       features.airports.push(airport);
     } else if (
@@ -536,48 +644,25 @@ out geom;`;
       tags.landuse === 'water'
     ) {
       // Water multipolygons (lakes, ponds, reservoirs, wetlands)
-      const waterType = tags['natural'] || tags.landuse || 'water';
-      const water: Water = {
+      const waterType: string = tags['natural'] || tags.landuse || 'water';
+      const water: WaterVisual = {
         id,
-        geometry: {
-          type: 'Polygon',
-          coordinates: [coordinates],
-        },
-        tags,
-        name: tags.name,
+        geometry: polygonGeometry,
         type: waterType,
-        area: true, // Relations are always areal
-        isNatural:
-          tags['natural'] === 'water'
-            ? true
-            : tags.landuse === 'water'
-              ? false
-              : undefined,
+        isArea: true, // Relations are always areal
+        color: this.getColorForWater(waterType),
       };
       features.waters.push(water);
-    } else if (tags.landuse) {
-      const landUse: LandUseArea = {
-        id,
-        geometry: {
-          type: 'Polygon',
-          coordinates: [coordinates],
-        },
-        tags,
-        name: tags.name,
-        type: tags.landuse,
-      };
-      features.landUse.push(landUse);
     } else if (tags.natural) {
-      const vegetation: Vegetation = {
+      const vegType: string = tags.natural || 'vegetation';
+      const height = tags.height ? parseFloat(tags.height) : undefined;
+      const vegetation: VegetationVisual = {
         id,
-        geometry: {
-          type: 'Polygon',
-          coordinates: [coordinates],
-        },
-        tags,
-        name: tags.name,
-        type: tags.natural,
-        height: tags.height ? parseFloat(tags.height) : undefined,
+        geometry: polygonGeometry,
+        type: vegType,
+        height,
+        heightCategory: this.getHeightCategory(height),
+        color: this.getColorForVegetation(vegType),
       };
       features.vegetation.push(vegetation);
     }
@@ -613,29 +698,45 @@ out geom;`;
 
   /**
    * Attempts to load a tile with exponential backoff retry logic.
+   * Handles rate limiting (429) separately with longer backoff.
    * Returns null if all retry attempts fail.
    *
    * @param coordinates - Tile coordinates to load
    * @param endpoint - Overpass API endpoint
    * @param timeout - Query timeout in milliseconds
    * @param maxRetries - Maximum retry attempts (default: 3)
+   * @param statusManager - Optional OverpassStatusManager for respecting API rate limits
    * @returns Loaded tile or null if loading failed
    */
   static async loadTileWithRetry(
     coordinates: TileCoordinates,
     endpoint: string,
     timeout: number,
-    maxRetries: number = 3
+    maxRetries: number = 3,
+    statusManager?: OverpassStatusManager
   ): Promise<ContextDataTile | null> {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        return await this.loadTile(coordinates, endpoint, timeout);
+        return await this.loadTile(coordinates, endpoint, timeout, statusManager);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
+        const isRateLimit =
+          (error as Error & { statusCode?: number }).statusCode === 429;
 
-        // Exponential backoff: wait 100ms * 2^attempt before retry
+        // Skip retry if rate limited (better to fail than hammer server more)
+        if (isRateLimit && attempt === 0) {
+          // Only retry once for rate limits, with long backoff
+          const delayMs = 1000; // Wait 1 second for rate limit
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          continue;
+        } else if (isRateLimit) {
+          // Don't retry rate limit errors more than once
+          break;
+        }
+
+        // Exponential backoff for other errors: wait 100ms * 2^attempt before retry
         if (attempt < maxRetries - 1) {
           const delayMs = 100 * Math.pow(2, attempt);
           await new Promise((resolve) => setTimeout(resolve, delayMs));
