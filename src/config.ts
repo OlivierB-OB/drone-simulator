@@ -60,6 +60,23 @@ export const elevationConfig = {
   maxConcurrentLoads: 3,
 };
 
+export const contextDataConfig = {
+  // Web Mercator zoom level for context data tiles (14-15 balances detail vs. request size)
+  zoomLevel: 14,
+
+  // Number of tiles in each direction from center (1 = 3×3 grid of tiles)
+  ringRadius: 1,
+
+  // Maximum concurrent Overpass API requests
+  maxConcurrentLoads: 3,
+
+  // Query timeout in milliseconds
+  queryTimeout: 30000,
+
+  // Overpass API endpoint
+  overpassEndpoint: 'https://overpass-api.de/api/interpreter',
+};
+
 export const debugConfig = {
   // Show visual axes helper for debugging coordinate system (red=X, green=Y, blue=Z)
   showAxisHelper: true,
