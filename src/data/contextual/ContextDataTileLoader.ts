@@ -112,30 +112,30 @@ export class ContextDataTileLoader {
     const bbox = `${south},${west},${north},${east}`;
 
     // OverpassQL query combining multiple feature types
-    return `[bbox:${bbox}];
-(
-  node["building"];
-  way["building"];
-  relation["building"];
-  way["highway"];
-  way["railway"];
-  way["waterway"];
-  node["waterway"];
-  way["natural"="water"];
-  relation["natural"="water"];
-  way["water"~"lake|pond|reservoir"];
-  way["natural"="wetland"];
-  way["natural"="coastline"];
-  way["landuse"="water"];
-  relation["landuse"="water"];
-  node["aeroway"="aerodrome"];
-  way["aeroway"="aerodrome"];
-  relation["aeroway"="aerodrome"];
-  way["natural"~"forest|wood|scrub|grass|heath"];
-  node["natural"~"tree|trees"];
-  way["landuse"~"residential|industrial|agricultural|grass|sand|commercial"];
+    return `[out:json][timeout:30];(
+  node["building"](${bbox});
+  way["building"](${bbox});
+  relation["building"](${bbox});
+  way["highway"](${bbox});
+  way["railway"](${bbox});
+  way["waterway"](${bbox});
+  node["waterway"](${bbox});
+  way["natural"="water"](${bbox});
+  relation["natural"="water"](${bbox});
+  way["water"~"lake|pond|reservoir"](${bbox});
+  way["natural"="wetland"](${bbox});
+  way["natural"="coastline"](${bbox});
+  way["landuse"="water"](${bbox});
+  relation["landuse"="water"](${bbox});
+  node["aeroway"="aerodrome"](${bbox});
+  way["aeroway"="aerodrome"](${bbox});
+  relation["aeroway"="aerodrome"](${bbox});
+  way["natural"~"forest|wood|scrub|grass|heath"](${bbox});
+  node["natural"~"tree|trees"](${bbox});
+  way["landuse"~"residential|industrial|agricultural|grass|sand|commercial"](${bbox});
 );
-out geom;`;
+out;>;
+out qt;`;
   }
 
   /**
