@@ -41,10 +41,11 @@ export class Camera {
     const pitchRad = (-30 * Math.PI) / 180; // -30° for downward tilt
 
     // Use Euler angles with YXZ order: first yaw (azimuth), then pitch (inclination), then roll (0)
-    // Invert azimuth to convert from world coordinate system (0° = North, clockwise)
-    // to Three.js rotation (counterclockwise positive around Y axis)
+    // Use consistent positive azimuth convention throughout:
+    // Azimuth (0° = North) directly maps to Three.js Y rotation
+    // This matches the movement calculation in Drone.ts which uses positive azimuth
     this.camera.rotation.order = 'YXZ';
-    this.camera.rotation.y = -azimuthRad;
+    this.camera.rotation.y = azimuthRad;
     this.camera.rotation.x = pitchRad;
     this.camera.rotation.z = 0;
   }

@@ -167,11 +167,11 @@ describe('AnimationLoop', () => {
       if (callback) {
         callback(100);
 
-        // Camera coordinates: X=Mercator X, Y=elevation, Z=Mercator Y
+        // Camera coordinates: X=Mercator X, Y=elevation, Z=-Mercator Y (negated for coordinate system)
         expect(mockCamera.setPosition).toHaveBeenCalledWith(
           droneLocation.x,
           droneElevation + 5,
-          droneLocation.y
+          -droneLocation.y
         );
       }
     });
@@ -203,7 +203,7 @@ describe('AnimationLoop', () => {
         expect(mockCamera.setPosition).toHaveBeenCalledWith(
           initialLocation.x,
           initialElevation + 5,
-          initialLocation.y
+          -initialLocation.y
         );
 
         // Start moving forward for next frame

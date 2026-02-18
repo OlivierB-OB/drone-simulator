@@ -59,22 +59,34 @@ describe('TerrainObjectFactory', () => {
       expect(mesh.geometry).toBe(geometry);
     });
 
-    it('should create a mesh with a MeshPhongMaterial', () => {
-      const terrainObject = factory.createTerrainObject(geometryObject);
-      const mesh = terrainObject.getMesh();
+    describe('material type', () => {
+      const originalUseSimple = debugConfig.useSimpleTerrainMaterial;
 
-      expect(mesh.material).toBeInstanceOf(MeshPhongMaterial);
-    });
+      beforeEach(() => {
+        (debugConfig as any).useSimpleTerrainMaterial = false;
+      });
 
-    it('should configure material with appropriate properties', () => {
-      const terrainObject = factory.createTerrainObject(geometryObject);
-      const mesh = terrainObject.getMesh();
-      const material = mesh.material as MeshPhongMaterial;
+      afterEach(() => {
+        (debugConfig as any).useSimpleTerrainMaterial = originalUseSimple;
+      });
 
-      expect(material.color.getHex()).toBe(0x2d5016);
-      expect(material.specular.getHex()).toBe(0x101010);
-      expect(material.shininess).toBe(100);
-      expect(material.flatShading).toBe(false);
+      it('should create a mesh with a MeshPhongMaterial', () => {
+        const terrainObject = factory.createTerrainObject(geometryObject);
+        const mesh = terrainObject.getMesh();
+
+        expect(mesh.material).toBeInstanceOf(MeshPhongMaterial);
+      });
+
+      it('should configure material with appropriate properties', () => {
+        const terrainObject = factory.createTerrainObject(geometryObject);
+        const mesh = terrainObject.getMesh();
+        const material = mesh.material as MeshPhongMaterial;
+
+        expect(material.color.getHex()).toBe(0x2d5016);
+        expect(material.specular.getHex()).toBe(0x101010);
+        expect(material.shininess).toBe(100);
+        expect(material.flatShading).toBe(false);
+      });
     });
 
     it('should create different mesh instances for each call', () => {
@@ -97,10 +109,10 @@ describe('TerrainObjectFactory', () => {
       const terrainObject = factory.createTerrainObject(geometryObject);
       const mesh = terrainObject.getMesh();
 
-      // Expected center: (0+1000)/2 = 500 for both X and Z (Y is 0)
+      // Expected center: (0+1000)/2 = 500 for X, -500 for Z (negated Mercator Y)
       expect(mesh.position.x).toBe(500);
       expect(mesh.position.y).toBe(0);
-      expect(mesh.position.z).toBe(500);
+      expect(mesh.position.z).toBe(-500);
     });
 
     describe('debug wireframe mode', () => {

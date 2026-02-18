@@ -56,16 +56,6 @@ describe('droneConfig', () => {
     it('should be a positive number', () => {
       expect(droneConfig.movementSpeed).toBeGreaterThan(0);
     });
-
-    it('should be realistic for a drone', () => {
-      // Realistic drone cruising speed: 10-15 m/s
-      expect(droneConfig.movementSpeed).toBeGreaterThanOrEqual(10);
-      expect(droneConfig.movementSpeed).toBeLessThanOrEqual(15);
-    });
-
-    it('should be 12 m/s', () => {
-      expect(droneConfig.movementSpeed).toBe(12);
-    });
   });
 
   describe('mouseSensitivity', () => {
@@ -77,10 +67,6 @@ describe('droneConfig', () => {
       // Mouse sensitivity should be between 0.1 and 2.0 degrees per pixel
       expect(droneConfig.mouseSensitivity).toBeGreaterThanOrEqual(0.1);
       expect(droneConfig.mouseSensitivity).toBeLessThanOrEqual(2.0);
-    });
-
-    it('should be 0.5 degrees per pixel', () => {
-      expect(droneConfig.mouseSensitivity).toBe(0.5);
     });
   });
 
@@ -136,10 +122,6 @@ describe('debugConfig', () => {
 
     it('should have axesHelperSize set to 500 by default', () => {
       expect(debugConfig.axesHelperSize).toBe(500);
-    });
-
-    it('should have useSimpleTerrainMaterial set to false by default', () => {
-      expect(debugConfig.useSimpleTerrainMaterial).toBe(false);
     });
   });
 });

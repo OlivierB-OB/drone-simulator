@@ -176,7 +176,8 @@ describe('Drone', () => {
         drone.applyMove(1);
 
         const newLocation = drone.getLocation();
-        expect(newLocation.y).toBeGreaterThan(initialLocation.y);
+        // Forward at azimuth 0° moves in -Y direction (Mercator Y increases southward, so north = decreasing Y)
+        expect(newLocation.y).toBeLessThan(initialLocation.y);
       });
 
       it('should stop moving forward', () => {
@@ -200,7 +201,8 @@ describe('Drone', () => {
         drone.applyMove(1);
 
         const newLocation = drone.getLocation();
-        expect(newLocation.y).toBeLessThan(initialLocation.y);
+        // Backward at azimuth 0° moves in +Y direction (opposite of forward)
+        expect(newLocation.y).toBeGreaterThan(initialLocation.y);
       });
 
       it('should stop moving backward', () => {
@@ -350,16 +352,16 @@ describe('Drone', () => {
       const southLocation = southDrone.getLocation();
       const westLocation = westDrone.getLocation();
 
-      // North: moving mostly in positive Y
-      expect(northLocation.y).toBeGreaterThan(northInitial.y);
+      // North: moving in negative Y (Mercator Y increases southward, so north = decreasing Y)
+      expect(northLocation.y).toBeLessThan(northInitial.y);
       expect(Math.abs(northLocation.x - northInitial.x)).toBeLessThan(5);
 
       // East: moving mostly in positive X
       expect(eastLocation.x).toBeGreaterThan(eastInitial.x);
       expect(Math.abs(eastLocation.y - eastInitial.y)).toBeLessThan(5);
 
-      // South: moving mostly in negative Y
-      expect(southLocation.y).toBeLessThan(southInitial.y);
+      // South: moving in positive Y (Mercator Y increases southward)
+      expect(southLocation.y).toBeGreaterThan(southInitial.y);
       expect(Math.abs(southLocation.x - southInitial.x)).toBeLessThan(5);
 
       // West: moving mostly in negative X
@@ -395,8 +397,8 @@ describe('Drone', () => {
       drone.applyMove(1);
 
       const newLocation = drone.getLocation();
-      expect(newLocation.x).toBeGreaterThan(initialLocation.x);
-      expect(newLocation.y).toBeGreaterThan(initialLocation.y);
+      expect(newLocation.x).toBeGreaterThan(initialLocation.x); // Right increases X ✓
+      expect(newLocation.y).toBeLessThan(initialLocation.y); // Forward decreases Y (north)
     });
 
     it('should combine forward and left movements', () => {
@@ -407,8 +409,8 @@ describe('Drone', () => {
       drone.applyMove(1);
 
       const newLocation = drone.getLocation();
-      expect(newLocation.x).toBeLessThan(initialLocation.x);
-      expect(newLocation.y).toBeGreaterThan(initialLocation.y);
+      expect(newLocation.x).toBeLessThan(initialLocation.x); // Left decreases X
+      expect(newLocation.y).toBeLessThan(initialLocation.y); // Forward decreases Y (north)
     });
 
     it('should combine backward and right movements', () => {
@@ -419,8 +421,8 @@ describe('Drone', () => {
       drone.applyMove(1);
 
       const newLocation = drone.getLocation();
-      expect(newLocation.x).toBeGreaterThan(initialLocation.x);
-      expect(newLocation.y).toBeLessThan(initialLocation.y);
+      expect(newLocation.x).toBeGreaterThan(initialLocation.x); // Right increases X
+      expect(newLocation.y).toBeGreaterThan(initialLocation.y); // Backward increases Y (south)
     });
 
     it('should combine backward and left movements', () => {
@@ -431,8 +433,8 @@ describe('Drone', () => {
       drone.applyMove(1);
 
       const newLocation = drone.getLocation();
-      expect(newLocation.x).toBeLessThan(initialLocation.x);
-      expect(newLocation.y).toBeLessThan(initialLocation.y);
+      expect(newLocation.x).toBeLessThan(initialLocation.x); // Left decreases X
+      expect(newLocation.y).toBeGreaterThan(initialLocation.y); // Backward increases Y (south)
     });
   });
 

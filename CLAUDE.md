@@ -65,6 +65,70 @@ bun run format:check   # Check without modifying
 6. Position camera (5m above drone)
 7. `viewer3D.render()`
 
+## Coordinate System: World → Three.js Conversion
+
+**Critical:** This application uses Web Mercator projection for world coordinates but must convert to Three.js conventions for 3D rendering. Coordinate mismatch causes inverted camera/movement.
+
+### World Coordinates (Mercator)
+```
+Location.x  = Mercator X (east-west, increases rightward/eastward)
+Location.y  = Mercator Y (north-south, INCREASES SOUTHWARD - inverted from compass!)
+Elevation   = Meters above sea level (vertical)
+Azimuth     = Compass bearing in degrees (0°=North, 90°=East, clockwise positive)
+```
+
+### Three.js Coordinates
+```
+position.x  = Right (east)
+position.y  = Up (vertical)
+position.z  = Forward (north when at default orientation)
+rotation.y  = Yaw around Y-axis (counterclockwise positive when viewed from above)
+```
+
+### Conversion Formula
+
+**Camera Position:** `AnimationLoop.ts:44-48`
+```typescript
+camera.setPosition(
+  droneLocation.x,      // X: Mercator X → Three.js X (direct)
+  elevation + 5,        // Y: elevation → Three.js Y (direct, +5m offset)
+  -droneLocation.y      // Z: -Mercator Y (NEGATED because Mercator Y increases southward)
+);
+```
+
+**Movement Calculation:** `Drone.ts:110-118`
+```typescript
+// Forward/backward (along drone's heading)
+x: Math.sin(azimuthRad) * netForward * displacement,
+y: -Math.cos(azimuthRad) * netForward * displacement,  // NEGATED for Mercator Y
+
+// Left/right (perpendicular to heading)
+x: Math.sin(rightAzimuthRad) * netRight * displacement,
+y: -Math.cos(rightAzimuthRad) * netRight * displacement,  // NEGATED for Mercator Y
+```
+
+**Camera Rotation:** `Camera.ts:48`
+```typescript
+camera.rotation.y = azimuthRad;  // Direct mapping: azimuth → rotation.y
+```
+
+### Why Negation on Y (Mercator Y)
+
+Mercator projection has Y increasing **southward** (opposite of compass north):
+- North (azimuth 0°) → should move in **negative Y** direction → `-cos(0°) = -1` ✓
+- South (azimuth 180°) → should move in **positive Y** direction → `-cos(180°) = +1` ✓
+
+Without the negation, north/south movement is inverted.
+
+### Coordinate Consistency
+
+All three components must use the same convention:
+1. **Position Z**: `-droneLocation.y` (Mercator Y negated)
+2. **Movement Y**: `-cos(azimuthRad)` (Y component negated)
+3. **Rotation Y**: `azimuthRad` (direct, no negation - it already accounts for Z flip)
+
+If any component lacks the negation, camera/movement directions become opposite.
+
 **Key Patterns:**
 - Constructor injection: 3D wrappers accept constructor functions (not instances) for DI
 - Frame-rate independent physics: delta time in seconds

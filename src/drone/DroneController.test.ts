@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DroneController } from './DroneController';
 import { createDrone, Drone } from './Drone';
+import { droneConfig } from '../config';
 
 describe('DroneController', () => {
   let drone: Drone;
@@ -100,18 +101,16 @@ describe('DroneController', () => {
     it('should listen to mousemove events on container', () => {
       const rotateSpy = vi.spyOn(drone, 'rotateAzimuth');
 
+      // Set baseline position
       const event = new MouseEvent('mousemove', { clientX: 100 });
       container.dispatchEvent(event);
 
-      // First movement from 0 to 100 = 100px * 0.5 sensitivity = 50 degrees
-      expect(rotateSpy).toHaveBeenCalled();
-
+      // First real movement should trigger rotation
       rotateSpy.mockClear();
-
       const rightEvent = new MouseEvent('mousemove', { clientX: 150 });
       container.dispatchEvent(rightEvent);
-      // Second movement from 100 to 150 = 50px * 0.5 = 25 degrees
-      expect(rotateSpy).toHaveBeenCalledWith(25);
+      // Movement from 100 to 150 = 50px * mouseSensitivity
+      expect(rotateSpy).toHaveBeenCalledWith(50 * droneConfig.mouseSensitivity);
     });
 
     it('should detect left mouse movement and rotate counter-clockwise', () => {
@@ -127,8 +126,10 @@ describe('DroneController', () => {
       event = new MouseEvent('mousemove', { clientX: 50 });
       container.dispatchEvent(event);
 
-      // 50 - 100 = -50px * 0.5 = -25 degrees (counter-clockwise)
-      expect(rotateSpy).toHaveBeenCalledWith(-25);
+      // 50 - 100 = -50px * mouseSensitivity = counter-clockwise rotation
+      expect(rotateSpy).toHaveBeenCalledWith(
+        -50 * droneConfig.mouseSensitivity
+      );
     });
 
     it('should detect right mouse movement and rotate clockwise', () => {
@@ -144,8 +145,8 @@ describe('DroneController', () => {
       event = new MouseEvent('mousemove', { clientX: 150 });
       container.dispatchEvent(event);
 
-      // 150 - 100 = 50px * 0.5 = 25 degrees (clockwise)
-      expect(rotateSpy).toHaveBeenCalledWith(25);
+      // 150 - 100 = 50px * mouseSensitivity = clockwise rotation
+      expect(rotateSpy).toHaveBeenCalledWith(50 * droneConfig.mouseSensitivity);
     });
   });
 

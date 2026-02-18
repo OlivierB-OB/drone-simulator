@@ -36,7 +36,7 @@ export class Scene {
         droneConfig.initialCoordinates.latitude,
         droneConfig.initialCoordinates.longitude
       );
-      axisHelper.position.set(mercatorCoords.x, 0, mercatorCoords.y);
+      axisHelper.position.set(mercatorCoords.x, 0, -mercatorCoords.y);
       this.scene.add(axisHelper);
     }
   }

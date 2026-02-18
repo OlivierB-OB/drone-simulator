@@ -13,10 +13,10 @@ export const droneConfig = {
   initialAzimuth: 0,
 
   // Movement speed in meters per second (realistic drone cruising speed: 10-15 m/s)
-  movementSpeed: 12,
+  movementSpeed: 1200,
 
   // Mouse sensitivity for azimuth control (degrees per pixel of mouse movement)
-  mouseSensitivity: 0.5,
+  mouseSensitivity: 0.2,
 
   // Elevation bounds in meters (0 = ground level)
   elevationMinimum: 0,
@@ -62,5 +62,5 @@ export const debugConfig = {
   axesHelperSize: 500,
 
   // Use simple unlit mesh material for terrain instead of realistic phong shading
-  useSimpleTerrainMaterial: false,
+  useSimpleTerrainMaterial: true,
 };

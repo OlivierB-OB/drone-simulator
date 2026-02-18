@@ -57,12 +57,17 @@ export class DroneController {
   }
 
   private setupMouseListeners() {
-    let lastX = 0;
+    let lastX: number | null = null;
 
     this.mousemoveHandler = (event: MouseEvent) => {
       const currentX = event.clientX;
-      const deltaX = currentX - lastX;
 
+      if (lastX === null) {
+        lastX = currentX;
+        return;
+      }
+
+      const deltaX = currentX - lastX;
       if (deltaX !== 0) {
         const deltaDegrees = deltaX * droneConfig.mouseSensitivity;
         this.drone.rotateAzimuth(deltaDegrees);
