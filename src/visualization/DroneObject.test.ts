@@ -70,6 +70,31 @@ describe('DroneObject', () => {
       expect(() => droneObject.update(0, 0, 0, 0, 0.1)).not.toThrow();
     });
 
+    it('should rotate rotors when deltaTime is positive', () => {
+      const group = droneObject.getMesh() as Group;
+      const rotors = collectRotorMeshes(group);
+      const initialY = rotors.map((r) => r.rotation.y);
+
+      droneObject.update(0, 0, 0, 0, 0.1);
+
+      rotors.forEach((rotor, i) => {
+        expect(rotor.rotation.y).not.toBeCloseTo(initialY[i], 1);
+      });
+    });
+
+    it('should counter-rotate adjacent rotors', () => {
+      const group = droneObject.getMesh() as Group;
+      const rotors = collectRotorMeshes(group);
+      const initialY = rotors.map((r) => r.rotation.y);
+
+      droneObject.update(0, 0, 0, 0, 0.1);
+
+      // Even-indexed and odd-indexed rotors spin in opposite directions
+      const delta0 = rotors[0].rotation.y - initialY[0];
+      const delta1 = rotors[1].rotation.y - initialY[1];
+      expect(Math.sign(delta0)).not.toBe(Math.sign(delta1));
+    });
+
     it('should have correct rotation at all cardinal azimuth values', () => {
       const cases = [
         { azimuth: 0, expected: 0 },
@@ -142,6 +167,17 @@ function countMeshes(
     if (child instanceof Mesh) count++;
   });
   return count;
+}
+
+/** Collect rotor disc meshes (CircleGeometry children) */
+function collectRotorMeshes(obj: Group | Mesh): Mesh[] {
+  const meshes: Mesh[] = [];
+  (obj as Group).traverse((child) => {
+    if (child instanceof Mesh && child.geometry?.type === 'CircleGeometry') {
+      meshes.push(child);
+    }
+  });
+  return meshes;
 }
 
 /** Collect positions of rotor discs (CircleGeometry children positioned above Y=0) */

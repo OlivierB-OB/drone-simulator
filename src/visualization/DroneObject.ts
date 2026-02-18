@@ -37,36 +37,20 @@ function generateRotorTexture(): CanvasTexture | null {
     const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY);
 
     // Draw radial stripes
-    const stripeWidth = 12; // pixels per stripe
-    const lightColor = '#CCCCCC';
-    const darkColor = '#222222';
+    const stripeWidth = 24; // pixels per stripe
+    const darkColor = '#000000';
 
-    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 16) {
-      // Draw lines from center outward
-      const x1 = centerX + Math.cos(angle) * 0;
-      const y1 = centerY + Math.sin(angle) * 0;
-      const x2 = centerX + Math.cos(angle) * maxRadius;
-      const y2 = centerY + Math.sin(angle) * maxRadius;
-
-      ctx.strokeStyle = lightColor;
-      ctx.lineWidth = stripeWidth;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-
+    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 2) {
       // Dark stripe offset
       const angle2 = angle + Math.PI / 32;
-      const x3 = centerX + Math.cos(angle2) * 0;
-      const y3 = centerY + Math.sin(angle2) * 0;
-      const x4 = centerX + Math.cos(angle2) * maxRadius;
-      const y4 = centerY + Math.sin(angle2) * maxRadius;
-
       ctx.strokeStyle = darkColor;
       ctx.lineWidth = stripeWidth;
       ctx.beginPath();
-      ctx.moveTo(x3, y3);
-      ctx.lineTo(x4, y4);
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(
+        centerX + Math.cos(angle2) * maxRadius,
+        centerY + Math.sin(angle2) * maxRadius
+      );
       ctx.stroke();
     }
 
@@ -253,14 +237,12 @@ export class DroneObject {
     this.group.rotation.x = 0;
     this.group.rotation.z = 0;
 
-    // Animate rotors: scroll texture UV instead of rotating geometry
-    // This creates the illusion of spinning without geometry rotation
-    const rotorSpeed = 0.5; // texture offset units per second
-    this.rotorMeshes.forEach((rotor) => {
-      const material = rotor.material as MeshPhongMaterial;
-      if (material.map) {
-        material.map.offset.x += rotorSpeed * deltaTime;
-      }
+    // Animate rotors: spin geometry (YXZ order → Y rotation spins disc before X tilts it horizontal)
+    // Counter-rotating pairs match real quadcopter torque balance
+    const rotorSpeed = 10 * Math.PI; // ~10 rev/s
+    this.rotorMeshes.forEach((rotor, index) => {
+      const direction = index % 2 === 0 ? 1 : -1;
+      rotor.rotation.y += direction * rotorSpeed * deltaTime;
     });
   }
 
