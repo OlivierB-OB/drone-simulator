@@ -75,6 +75,89 @@ export const contextDataConfig = {
 
   // Overpass API endpoint
   overpassEndpoint: 'https://overpass-api.de/api/interpreter',
+
+  // Enable checking Overpass API status endpoint for real-time rate limit information
+  statusCheckEnabled: true,
+
+  // Overpass API status endpoint URL
+  statusEndpoint: 'https://overpass-api.de/api/status',
+
+  // How often to poll status endpoint in milliseconds (30 seconds)
+  statusCheckIntervalMs: 30000,
+
+  // How long to wait for status endpoint response before timing out (5 seconds)
+  statusCheckTimeoutMs: 5000,
+
+  // Cache status response for this long before fetching fresh data (30 seconds)
+  statusCacheTtlMs: 30000,
+
+  // Fallback throttle delay in milliseconds if status endpoint is unavailable
+  fallbackThrottleMs: 200,
+};
+
+/**
+ * Color palette for visual OSM features
+ * Maps feature types to hex colors for rendering
+ */
+export const colorPalette = {
+  buildings: {
+    residential: '#c4b8a0',
+    commercial: '#cc99ff',
+    industrial: '#888888',
+    office: '#cc99ff',
+    retail: '#ff99cc',
+    apartments: '#c4b8a0',
+    detached: '#d4c4b0',
+    house: '#d4c4b0',
+    other: '#aaaaaa',
+    default: '#c4b8a0',
+  },
+  roads: {
+    motorway: '#e0a56e',
+    trunk: '#ddb855',
+    primary: '#ddb855',
+    secondary: '#f7e6b8',
+    tertiary: '#f7e6b8',
+    residential: '#ffffff',
+    service: '#ffffff',
+    footway: '#cccccc',
+    path: '#cccccc',
+    other: '#ffffff',
+    default: '#ffffff',
+  },
+  railways: {
+    rail: '#888888',
+    light_rail: '#666666',
+    tram: '#666666',
+    metro: '#ff0000',
+    monorail: '#888888',
+    other: '#888888',
+    default: '#888888',
+  },
+  waters: {
+    river: '#5588dd',
+    stream: '#5588dd',
+    canal: '#5588dd',
+    lake: '#3366cc',
+    pond: '#3366cc',
+    reservoir: '#3366cc',
+    wetland: '#88dd99',
+    water: '#3366cc',
+    other: '#3366cc',
+    default: '#3366cc',
+  },
+  vegetation: {
+    forest: '#2d8a2d',
+    wood: '#3d9d3d',
+    scrub: '#669966',
+    grass: '#99cc99',
+    grassland: '#99cc99',
+    tree: '#4da64d',
+    hedge: '#669966',
+    other: '#99cc99',
+    default: '#2d8a2d',
+  },
+  airport: '#ffff99',
 };
 
 export const debugConfig = {

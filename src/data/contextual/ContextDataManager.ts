@@ -14,7 +14,8 @@ export class ContextDataManager {
   private currentTileCenter: TileCoordinates | null = null;
   private tileCache: Map<string, ContextDataTile> = new Map();
   private pendingQueue: string[] = [];
-  private loadPromises: Map<string, Promise<ContextDataTile | null>> = new Map();
+  private loadPromises: Map<string, Promise<ContextDataTile | null>> =
+    new Map();
   private loadingCount: number = 0;
   private abortController: AbortController = new AbortController();
   private lastRequestTime: number = 0;

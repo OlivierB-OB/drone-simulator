@@ -1,5 +1,8 @@
 import { ContextDataManager } from '../../../data/contextual/ContextDataManager';
-import { ContextGeometryObject, type ContextGeometry } from './ContextGeometryObject';
+import {
+  ContextGeometryObject,
+  type ContextGeometry,
+} from './ContextGeometryObject';
 import { ContextGeometryFactory } from './ContextGeometryFactory';
 import type { TileKey } from '../../terrain/geometry/types';
 
@@ -108,7 +111,9 @@ export class ContextGeometryObjectManager {
    * Create geometries from a context data tile
    * Processes all feature types (buildings, roads, railways, water, vegetation, airports)
    */
-  private createGeometriesFromTile(tile: Record<string, unknown>): ContextGeometry[] {
+  private createGeometriesFromTile(
+    tile: Record<string, unknown>
+  ): ContextGeometry[] {
     const geometries: ContextGeometry[] = [];
     const { features, mercatorBounds } = tile;
 

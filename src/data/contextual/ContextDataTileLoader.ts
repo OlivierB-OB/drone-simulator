@@ -410,9 +410,7 @@ out geom;`;
       // Filter: skip footways, paths (no visual distinction)
       const highwayType = tags.highway.toLowerCase();
       if (!['footway', 'path'].includes(highwayType)) {
-        const lanes = tags.lanes
-          ? parseInt(tags.lanes, 10)
-          : undefined;
+        const lanes = tags.lanes ? parseInt(tags.lanes, 10) : undefined;
         const road: RoadVisual = {
           id,
           geometry: lineGeometry,
@@ -719,7 +717,12 @@ out geom;`;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        return await this.loadTile(coordinates, endpoint, timeout, statusManager);
+        return await this.loadTile(
+          coordinates,
+          endpoint,
+          timeout,
+          statusManager
+        );
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         const isRateLimit =

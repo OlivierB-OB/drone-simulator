@@ -21,94 +21,109 @@ export interface Polygon {
 }
 
 /**
- * Base feature type with common properties
+ * Color representation in hex format
  */
-export interface BaseFeature {
-  id: string; // OSM id (node/way/relation id)
-  geometry: Geometry;
-  tags: Record<string, string>; // Raw OSM tags
+export type HexColor = string; // e.g., '#ff0000'
+
+/**
+ * Visual properties for buildings - focused on rendering: shape, size, levels, color
+ */
+export interface BuildingVisual {
+  id: string;
+  geometry: Polygon | Point | LineString; // Polygon for relations, Point for nodes, LineString for simple ways
+  type: string; // Building category: residential, commercial, industrial, office, etc.
+  height?: number; // meters above ground
+  levelCount?: number; // number of floors
+  color: HexColor; // Derived from building type
 }
 
 /**
- * Building feature
+ * Visual properties for roads - focused on rendering: shape, width, lanes, color
  */
-export interface Building extends BaseFeature {
-  name?: string;
-  type?: string; // residential, commercial, industrial, etc.
-  height?: number; // meters, if available
-  levels?: number; // number of levels, if available
+export interface RoadVisual {
+  id: string;
+  geometry: LineString;
+  type: string; // Road category: primary, secondary, residential, motorway, etc.
+  widthCategory: 'large' | 'medium' | 'small'; // Derived from road type
+  laneCount?: number; // Number of lanes if available
+  color: HexColor; // Derived from road type
 }
 
 /**
- * Road/highway feature
+ * Visual properties for railways - focused on rendering: shape, track count, type, color
  */
-export interface Road extends BaseFeature {
-  name?: string;
-  type: string; // primary, secondary, residential, service, etc.
-  maxSpeed?: number; // km/h, if available
-  oneWay?: boolean;
+export interface RailwayVisual {
+  id: string;
+  geometry: LineString;
+  type: string; // Railway category: rail, light_rail, tram, metro, etc.
+  trackCount?: number; // Number of tracks/rails
+  color: HexColor; // Derived from railway type
 }
 
 /**
- * Railway feature
+ * Visual properties for water bodies - focused on rendering: shape, water type, color
  */
-export interface Railway extends BaseFeature {
-  name?: string;
-  type: string; // rail, metro, light_rail, tram, etc.
-  gauge?: string; // mm, if available
+export interface WaterVisual {
+  id: string;
+  geometry: LineString | Polygon;
+  type: string; // Water category: river, lake, canal, stream, wetland, reservoir, etc.
+  isArea: boolean; // true for lakes/ponds/wetlands, false for rivers/streams/canals
+  color: HexColor; // Blue variants derived from water type
 }
 
 /**
- * Water feature (rivers, lakes, reservoirs, etc.)
+ * Visual properties for vegetation - focused on rendering: shape, vegetation type, height, color
  */
-export interface Water extends BaseFeature {
-  name?: string;
-  type: string; // river, lake, reservoir, canal, stream, wetland, etc.
-  area?: boolean; // true if closed water area (lake, pond), undefined for linear (river)
-  isNatural?: boolean; // true if natural=water, false if landuse=water
+export interface VegetationVisual {
+  id: string;
+  geometry: LineString | Polygon | Point;
+  type: string; // Vegetation category: forest, wood, scrub, grass, tree, hedge, etc.
+  height?: number; // meters (for trees and tall vegetation)
+  heightCategory: 'tall' | 'medium' | 'short'; // Normalized height
+  color: HexColor; // Green variants derived from vegetation type
 }
 
 /**
- * Airport feature
+ * Visual properties for airports - focused on rendering: location, type, color
  */
-export interface Airport extends BaseFeature {
-  name: string;
-  iata?: string; // IATA code
-  icao?: string; // ICAO code
-  type?: string; // aerodrome, heliport, etc.
+export interface AirportVisual {
+  id: string;
+  geometry: Point | Polygon | LineString; // Point for nodes, Polygon/LineString for ways/relations
+  type: string; // Airport category: aerodrome, heliport, etc.
+  color: HexColor; // Standard airport color
 }
 
 /**
- * Vegetation feature (forests, grass, scrub, individual trees)
+ * Union of all visual feature types
  */
-export interface Vegetation extends BaseFeature {
-  name?: string;
-  type: string; // forest, wood, scrub, grass, hedge, etc.
-  height?: number; // meters, if available (usually for trees)
+export type VisualFeature =
+  | BuildingVisual
+  | RoadVisual
+  | RailwayVisual
+  | WaterVisual
+  | VegetationVisual
+  | AirportVisual;
+
+/**
+ * Color palette mapping for different feature categories
+ */
+export interface ColorPalette {
+  // Building colors by type
+  buildings: Record<string, HexColor>;
+  // Road colors by type
+  roads: Record<string, HexColor>;
+  // Railway colors by type
+  railways: Record<string, HexColor>;
+  // Water colors by type
+  waters: Record<string, HexColor>;
+  // Vegetation colors by type
+  vegetation: Record<string, HexColor>;
+  // Airport color
+  airport: HexColor;
 }
 
 /**
- * Land use area (residential, industrial, agricultural, grass, sand, etc.)
- */
-export interface LandUseArea extends BaseFeature {
-  name?: string;
-  type: string; // residential, industrial, agricultural, grass, sand, commercial, etc.
-}
-
-/**
- * Union of all feature types
- */
-export type Feature =
-  | Building
-  | Road
-  | Railway
-  | Water
-  | Airport
-  | Vegetation
-  | LandUseArea;
-
-/**
- * Context data tile containing all OSM features for a tile
+ * Context data tile containing all visual OSM features for a tile
  */
 export interface ContextDataTile {
   /** Position of this tile in the Web Mercator system */
@@ -120,14 +135,16 @@ export interface ContextDataTile {
   /** Zoom level of this tile */
   zoomLevel: number;
 
-  /** All features grouped by type */
+  /** All features grouped by type - only visual properties */
   features: {
-    buildings: Building[];
-    roads: Road[];
-    railways: Railway[];
-    waters: Water[];
-    airports: Airport[];
-    vegetation: Vegetation[];
-    landUse: LandUseArea[];
+    buildings: BuildingVisual[];
+    roads: RoadVisual[];
+    railways: RailwayVisual[];
+    waters: WaterVisual[];
+    airports: AirportVisual[];
+    vegetation: VegetationVisual[];
   };
+
+  /** Color palette for this tile's features */
+  colorPalette: ColorPalette;
 }

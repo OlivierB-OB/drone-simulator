@@ -32,10 +32,7 @@ export class ContextObjectFactory {
           flatShading: false,
         });
 
-    const mesh = new this.meshConstructor(
-      contextGeometry.geometry,
-      material
-    );
+    const mesh = new this.meshConstructor(contextGeometry.geometry, material);
 
     // Store feature type and ID for debugging/identification
     (mesh as Record<string, unknown>).__featureType = contextGeometry.type;

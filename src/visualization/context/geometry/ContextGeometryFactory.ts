@@ -1,4 +1,10 @@
-import { BufferGeometry, TubeGeometry, ShapeGeometry, Vector3, Shape } from 'three';
+import {
+  BufferGeometry,
+  TubeGeometry,
+  ShapeGeometry,
+  Vector3,
+  Shape,
+} from 'three';
 import type {
   LineString,
   Polygon,

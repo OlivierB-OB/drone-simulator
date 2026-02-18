@@ -10,6 +10,7 @@ describe('AnimationLoop', () => {
   let mockElevationData: any;
   let mockContextData: any;
   let mockTerrainObjectManager: any;
+  let mockContextObjectManager: any;
   let mockDroneObject: any;
 
   beforeEach(() => {
@@ -40,6 +41,11 @@ describe('AnimationLoop', () => {
       refresh: vi.fn(),
     };
 
+    // Mock ContextObjectManager
+    mockContextObjectManager = {
+      refresh: vi.fn(),
+    };
+
     // Mock DroneObject
     mockDroneObject = {
       update: vi.fn(),
@@ -52,6 +58,7 @@ describe('AnimationLoop', () => {
       mockContextData,
       mockCamera,
       mockTerrainObjectManager,
+      mockContextObjectManager,
       mockDroneObject
     );
 
@@ -229,13 +236,16 @@ describe('AnimationLoop', () => {
   });
 
   describe('execution order', () => {
-    it('should execute in correct order: applyMove -> refresh -> droneObject.update -> updateChaseCamera -> render', () => {
+    it('should execute in correct order: applyMove -> terrainRefresh -> contextRefresh -> droneObject.update -> updateChaseCamera -> render', () => {
       const callOrder: string[] = [];
       vi.spyOn(drone, 'applyMove').mockImplementation(() => {
         callOrder.push('applyMove');
       });
       mockTerrainObjectManager.refresh.mockImplementation(() => {
-        callOrder.push('refresh');
+        callOrder.push('terrainRefresh');
+      });
+      mockContextObjectManager.refresh.mockImplementation(() => {
+        callOrder.push('contextRefresh');
       });
       mockDroneObject.update.mockImplementation(() => {
         callOrder.push('droneObject.update');
@@ -258,7 +268,8 @@ describe('AnimationLoop', () => {
 
         expect(callOrder).toEqual([
           'applyMove',
-          'refresh',
+          'terrainRefresh',
+          'contextRefresh',
           'droneObject.update',
           'updateChaseCamera',
           'render',
