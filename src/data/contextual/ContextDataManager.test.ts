@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { ContextDataManager } from './ContextDataManager';
 import type { MercatorCoordinates } from '../../gis/types';
 
@@ -11,6 +11,10 @@ describe('ContextDataManager', () => {
 
   beforeEach(() => {
     contextManager = new ContextDataManager(initialLocation);
+  });
+
+  afterEach(() => {
+    contextManager.dispose();
   });
 
   it('initializes with a tile ring around the initial location', () => {

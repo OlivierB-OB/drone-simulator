@@ -95,6 +95,9 @@ export class ContextObjectManager {
         // Create mesh from geometry
         const mesh = this.factory.createMesh(geometry);
 
+        // Rotate from XY plane (ShapeGeometry default) to XZ plane (ground)
+        mesh.rotation.x = -Math.PI / 2;
+
         // Position mesh at tile center
         // Note: geometry is already tile-centered internally, but we offset for tile position
         const centerX = (bounds.minX + bounds.maxX) / 2;

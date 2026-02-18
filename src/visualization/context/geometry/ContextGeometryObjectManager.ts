@@ -1,4 +1,5 @@
 import { ContextDataManager } from '../../../data/contextual/ContextDataManager';
+import type { ContextDataTile } from '../../../data/contextual/types';
 import {
   ContextGeometryObject,
   type ContextGeometry,
@@ -111,9 +112,7 @@ export class ContextGeometryObjectManager {
    * Create geometries from a context data tile
    * Processes all feature types (buildings, roads, railways, water, vegetation, airports)
    */
-  private createGeometriesFromTile(
-    tile: Record<string, unknown>
-  ): ContextGeometry[] {
+  private createGeometriesFromTile(tile: ContextDataTile): ContextGeometry[] {
     const geometries: ContextGeometry[] = [];
     const { features, mercatorBounds } = tile;
 
@@ -229,7 +228,7 @@ export class ContextGeometryObjectManager {
         geometry = this.factory.createLineStringGeometry(
           airport.geometry,
           mercatorBounds,
-          airport as Record<string, unknown>
+          airport
         );
       } else {
         continue; // Skip Point geometries

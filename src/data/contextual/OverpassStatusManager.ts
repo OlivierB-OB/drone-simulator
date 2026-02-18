@@ -30,6 +30,7 @@ export class OverpassStatusManager {
   private cacheTimestamp: number = 0;
   private pollTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private pollPromise: Promise<void> | null = null;
+  private fetchAbortController: AbortController | null = null;
   private isDisposed = false;
 
   constructor(
@@ -139,6 +140,8 @@ export class OverpassStatusManager {
       clearTimeout(this.pollTimeoutId);
       this.pollTimeoutId = null;
     }
+    this.fetchAbortController?.abort();
+    this.fetchAbortController = null;
     this.cachedStatus = null;
     this.pollPromise = null;
   }
@@ -163,11 +166,14 @@ export class OverpassStatusManager {
     }
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+      this.fetchAbortController = new AbortController();
+      const timeoutId = setTimeout(
+        () => this.fetchAbortController?.abort(),
+        this.timeoutMs
+      );
 
       const response = await fetch(this.statusUrl, {
-        signal: controller.signal,
+        signal: this.fetchAbortController.signal,
       });
 
       clearTimeout(timeoutId);
@@ -192,6 +198,9 @@ export class OverpassStatusManager {
         );
       }
     } catch (error) {
+      if (this.isDisposed) {
+        return; // Silently ignore errors during cleanup
+      }
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           console.warn('[OverpassStatusManager] Status fetch timeout');

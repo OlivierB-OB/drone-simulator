@@ -381,10 +381,24 @@ out geom;`;
       return;
     }
 
+    // Detect closed ring (first coord == last coord) for polygon features
+    const firstCoord = coordinates[0];
+    const lastCoord = coordinates[coordinates.length - 1];
+    const isClosed: boolean =
+      coordinates.length >= 3 &&
+      !!firstCoord &&
+      !!lastCoord &&
+      firstCoord[0] === lastCoord[0] &&
+      firstCoord[1] === lastCoord[1];
+
     const lineGeometry: LineString = {
       type: 'LineString',
       coordinates,
     };
+
+    const polygonGeometry: Polygon | null = isClosed
+      ? { type: 'Polygon', coordinates: [coordinates] }
+      : null;
 
     // Classify feature by tags and extract only visual properties
     if (tags.building) {
@@ -398,7 +412,7 @@ out geom;`;
         const buildingType = tags['building:type'] || tags.building || 'other';
         const building: BuildingVisual = {
           id,
-          geometry: lineGeometry,
+          geometry: polygonGeometry ?? lineGeometry,
           type: buildingType,
           height,
           levelCount: levels,
@@ -439,16 +453,6 @@ out geom;`;
       tags.water ||
       tags.landuse === 'water'
     ) {
-      // Detect if this is a closed water area (lake, pond, etc.)
-      const firstCoord = coordinates[0];
-      const lastCoord = coordinates[coordinates.length - 1];
-      const isClosedRing =
-        coordinates.length >= 2 &&
-        firstCoord &&
-        lastCoord &&
-        firstCoord[0] === lastCoord[0] &&
-        firstCoord[1] === lastCoord[1];
-
       // Determine water type from tags (always has a default)
       const waterType: string =
         tags.waterway ||
@@ -459,9 +463,9 @@ out geom;`;
 
       const water: WaterVisual = {
         id,
-        geometry: lineGeometry,
+        geometry: isClosed ? polygonGeometry! : lineGeometry,
         type: waterType,
-        isArea: isClosedRing || false,
+        isArea: isClosed,
         color: this.getColorForWater(waterType),
       };
       features.waters.push(water);
@@ -469,7 +473,7 @@ out geom;`;
       const airportType: string = tags.aeroway || 'aerodrome';
       const airport: AirportVisual = {
         id,
-        geometry: lineGeometry,
+        geometry: isClosed ? polygonGeometry! : lineGeometry,
         type: airportType,
         color: colorPalette.airport,
       };
@@ -479,7 +483,7 @@ out geom;`;
       const height = tags.height ? parseFloat(tags.height) : undefined;
       const vegetation: VegetationVisual = {
         id,
-        geometry: lineGeometry,
+        geometry: isClosed ? polygonGeometry! : lineGeometry,
         type: vegType,
         height,
         heightCategory: this.getHeightCategory(height),

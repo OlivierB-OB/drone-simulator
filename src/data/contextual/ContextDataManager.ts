@@ -97,6 +97,11 @@ export class ContextDataManager {
       }
     }
 
+    // Remove queued tiles that are no longer in the desired set
+    this.pendingQueue = this.pendingQueue.filter((key) =>
+      desiredTiles.has(key)
+    );
+
     // Load tiles that are needed but not yet loaded
     for (const key of desiredTiles) {
       if (!this.tileCache.has(key) && !this.loadPromises.has(key)) {

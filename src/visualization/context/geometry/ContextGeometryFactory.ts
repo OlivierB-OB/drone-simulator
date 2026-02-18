@@ -1,5 +1,6 @@
 import {
   BufferGeometry,
+  CatmullRomCurve3,
   TubeGeometry,
   ShapeGeometry,
   Vector3,
@@ -8,6 +9,7 @@ import {
 import type {
   LineString,
   Polygon,
+  AirportVisual,
   RoadVisual,
   RailwayVisual,
   WaterVisual,
@@ -27,7 +29,7 @@ export class ContextGeometryFactory {
   createLineStringGeometry(
     lineString: LineString,
     bounds: MercatorBounds,
-    feature: RoadVisual | RailwayVisual | WaterVisual
+    feature: RoadVisual | RailwayVisual | WaterVisual | AirportVisual
   ): BufferGeometry {
     const radius = this.getLineStringRadius(feature);
     return this.createTubeGeometry(lineString, radius, bounds);
@@ -49,7 +51,7 @@ export class ContextGeometryFactory {
    * Priority: width tag > lanes tag > type category
    */
   private getLineStringRadius(
-    feature: RoadVisual | RailwayVisual | WaterVisual
+    feature: RoadVisual | RailwayVisual | WaterVisual | AirportVisual
   ): number {
     // For roads, use width category if available
     if ('widthCategory' in feature) {
@@ -61,7 +63,12 @@ export class ContextGeometryFactory {
       return 0.5;
     }
 
-    // For water, use 0.5m
+    // For airports, use 1.0m
+    if ('type' in feature && feature.type === 'aerodrome') {
+      return 1.0;
+    }
+
+    // For water and other features, use 0.5m
     return 0.5;
   }
 
@@ -108,8 +115,16 @@ export class ContextGeometryFactory {
       return new BufferGeometry(); // Return empty geometry for invalid data
     }
 
-    // Create tube with radial segments = 8 (balance between quality and performance)
-    const tubeGeometry = new TubeGeometry(points, 8, radius, 8, false);
+    // TubeGeometry requires a Curve, not a raw point array
+    const curve = new CatmullRomCurve3(points);
+    const tubularSegments = Math.max(8, points.length * 2);
+    const tubeGeometry = new TubeGeometry(
+      curve,
+      tubularSegments,
+      radius,
+      8,
+      false
+    );
     return tubeGeometry;
   }
 
