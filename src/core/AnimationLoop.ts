@@ -48,7 +48,7 @@ export class AnimationLoop {
       const threeY = droneElevation;
       const threeZ = -droneLocation.y;
 
-      this.droneObject.update(threeX, threeY, threeZ, droneAzimuth);
+      this.droneObject.update(threeX, threeY, threeZ, droneAzimuth, deltaTime);
       this.camera.updateChaseCamera(threeX, threeY, threeZ, droneAzimuth);
 
       this.viewer3D.render();

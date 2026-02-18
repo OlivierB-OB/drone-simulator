@@ -1,15 +1,165 @@
-import { Mesh, ConeGeometry, MeshBasicMaterial, type Object3D } from 'three';
+import {
+  Mesh,
+  BoxGeometry,
+  CylinderGeometry,
+  CircleGeometry,
+  MeshPhongMaterial,
+  Group,
+  Vector3,
+  type Object3D,
+} from 'three';
+
+interface DroneGeometryResult {
+  group: Group;
+  rotors: Mesh[];
+}
+
+function createDroneGeometry(): DroneGeometryResult {
+  const group = new Group();
+  const rotors: Mesh[] = [];
+
+  // Local space: -Z = forward (North), +X = right (East), +Y = up
+
+  // --- Fuselage (flat rectangular body) ---
+  const fuselageWidth = 1.6;
+  const fuselageHeight = 0.4;
+  const fuselageLength = 2.2;
+  const halfW = fuselageWidth / 2;
+  const halfH = fuselageHeight / 2;
+  const halfL = fuselageLength / 2;
+
+  const bodyMaterial = new MeshPhongMaterial({
+    color: 0x444444,
+    shininess: 60,
+  });
+  const fuselage = new Mesh(
+    new BoxGeometry(fuselageWidth, fuselageHeight, fuselageLength),
+    bodyMaterial
+  );
+  group.add(fuselage);
+
+  // --- Front indicator (red bar at nose so heading is visible) ---
+  const frontIndicator = new Mesh(
+    new BoxGeometry(fuselageWidth * 0.6, fuselageHeight * 0.5, 0.15),
+    new MeshPhongMaterial({ color: 0xff3300, shininess: 80 })
+  );
+  frontIndicator.position.set(0, halfH * 0.2, -halfL - 0.075);
+  group.add(frontIndicator);
+
+  // --- Arms + motors + rotors ---
+  // Arms extend diagonally outward from fuselage corners in an X pattern
+  const armLength = 3.0;
+  const diag = 1 / Math.SQRT2;
+
+  const armConfigs = [
+    { dirX: +diag, dirZ: -diag, cornerX: +halfW, cornerZ: -halfL }, // Front-Right
+    { dirX: -diag, dirZ: -diag, cornerX: -halfW, cornerZ: -halfL }, // Front-Left
+    { dirX: +diag, dirZ: +diag, cornerX: +halfW, cornerZ: +halfL }, // Back-Right
+    { dirX: -diag, dirZ: +diag, cornerX: -halfW, cornerZ: +halfL }, // Back-Left
+  ];
+
+  const armMaterial = new MeshPhongMaterial({ color: 0x222222, shininess: 40 });
+  const motorMaterial = new MeshPhongMaterial({
+    color: 0x333333,
+    shininess: 50,
+  });
+  const rotorMaterial = new MeshPhongMaterial({
+    color: 0x111111,
+    shininess: 30,
+    transparent: true,
+    opacity: 0.7,
+  });
+
+  const motorRadius = 0.3;
+  const motorHeight = 0.35;
+  const rotorRadius = 1.2;
+  const yAxis = new Vector3(0, 1, 0);
+
+  armConfigs.forEach((config) => {
+    const rotorX = config.cornerX + config.dirX * armLength;
+    const rotorZ = config.cornerZ + config.dirZ * armLength;
+
+    // Arm cylinder from fuselage corner to motor position
+    const dx = rotorX - config.cornerX;
+    const dz = rotorZ - config.cornerZ;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+
+    const arm = new Mesh(
+      new CylinderGeometry(0.08, 0.08, dist, 6),
+      armMaterial
+    );
+    arm.position.set(
+      (config.cornerX + rotorX) / 2,
+      0,
+      (config.cornerZ + rotorZ) / 2
+    );
+    arm.quaternion.setFromUnitVectors(
+      yAxis,
+      new Vector3(dx, 0, dz).normalize()
+    );
+    group.add(arm);
+
+    // Motor pod (small cylinder at arm tip)
+    const motor = new Mesh(
+      new CylinderGeometry(motorRadius, motorRadius, motorHeight, 8),
+      motorMaterial
+    );
+    motor.position.set(rotorX, 0, rotorZ);
+    group.add(motor);
+
+    // Rotor disc (circle on top of motor)
+    const rotor = new Mesh(new CircleGeometry(rotorRadius, 16), rotorMaterial);
+    rotor.position.set(rotorX, motorHeight / 2 + 0.05, rotorZ);
+    // YXZ order: Y rotation spins the disc, then X tilts it to horizontal
+    rotor.rotation.order = 'YXZ';
+    rotor.rotation.x = -Math.PI / 2;
+    group.add(rotor);
+    rotors.push(rotor);
+  });
+
+  // --- Landing skids (two horizontal bars under the body with struts) ---
+  const skidMaterial = new MeshPhongMaterial({
+    color: 0x666666,
+    shininess: 40,
+  });
+  const skidLength = fuselageLength * 1.1;
+  const skidRadius = 0.06;
+  const skidY = -halfH - 0.4;
+  const skidSpacing = halfW + 0.1;
+
+  [-1, 1].forEach((side) => {
+    // Horizontal skid bar (along Z axis)
+    const skid = new Mesh(
+      new CylinderGeometry(skidRadius, skidRadius, skidLength, 6),
+      skidMaterial
+    );
+    skid.position.set(side * skidSpacing, skidY, 0);
+    skid.quaternion.setFromUnitVectors(yAxis, new Vector3(0, 0, 1));
+    group.add(skid);
+
+    // Vertical struts connecting skid to fuselage
+    const strutHeight = 0.4;
+    [-0.6, 0.6].forEach((zOffset) => {
+      const strut = new Mesh(
+        new CylinderGeometry(0.04, 0.04, strutHeight, 4),
+        skidMaterial
+      );
+      strut.position.set(side * skidSpacing, -halfH - strutHeight / 2, zOffset);
+      group.add(strut);
+    });
+  });
+
+  return { group, rotors };
+}
 
 export class DroneObject {
-  private readonly mesh: Mesh;
+  private readonly group: Group;
+  private readonly rotorMeshes: Mesh[];
 
-  constructor(
-    geometryConstructor: typeof ConeGeometry = ConeGeometry,
-    materialConstructor: typeof MeshBasicMaterial = MeshBasicMaterial
-  ) {
-    const geometry = new geometryConstructor(2, 6, 8);
-    const material = new materialConstructor({ color: 0xff4444 });
-    this.mesh = new Mesh(geometry, material);
+  constructor() {
+    const { group, rotors } = createDroneGeometry();
+    this.group = group;
+    this.rotorMeshes = rotors;
   }
 
   /**
@@ -19,26 +169,46 @@ export class DroneObject {
    * @param y Three.js Y position (= elevation)
    * @param z Three.js Z position (= -Mercator Y)
    * @param azimuthDegrees Compass heading (0=North, 90=East, clockwise)
+   * @param deltaTime Elapsed time in seconds for rotor animation
    */
-  update(x: number, y: number, z: number, azimuthDegrees: number): void {
-    this.mesh.position.set(x, y, z);
+  update(
+    x: number,
+    y: number,
+    z: number,
+    azimuthDegrees: number,
+    deltaTime: number = 0
+  ): void {
+    this.group.position.set(x, y, z);
 
     // Azimuth increases clockwise, Three.js rotation.y increases counterclockwise
-    // ConeGeometry tip points +Y by default; rotate -90° on X to point along -Z (North)
-    // Apply rotation order YXZ: yaw (azimuth) first, then pitch (tilt forward)
     const azimuthRad = (azimuthDegrees * Math.PI) / 180;
-    this.mesh.rotation.order = 'YXZ';
-    this.mesh.rotation.y = -azimuthRad;
-    this.mesh.rotation.x = -Math.PI / 2;
-    this.mesh.rotation.z = 0;
+    this.group.rotation.order = 'YXZ';
+    this.group.rotation.y = -azimuthRad;
+    this.group.rotation.x = 0;
+    this.group.rotation.z = 0;
+
+    // Animate rotors: 10 rotations per second = 20π rad/sec
+    const rotorSpeed = 20 * Math.PI;
+    this.rotorMeshes.forEach((rotor) => {
+      rotor.rotation.y =
+        (rotor.rotation.y + rotorSpeed * deltaTime) % (2 * Math.PI);
+    });
   }
 
   getMesh(): Object3D {
-    return this.mesh;
+    return this.group;
   }
 
   dispose(): void {
-    this.mesh.geometry.dispose();
-    (this.mesh.material as MeshBasicMaterial).dispose();
+    this.group.traverse((child) => {
+      if (child instanceof Mesh) {
+        child.geometry?.dispose();
+        if (Array.isArray(child.material)) {
+          child.material.forEach((mat) => mat.dispose());
+        } else {
+          child.material?.dispose();
+        }
+      }
+    });
   }
 }

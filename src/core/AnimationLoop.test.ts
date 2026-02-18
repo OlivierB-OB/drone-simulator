@@ -221,7 +221,8 @@ describe('AnimationLoop', () => {
           droneLocation.x,
           droneElevation,
           -droneLocation.y,
-          droneAzimuth
+          droneAzimuth,
+          0 // deltaTime on first frame
         );
       }
     });
