@@ -89,12 +89,6 @@ describe('Viewer3D', () => {
       expect(viewer).toBeDefined();
     });
 
-    it('should initialize with a cube', () => {
-      const cube = (viewer as any).cube;
-      expect(cube).toBeDefined();
-      expect(cube).not.toBeNull();
-    });
-
     it('should setup resize handler', () => {
       const resizeHandler = (viewer as any).resizeHandler;
       expect(resizeHandler).toBeDefined();
@@ -102,45 +96,10 @@ describe('Viewer3D', () => {
     });
   });
 
-  describe('initializeScene()', () => {
-    it('should have created a mesh', () => {
-      const cube = (viewer as any).cube;
-      expect(cube.type).toBe('Mesh');
-    });
-
-    it('should have box geometry', () => {
-      const cube = (viewer as any).cube;
-      expect(cube.geometry.type).toBe('BoxGeometry');
-    });
-
-    it('should have green material', () => {
-      const cube = (viewer as any).cube;
-      const color = (cube.material as any).color.getHex();
-      expect(color).toBe(0x00ff00);
-    });
-  });
-
   describe('render()', () => {
-    it('should rotate cube on render', () => {
-      const cube = (viewer as any).cube;
-      const initialRotationX = cube.rotation.x;
-      const initialRotationY = cube.rotation.y;
-
+    it('should call renderer.render', () => {
       viewer.render();
-
-      expect(cube.rotation.x).toBe(initialRotationX + 0.01);
-      expect(cube.rotation.y).toBe(initialRotationY + 0.01);
-    });
-
-    it('should accumulate rotation', () => {
-      const cube = (viewer as any).cube;
-      const initialRotationX = cube.rotation.x;
-
-      viewer.render();
-      viewer.render();
-      viewer.render();
-
-      expect(cube.rotation.x).toBeCloseTo(initialRotationX + 0.03, 5);
+      expect(mockRenderer.render).toHaveBeenCalled();
     });
 
     it('should not throw on multiple renders', () => {
@@ -187,11 +146,6 @@ describe('Viewer3D', () => {
 
     it('should append renderer DOM element to container', () => {
       expect(container.contains(mockRenderer.domElement)).toBe(true);
-    });
-
-    it('should add cube to injected scene', () => {
-      const cube = (viewer as any).cube;
-      expect(mockScene.children).toContain(cube);
     });
   });
 });

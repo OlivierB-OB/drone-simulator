@@ -48,86 +48,87 @@ bun run format:check   # Check without modifying
 **Stack:** SolidJS 1.9 · TypeScript 5.9 · Three.js 0.160 · Vite 7.3 · Vitest 4.0 · Bun
 
 **Core Components:**
-- `src/App.tsx` - Orchestrates Viewer3D, AnimationLoop, DroneController, Drone (all initialized in onMount, disposed in cleanup)
+- `src/App.tsx` - Orchestrates Viewer3D, AnimationLoop, DroneController, Drone, DroneObject (all initialized in onMount, disposed in cleanup)
 - `src/3Dviewer/` - Wrapper pattern around Three.js (Camera, Scene, Renderer) with constructor injection for testing
 - `src/core/AnimationLoop.ts` - requestAnimationFrame loop, delta time (seconds), frame synchronization
 - `src/drone/` - Drone physics (Mercator coordinates), DroneController (keyboard input, arrow keys)
 - `src/data/` - ElevationDataManager (tile caching, Web Mercator zoom, z:x:y keys, AWS Terrarium PNG), ContextDataManager (placeholder)
 - `src/visualization/terrain/` - TerrainGeometryObjectManager → TerrainObjectManager → Three.js meshes (two-stage pipeline)
-- `src/config.ts` - Centralized config: drone position/speed, elevation zoom/ring/concurrency, GIS
+- `src/visualization/DroneObject.ts` - Cone mesh representing the drone in the scene
+- `src/config.ts` - Centralized config: drone position/speed, camera chase distance/height, elevation zoom/ring/concurrency
 
 **Animation Frame Order:**
 1. `drone.applyMove(deltaTime)` - Update location/heading (respects drone heading)
 2. `elevationData.setLocation()` - Load/unload tiles in ring around drone
 3. `contextData.setLocation()` - Update context
-4. `terrainGeometryManager.refresh()` - Create geometry from loaded tiles (z:x:y keyed)
-5. `terrainObjectManager.refresh()` - Create/remove Three.js meshes in scene
-6. Position camera (5m above drone)
+4. `terrainObjectManager.refresh()` - Create/remove Three.js meshes in scene
+5. `droneObject.update()` - Position and orient the drone cone mesh
+6. `camera.updateChaseCamera()` - Position camera behind and above drone, lookAt drone
 7. `viewer3D.render()`
 
 ## Coordinate System: World → Three.js Conversion
 
-**Critical:** This application uses Web Mercator projection for world coordinates but must convert to Three.js conventions for 3D rendering. Coordinate mismatch causes inverted camera/movement.
+**Critical:** See `COORDINATE_SYSTEM.md` for the full strategy document.
 
 ### World Coordinates (Mercator)
 ```
-Location.x  = Mercator X (east-west, increases rightward/eastward)
-Location.y  = Mercator Y (north-south, INCREASES SOUTHWARD - inverted from compass!)
+Location.x  = Mercator X (east-west, increases eastward)
+Location.y  = Mercator Y (north-south, INCREASES NORTHWARD - standard Web Mercator)
 Elevation   = Meters above sea level (vertical)
 Azimuth     = Compass bearing in degrees (0°=North, 90°=East, clockwise positive)
 ```
 
 ### Three.js Coordinates
 ```
-position.x  = Right (east)
-position.y  = Up (vertical)
-position.z  = Forward (north when at default orientation)
-rotation.y  = Yaw around Y-axis (counterclockwise positive when viewed from above)
+position.x  = Mercator X (East = +X)
+position.y  = Elevation (Up = +Y)
+position.z  = -Mercator Y (North = -Z)
+rotation.y  = -azimuthRad (counterclockwise positive, opposite of clockwise azimuth)
 ```
 
 ### Conversion Formula
 
-**Camera Position:** `AnimationLoop.ts:44-48`
+**Mercator → Three.js Position:**
 ```typescript
-camera.setPosition(
-  droneLocation.x,      // X: Mercator X → Three.js X (direct)
-  elevation + 5,        // Y: elevation → Three.js Y (direct, +5m offset)
-  -droneLocation.y      // Z: -Mercator Y (NEGATED because Mercator Y increases southward)
-);
+threeX = mercator.x       // Direct
+threeY = elevation         // Direct
+threeZ = -mercator.y       // Negated (Mercator Y northward → Three.js -Z northward)
 ```
 
 **Movement Calculation:** `Drone.ts:110-118`
 ```typescript
 // Forward/backward (along drone's heading)
+// No negation needed: Mercator Y increases northward, cos(0°)=+1 moves north
 x: Math.sin(azimuthRad) * netForward * displacement,
-y: -Math.cos(azimuthRad) * netForward * displacement,  // NEGATED for Mercator Y
+y: Math.cos(azimuthRad) * netForward * displacement,
 
 // Left/right (perpendicular to heading)
 x: Math.sin(rightAzimuthRad) * netRight * displacement,
-y: -Math.cos(rightAzimuthRad) * netRight * displacement,  // NEGATED for Mercator Y
+y: Math.cos(rightAzimuthRad) * netRight * displacement,
 ```
 
-**Camera Rotation:** `Camera.ts:48`
+**Chase Camera:** `Camera.ts`
 ```typescript
-camera.rotation.y = azimuthRad;  // Direct mapping: azimuth → rotation.y
+// Camera behind drone: opposite of forward direction + height offset
+behindX = droneX - sin(azimuthRad) * chaseDistance
+behindZ = droneZ + cos(azimuthRad) * chaseDistance
+aboveY  = droneY + chaseHeight
+camera.lookAt(droneX, droneY, droneZ)  // Orientation handled by lookAt
 ```
 
-### Why Negation on Y (Mercator Y)
+### Why Z = -Mercator.Y
 
-Mercator projection has Y increasing **southward** (opposite of compass north):
-- North (azimuth 0°) → should move in **negative Y** direction → `-cos(0°) = -1` ✓
-- South (azimuth 180°) → should move in **positive Y** direction → `-cos(180°) = +1` ✓
-
-Without the negation, north/south movement is inverted.
+Mercator Y increases **northward** (standard projection). Three.js default camera looks along -Z. By mapping Z = -Y:
+- North (increasing Mercator Y) = decreasing Z = -Z direction = camera's default forward
+- This makes azimuth 0 (North) align with the default Three.js viewing direction
 
 ### Coordinate Consistency
 
-All three components must use the same convention:
-1. **Position Z**: `-droneLocation.y` (Mercator Y negated)
-2. **Movement Y**: `-cos(azimuthRad)` (Y component negated)
-3. **Rotation Y**: `azimuthRad` (direct, no negation - it already accounts for Z flip)
-
-If any component lacks the negation, camera/movement directions become opposite.
+All components must use the same convention:
+1. **Position Z**: `-mercator.y` (camera, terrain meshes, axes helper, drone object)
+2. **Movement Y**: `+cos(azimuthRad)` (no negation, Mercator Y increases northward)
+3. **Object rotation.y**: `-azimuthRad` (clockwise azimuth → counterclockwise Three.js)
+4. **Camera**: `lookAt` handles rotation automatically (no manual Euler angles)
 
 **Key Patterns:**
 - Constructor injection: 3D wrappers accept constructor functions (not instances) for DI

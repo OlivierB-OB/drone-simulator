@@ -28,7 +28,6 @@ describe('Camera', () => {
     });
 
     it('should accept optional injected camera constructor', () => {
-      // Create a wrapper class that delegates to a tracked constructor
       const constructorCalls: any[] = [];
       const mockConstructor = class MockCamera extends THREE.PerspectiveCamera {
         constructor(fov: number, aspect: number, near: number, far: number) {
@@ -207,98 +206,84 @@ describe('Camera', () => {
     });
   });
 
-  describe('setOrientation()', () => {
-    it('should set camera rotation for 0° azimuth (North)', () => {
-      const cameraInstance = camera.getCamera();
+  describe('updateChaseCamera()', () => {
+    it('should position camera behind drone facing North (azimuth 0)', () => {
+      const cam = camera.getCamera();
 
-      camera.setOrientation(0);
+      // Drone at origin, elevation 10, facing North
+      camera.updateChaseCamera(0, 10, 0, 0);
 
-      // Azimuth 0° = yaw 0, pitch -30°
-      expect(cameraInstance.rotation.y).toBeCloseTo(0, 5);
-      expect(cameraInstance.rotation.x).toBeCloseTo((-30 * Math.PI) / 180, 5);
-      expect(cameraInstance.rotation.z).toBe(0);
+      // North = -Z in Three.js, so "behind" = +Z direction
+      expect(cam.position.x).toBeCloseTo(0, 5);
+      expect(cam.position.y).toBeCloseTo(10 + cameraConfig.chaseHeight, 5);
+      expect(cam.position.z).toBeCloseTo(cameraConfig.chaseDistance, 5);
     });
 
-    it('should set camera rotation for 90° azimuth (East)', () => {
-      const cameraInstance = camera.getCamera();
+    it('should position camera behind drone facing East (azimuth 90)', () => {
+      const cam = camera.getCamera();
 
-      camera.setOrientation(90);
+      // Drone at origin, elevation 10, facing East
+      camera.updateChaseCamera(0, 10, 0, 90);
 
-      // Azimuth 90° = yaw 90° (π/2 radians), pitch -30°
-      expect(cameraInstance.rotation.y).toBeCloseTo((90 * Math.PI) / 180, 5);
-      expect(cameraInstance.rotation.x).toBeCloseTo((-30 * Math.PI) / 180, 5);
-      expect(cameraInstance.rotation.z).toBe(0);
+      // East = +X in Three.js, so "behind" = -X direction
+      expect(cam.position.x).toBeCloseTo(-cameraConfig.chaseDistance, 5);
+      expect(cam.position.y).toBeCloseTo(10 + cameraConfig.chaseHeight, 5);
+      expect(cam.position.z).toBeCloseTo(0, 5);
     });
 
-    it('should set camera rotation for 180° azimuth (South)', () => {
-      const cameraInstance = camera.getCamera();
+    it('should position camera behind drone facing South (azimuth 180)', () => {
+      const cam = camera.getCamera();
 
-      camera.setOrientation(180);
+      camera.updateChaseCamera(0, 10, 0, 180);
 
-      // Azimuth 180° = yaw 180° (π radians), pitch -30°
-      expect(cameraInstance.rotation.y).toBeCloseTo((180 * Math.PI) / 180, 5);
-      expect(cameraInstance.rotation.x).toBeCloseTo((-30 * Math.PI) / 180, 5);
-      expect(cameraInstance.rotation.z).toBe(0);
+      // South = +Z in Three.js, so "behind" = -Z direction
+      expect(cam.position.x).toBeCloseTo(0, 5);
+      expect(cam.position.y).toBeCloseTo(10 + cameraConfig.chaseHeight, 5);
+      expect(cam.position.z).toBeCloseTo(-cameraConfig.chaseDistance, 5);
     });
 
-    it('should set camera rotation for 270° azimuth (West)', () => {
-      const cameraInstance = camera.getCamera();
+    it('should position camera behind drone facing West (azimuth 270)', () => {
+      const cam = camera.getCamera();
 
-      camera.setOrientation(270);
+      camera.updateChaseCamera(0, 10, 0, 270);
 
-      // Azimuth 270° = yaw 270° (3π/2 radians), pitch -30°
-      expect(cameraInstance.rotation.y).toBeCloseTo((270 * Math.PI) / 180, 5);
-      expect(cameraInstance.rotation.x).toBeCloseTo((-30 * Math.PI) / 180, 5);
-      expect(cameraInstance.rotation.z).toBe(0);
+      // West = -X in Three.js, so "behind" = +X direction
+      expect(cam.position.x).toBeCloseTo(cameraConfig.chaseDistance, 5);
+      expect(cam.position.y).toBeCloseTo(10 + cameraConfig.chaseHeight, 5);
+      expect(cam.position.z).toBeCloseTo(0, 5);
     });
 
-    it('should always maintain 30° downward inclination', () => {
-      const cameraInstance = camera.getCamera();
-      const expectedPitch = (-30 * Math.PI) / 180;
+    it('should place camera at chaseHeight above the drone', () => {
+      const cam = camera.getCamera();
+      const droneElevation = 50;
 
-      // Test multiple azimuths
-      for (const azimuth of [0, 45, 90, 135, 180, 225, 270, 315, 359]) {
-        camera.setOrientation(azimuth);
-        expect(cameraInstance.rotation.x).toBeCloseTo(expectedPitch, 5);
-        expect(cameraInstance.rotation.z).toBe(0);
-      }
+      camera.updateChaseCamera(100, droneElevation, -200, 0);
+
+      expect(cam.position.y).toBeCloseTo(
+        droneElevation + cameraConfig.chaseHeight,
+        5
+      );
     });
 
-    it('should handle azimuth at 360° (equivalent to 0°)', () => {
-      const cameraInstance = camera.getCamera();
+    it('should offset camera position relative to drone position', () => {
+      const cam = camera.getCamera();
 
-      camera.setOrientation(360);
+      // Drone at non-origin position, facing North
+      camera.updateChaseCamera(1000, 50, -5000, 0);
 
-      // 360° in radians is 2π, which is mathematically equivalent to 0°
-      // Check that both pitch and roll are correct
-      expect(cameraInstance.rotation.x).toBeCloseTo((-30 * Math.PI) / 180, 5);
-      expect(cameraInstance.rotation.z).toBe(0);
-      // For yaw, 360° = 2π radians
-      expect(cameraInstance.rotation.y).toBeCloseTo((360 * Math.PI) / 180, 5);
+      expect(cam.position.x).toBeCloseTo(1000, 5);
+      expect(cam.position.y).toBeCloseTo(50 + cameraConfig.chaseHeight, 5);
+      expect(cam.position.z).toBeCloseTo(-5000 + cameraConfig.chaseDistance, 5);
     });
 
-    it('should set rotation order to YXZ', () => {
-      const cameraInstance = camera.getCamera();
+    it('should allow multiple chase camera updates', () => {
+      const cam = camera.getCamera();
 
-      camera.setOrientation(45);
+      camera.updateChaseCamera(0, 10, 0, 0);
+      expect(cam.position.z).toBeCloseTo(cameraConfig.chaseDistance, 5);
 
-      expect(cameraInstance.rotation.order).toBe('YXZ');
-    });
-
-    it('should allow multiple orientation updates', () => {
-      const cameraInstance = camera.getCamera();
-      const expectedPitch = (-30 * Math.PI) / 180;
-
-      camera.setOrientation(0);
-      expect(cameraInstance.rotation.y).toBeCloseTo(0, 5);
-
-      camera.setOrientation(180);
-      expect(cameraInstance.rotation.y).toBeCloseTo(Math.PI, 5);
-      expect(cameraInstance.rotation.x).toBeCloseTo(expectedPitch, 5);
-
-      camera.setOrientation(90);
-      expect(cameraInstance.rotation.y).toBeCloseTo(Math.PI / 2, 5);
-      expect(cameraInstance.rotation.x).toBeCloseTo(expectedPitch, 5);
+      camera.updateChaseCamera(0, 10, 0, 180);
+      expect(cam.position.z).toBeCloseTo(-cameraConfig.chaseDistance, 5);
     });
   });
 
@@ -323,16 +308,6 @@ describe('Camera', () => {
       expect(cameraInstance.position.x).toBe(10000);
       expect(cameraInstance.position.y).toBe(10000);
       expect(cameraInstance.position.z).toBe(10000);
-    });
-
-    it('should handle setOrientation with large azimuth values', () => {
-      const cameraInstance = camera.getCamera();
-      const expectedPitch = (-30 * Math.PI) / 180;
-
-      camera.setOrientation(720); // 2 full rotations
-
-      expect(cameraInstance.rotation.y).toBeCloseTo((720 * Math.PI) / 180, 5);
-      expect(cameraInstance.rotation.x).toBeCloseTo(expectedPitch, 5);
     });
   });
 });

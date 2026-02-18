@@ -106,17 +106,17 @@ export class Drone {
     const displacement = speed * deltaTime;
 
     // Forward/backward component (along drone's heading)
-    // Negate Y because Mercator Y increases southward (opposite of compass north)
+    // Mercator Y increases northward: North (azimuth 0) = +Y, East (azimuth 90) = +X
     const forwardVector = {
       x: Math.sin(azimuthRad) * netForward * displacement,
-      y: -Math.cos(azimuthRad) * netForward * displacement,
+      y: Math.cos(azimuthRad) * netForward * displacement,
     };
 
     // Left/right component (perpendicular to drone's heading)
     const rightAzimuthRad = azimuthRad + Math.PI / 2;
     const rightVector = {
       x: Math.sin(rightAzimuthRad) * netRight * displacement,
-      y: -Math.cos(rightAzimuthRad) * netRight * displacement,
+      y: Math.cos(rightAzimuthRad) * netRight * displacement,
     };
 
     // Apply movement to location

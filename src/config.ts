@@ -36,6 +36,12 @@ export const cameraConfig = {
   // Maximum distance from camera to render (far clipping plane)
   // Set to 100km to accommodate terrain tiles positioned far from origin in Mercator space
   far: 100000,
+
+  // Chase camera: distance behind the drone in meters
+  chaseDistance: 20,
+
+  // Chase camera: height above the drone in meters
+  chaseHeight: 10,
 };
 
 export const sceneConfig = {

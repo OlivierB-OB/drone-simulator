@@ -30,23 +30,31 @@ export class Camera {
     this.camera.position.set(x, y, z);
   }
 
-  setOrientation(azimuthDegrees: number): void {
-    // Convert azimuth (0° = North) to radians
-    // In Three.js, we use Euler angles with YXZ order for intuitive rotation
-    // Azimuth is rotation around Y axis (yaw)
-    // 30° downward tilt is rotation around X axis (pitch, negative = down)
-    // No rotation around Z axis (roll)
-
+  /**
+   * Position and orient the camera as a chase camera behind the drone.
+   * Camera is placed behind the drone (opposite its heading) and above it,
+   * then oriented to look at the drone position.
+   *
+   * @param droneX Drone position in Three.js X (= Mercator X)
+   * @param droneY Drone position in Three.js Y (= elevation)
+   * @param droneZ Drone position in Three.js Z (= -Mercator Y)
+   * @param azimuthDegrees Drone heading (0=North, 90=East, clockwise)
+   */
+  updateChaseCamera(
+    droneX: number,
+    droneY: number,
+    droneZ: number,
+    azimuthDegrees: number
+  ): void {
     const azimuthRad = (azimuthDegrees * Math.PI) / 180;
-    const pitchRad = (-30 * Math.PI) / 180; // -30° for downward tilt
 
-    // Use Euler angles with YXZ order: first yaw (azimuth), then pitch (inclination), then roll (0)
-    // Use consistent positive azimuth convention throughout:
-    // Azimuth (0° = North) directly maps to Three.js Y rotation
-    // This matches the movement calculation in Drone.ts which uses positive azimuth
-    this.camera.rotation.order = 'YXZ';
-    this.camera.rotation.y = azimuthRad;
-    this.camera.rotation.x = pitchRad;
-    this.camera.rotation.z = 0;
+    // Drone forward direction in Three.js: (sin(az), 0, -cos(az))
+    // "Behind" is the opposite: (-sin(az), 0, cos(az))
+    const behindX = droneX - Math.sin(azimuthRad) * cameraConfig.chaseDistance;
+    const behindZ = droneZ + Math.cos(azimuthRad) * cameraConfig.chaseDistance;
+    const aboveY = droneY + cameraConfig.chaseHeight;
+
+    this.camera.position.set(behindX, aboveY, behindZ);
+    this.camera.lookAt(droneX, droneY, droneZ);
   }
 }

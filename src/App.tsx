@@ -7,6 +7,7 @@ import { ContextDataManager } from './data/contextual/ContextDataManager';
 import { ElevationDataManager } from './data/elevation/ElevationDataManager';
 import { TerrainGeometryObjectManager } from './visualization/terrain/geometry/TerrainGeometryObjectManager';
 import { TerrainObjectManager } from './visualization/terrain/TerrainObjectManager';
+import { DroneObject } from './visualization/DroneObject';
 
 export function App() {
   let viewer3D: Viewer3D | null = null;
@@ -17,6 +18,7 @@ export function App() {
   let contextData: ContextDataManager | null = null;
   let terrainGeometryManager: TerrainGeometryObjectManager | null = null;
   let terrainObjectManager: TerrainObjectManager | null = null;
+  let droneObject: DroneObject | null = null;
 
   onMount(() => {
     const containerRef = document.getElementById(
@@ -35,13 +37,17 @@ export function App() {
       terrainGeometryManager
     );
 
+    droneObject = new DroneObject();
+    viewer3D.getScene().add(droneObject.getMesh());
+
     animationLoop = new AnimationLoop(
       viewer3D,
       drone,
       elevationData,
       contextData,
       viewer3D.getCamera(),
-      terrainObjectManager
+      terrainObjectManager,
+      droneObject
     );
     animationLoop.start();
 
@@ -55,6 +61,7 @@ export function App() {
       contextData?.dispose();
       terrainGeometryManager?.dispose();
       terrainObjectManager?.dispose();
+      droneObject?.dispose();
     };
   });
 

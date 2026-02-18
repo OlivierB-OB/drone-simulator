@@ -10,6 +10,7 @@ describe('AnimationLoop', () => {
   let mockElevationData: any;
   let mockContextData: any;
   let mockTerrainObjectManager: any;
+  let mockDroneObject: any;
 
   beforeEach(() => {
     drone = createDrone();
@@ -21,8 +22,7 @@ describe('AnimationLoop', () => {
 
     // Mock Camera
     mockCamera = {
-      setPosition: vi.fn(),
-      setOrientation: vi.fn(),
+      updateChaseCamera: vi.fn(),
     };
 
     // Mock ElevationDataManager
@@ -40,13 +40,19 @@ describe('AnimationLoop', () => {
       refresh: vi.fn(),
     };
 
+    // Mock DroneObject
+    mockDroneObject = {
+      update: vi.fn(),
+    };
+
     animationLoop = new AnimationLoop(
       mockViewer3D,
       drone,
       mockElevationData,
       mockContextData,
       mockCamera,
-      mockTerrainObjectManager
+      mockTerrainObjectManager,
+      mockDroneObject
     );
 
     // Mock requestAnimationFrame to capture the callback
@@ -137,46 +143,19 @@ describe('AnimationLoop', () => {
   });
 
   describe('camera coordination', () => {
-    it('should call camera.setPosition on animation frame', () => {
+    it('should call camera.updateChaseCamera on animation frame', () => {
       animationLoop.start();
 
       const callback = (animationLoop as any).__testCallback;
       if (callback) {
         callback(100);
-        expect(mockCamera.setPosition).toHaveBeenCalled();
+        expect(mockCamera.updateChaseCamera).toHaveBeenCalled();
       }
     });
 
-    it('should call camera.setOrientation on animation frame', () => {
-      animationLoop.start();
-
-      const callback = (animationLoop as any).__testCallback;
-      if (callback) {
-        callback(100);
-        expect(mockCamera.setOrientation).toHaveBeenCalled();
-      }
-    });
-
-    it('should position camera at drone location plus 5 unit offset', () => {
+    it('should pass correct Three.js coordinates to chase camera', () => {
       const droneLocation = drone.getLocation();
       const droneElevation = drone.getElevation();
-
-      animationLoop.start();
-
-      const callback = (animationLoop as any).__testCallback;
-      if (callback) {
-        callback(100);
-
-        // Camera coordinates: X=Mercator X, Y=elevation, Z=-Mercator Y (negated for coordinate system)
-        expect(mockCamera.setPosition).toHaveBeenCalledWith(
-          droneLocation.x,
-          droneElevation + 5,
-          -droneLocation.y
-        );
-      }
-    });
-
-    it('should orient camera to drone azimuth', () => {
       const droneAzimuth = drone.getAzimuth();
 
       animationLoop.start();
@@ -185,40 +164,71 @@ describe('AnimationLoop', () => {
       if (callback) {
         callback(100);
 
-        expect(mockCamera.setOrientation).toHaveBeenCalledWith(droneAzimuth);
+        // Three.js: X=Mercator.X, Y=elevation, Z=-Mercator.Y
+        expect(mockCamera.updateChaseCamera).toHaveBeenCalledWith(
+          droneLocation.x,
+          droneElevation,
+          -droneLocation.y,
+          droneAzimuth
+        );
       }
     });
 
     it('should update camera position multiple times as drone moves', () => {
-      // Get initial position
-      const initialLocation = drone.getLocation();
-      const initialElevation = drone.getElevation();
+      animationLoop.start();
+
+      const callback = (animationLoop as any).__testCallback;
+      if (callback) {
+        callback(0);
+        expect(mockCamera.updateChaseCamera).toHaveBeenCalled();
+
+        // Start moving forward for next frame
+        drone.startMovingForward();
+        mockCamera.updateChaseCamera.mockClear();
+
+        // Second call - with movement
+        callback(1000);
+
+        // Verify updateChaseCamera was called again
+        expect(mockCamera.updateChaseCamera).toHaveBeenCalled();
+      }
+    });
+  });
+
+  describe('drone object coordination', () => {
+    it('should call droneObject.update on animation frame', () => {
+      animationLoop.start();
+
+      const callback = (animationLoop as any).__testCallback;
+      if (callback) {
+        callback(100);
+        expect(mockDroneObject.update).toHaveBeenCalled();
+      }
+    });
+
+    it('should pass correct Three.js coordinates to drone object', () => {
+      const droneLocation = drone.getLocation();
+      const droneElevation = drone.getElevation();
+      const droneAzimuth = drone.getAzimuth();
 
       animationLoop.start();
 
       const callback = (animationLoop as any).__testCallback;
       if (callback) {
-        // First call - verify camera is at initial position + 5 elevation offset
-        callback(0);
-        expect(mockCamera.setPosition).toHaveBeenCalledWith(
-          initialLocation.x,
-          initialElevation + 5,
-          -initialLocation.y
+        callback(100);
+
+        expect(mockDroneObject.update).toHaveBeenCalledWith(
+          droneLocation.x,
+          droneElevation,
+          -droneLocation.y,
+          droneAzimuth
         );
-
-        // Start moving forward for next frame
-        drone.startMovingForward();
-        mockCamera.setPosition.mockClear();
-
-        // Second call - with movement
-        callback(1000);
-
-        // Verify setPosition was called again (even if with slightly different values)
-        expect(mockCamera.setPosition).toHaveBeenCalled();
       }
     });
+  });
 
-    it('should execute in correct order: applyMove -> refresh -> setPosition -> setOrientation -> render', () => {
+  describe('execution order', () => {
+    it('should execute in correct order: applyMove -> refresh -> droneObject.update -> updateChaseCamera -> render', () => {
       const callOrder: string[] = [];
       vi.spyOn(drone, 'applyMove').mockImplementation(() => {
         callOrder.push('applyMove');
@@ -226,11 +236,11 @@ describe('AnimationLoop', () => {
       mockTerrainObjectManager.refresh.mockImplementation(() => {
         callOrder.push('refresh');
       });
-      mockCamera.setPosition.mockImplementation(() => {
-        callOrder.push('setPosition');
+      mockDroneObject.update.mockImplementation(() => {
+        callOrder.push('droneObject.update');
       });
-      mockCamera.setOrientation.mockImplementation(() => {
-        callOrder.push('setOrientation');
+      mockCamera.updateChaseCamera.mockImplementation(() => {
+        callOrder.push('updateChaseCamera');
       });
       mockViewer3D.render.mockImplementation(() => {
         callOrder.push('render');
@@ -248,8 +258,8 @@ describe('AnimationLoop', () => {
         expect(callOrder).toEqual([
           'applyMove',
           'refresh',
-          'setPosition',
-          'setOrientation',
+          'droneObject.update',
+          'updateChaseCamera',
           'render',
         ]);
       }
@@ -257,7 +267,7 @@ describe('AnimationLoop', () => {
   });
 
   describe('integration', () => {
-    it('should coordinate drone, camera, and rendering', () => {
+    it('should coordinate drone, camera, drone object, and rendering', () => {
       const droneSpy = vi.spyOn(drone, 'applyMove');
 
       animationLoop.start();
@@ -267,8 +277,8 @@ describe('AnimationLoop', () => {
         callback(0);
         // Verify all components were called
         expect(droneSpy).toHaveBeenCalled();
-        expect(mockCamera.setPosition).toHaveBeenCalled();
-        expect(mockCamera.setOrientation).toHaveBeenCalled();
+        expect(mockDroneObject.update).toHaveBeenCalled();
+        expect(mockCamera.updateChaseCamera).toHaveBeenCalled();
         expect(mockViewer3D.render).toHaveBeenCalled();
       }
     });

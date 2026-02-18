@@ -4,6 +4,7 @@ import { Camera } from '../3Dviewer/Camera';
 import type { ElevationDataManager } from '../data/elevation/ElevationDataManager';
 import type { ContextDataManager } from '../data/contextual/ContextDataManager';
 import type { TerrainObjectManager } from '../visualization/terrain/TerrainObjectManager';
+import type { DroneObject } from '../visualization/DroneObject';
 
 export class AnimationLoop {
   private animationFrameId: number | null = null;
@@ -15,7 +16,8 @@ export class AnimationLoop {
     private readonly elevationData: ElevationDataManager,
     private readonly contextData: ContextDataManager,
     private readonly camera: Camera,
-    private readonly terrainObjectManager: TerrainObjectManager
+    private readonly terrainObjectManager: TerrainObjectManager,
+    private readonly droneObject: DroneObject
   ) {}
 
   public start(): void {
@@ -40,15 +42,14 @@ export class AnimationLoop {
 
       this.terrainObjectManager.refresh();
 
-      // Position camera in terrain coordinate space: X=Mercator X, Y=elevation, Z=-Mercator Y
-      // Negate Z-coordinate to flip Mercator Y axis (increases southward) to match camera forward direction
-      this.camera.setPosition(
-        droneLocation.x,
-        droneElevation + 5,
-        -droneLocation.y
-      );
+      // Convert Mercator to Three.js: X=Mercator.X, Y=elevation, Z=-Mercator.Y
+      // Mercator Y increases northward; negating gives North = -Z in Three.js
+      const threeX = droneLocation.x;
+      const threeY = droneElevation;
+      const threeZ = -droneLocation.y;
 
-      this.camera.setOrientation(droneAzimuth);
+      this.droneObject.update(threeX, threeY, threeZ, droneAzimuth);
+      this.camera.updateChaseCamera(threeX, threeY, threeZ, droneAzimuth);
 
       this.viewer3D.render();
     };
