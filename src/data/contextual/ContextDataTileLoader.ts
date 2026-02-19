@@ -182,8 +182,9 @@ out qt;`;
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       // If external signal is provided, abort controller when it signals
-      if (signal) {
-        signal.addEventListener('abort', () => controller.abort());
+      const abortHandler = signal ? () => controller.abort() : null;
+      if (signal && abortHandler) {
+        signal.addEventListener('abort', abortHandler);
       }
 
       const response = await fetch(endpoint, {
@@ -222,6 +223,9 @@ out qt;`;
         };
       } finally {
         clearTimeout(timeoutId);
+        if (signal && abortHandler) {
+          signal.removeEventListener('abort', abortHandler);
+        }
       }
     } catch (error) {
       if (error instanceof Error) {

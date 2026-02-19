@@ -23,6 +23,8 @@ export class ContextDataManager {
   private statusManager: OverpassStatusManager | null = null;
   private pendingResolvers: Array<{
     key: string;
+    timeoutId: ReturnType<typeof setTimeout>;
+    resolved: boolean;
     resolve: (tile: ContextDataTile | null) => void;
   }> = [];
 
@@ -138,26 +140,26 @@ export class ContextDataManager {
         // Queue for later when slot opens and throttle allows
         this.pendingQueue.push(key);
 
-        // Set up resolver to be called when tile loads
-        const timeoutId = setTimeout(() => {
-          // Remove resolver and resolve with null if timeout exceeded
-          const resolverIndex = this.pendingResolvers.findIndex(
-            (r) => r.key === key
-          );
-          if (resolverIndex >= 0) {
-            this.pendingResolvers.splice(resolverIndex, 1);
-          }
-          resolve(null);
-        }, contextDataConfig.queryTimeout);
-
-        // Store resolver to be called when tile loads
-        this.pendingResolvers.push({
+        // Set up resolver with timeout and resolved guard
+        const resolver: (typeof this.pendingResolvers)[number] = {
           key,
+          resolved: false,
+          timeoutId: setTimeout(() => {
+            if (resolver.resolved) return;
+            resolver.resolved = true;
+            const idx = this.pendingResolvers.indexOf(resolver);
+            if (idx >= 0) this.pendingResolvers.splice(idx, 1);
+            resolve(null);
+          }, contextDataConfig.queryTimeout),
           resolve: (tile: ContextDataTile | null) => {
-            clearTimeout(timeoutId);
+            if (resolver.resolved) return;
+            resolver.resolved = true;
+            clearTimeout(resolver.timeoutId);
             resolve(tile);
           },
-        });
+        };
+
+        this.pendingResolvers.push(resolver);
       }
     });
 
@@ -176,35 +178,36 @@ export class ContextDataManager {
     this.loadingCount++;
     this.lastRequestTime = Date.now();
 
-    const tile = await ContextDataTileLoader.loadTileWithCache(
-      coordinates,
-      contextDataConfig.overpassEndpoint,
-      contextDataConfig.queryTimeout,
-      3,
-      this.statusManager ?? undefined,
-      this.abortController.signal
-    );
-
-    this.loadingCount--;
-
-    if (tile) {
-      this.tileCache.set(key, tile);
-
-      // Notify any pending resolvers waiting for this tile
-      const resolverIndex = this.pendingResolvers.findIndex(
-        (r) => r.key === key
+    try {
+      const tile = await ContextDataTileLoader.loadTileWithCache(
+        coordinates,
+        contextDataConfig.overpassEndpoint,
+        contextDataConfig.queryTimeout,
+        3,
+        this.statusManager ?? undefined,
+        this.abortController.signal
       );
-      if (resolverIndex >= 0) {
-        const resolver = this.pendingResolvers[resolverIndex]!;
-        this.pendingResolvers.splice(resolverIndex, 1);
-        resolver.resolve(tile);
+
+      if (tile && this.loadPromises.has(key)) {
+        this.tileCache.set(key, tile);
+
+        // Notify any pending resolvers waiting for this tile
+        const resolverIndex = this.pendingResolvers.findIndex(
+          (r) => r.key === key
+        );
+        if (resolverIndex >= 0) {
+          const resolver = this.pendingResolvers[resolverIndex]!;
+          this.pendingResolvers.splice(resolverIndex, 1);
+          resolver.resolve(tile);
+        }
       }
+
+      return tile;
+    } finally {
+      this.loadingCount--;
+      this.loadPromises.delete(key);
+      this.processQueuedTiles();
     }
-
-    this.loadPromises.delete(key);
-    this.processQueuedTiles();
-
-    return tile;
   }
 
   /**
@@ -324,6 +327,9 @@ export class ContextDataManager {
     this.tileCache.clear();
     this.pendingQueue = [];
     this.loadPromises.clear();
+    for (const resolver of this.pendingResolvers) {
+      clearTimeout(resolver.timeoutId);
+    }
     this.pendingResolvers = [];
     this.loadingCount = 0;
     this.statusManager?.dispose();

@@ -52,6 +52,7 @@ export class Viewer3D {
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
     }
+    this.scene.dispose();
     this.renderer.dispose();
   }
 }

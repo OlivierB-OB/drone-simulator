@@ -1,4 +1,4 @@
-import { type Object3D, Mesh } from 'three';
+import { type Object3D, Mesh, type MeshStandardMaterial } from 'three';
 import { DroneGeometryFactory } from './factory/DroneGeometryFactory';
 
 /**
@@ -61,8 +61,12 @@ export class DroneObject {
       if (child instanceof Mesh) {
         child.geometry?.dispose();
         if (Array.isArray(child.material)) {
-          child.material.forEach((mat) => mat.dispose());
+          child.material.forEach((mat) => {
+            (mat as MeshStandardMaterial).map?.dispose();
+            mat.dispose();
+          });
         } else {
+          (child.material as MeshStandardMaterial)?.map?.dispose();
           child.material?.dispose();
         }
       }

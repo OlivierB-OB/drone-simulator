@@ -112,13 +112,11 @@ export class ElevationDataManager {
       .then((tile) => {
         this.loadingCount--;
 
-        if (tile) {
+        if (tile && this.pendingLoads.has(tileKey)) {
           this.tileCache.set(tileKey, tile);
         }
 
         this.pendingLoads.delete(tileKey);
-
-        // Try to load next queued tile
         this.processQueuedTiles();
 
         return tile;
@@ -127,8 +125,6 @@ export class ElevationDataManager {
         this.loadingCount--;
         console.error(`Error loading tile ${tileKey}:`, error);
         this.pendingLoads.delete(tileKey);
-
-        // Try to load next queued tile
         this.processQueuedTiles();
 
         return null;

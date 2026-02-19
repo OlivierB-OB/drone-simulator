@@ -11,33 +11,35 @@ import { Drone } from '../drone/Drone';
 
 export class Scene {
   private readonly scene: ThreeScene;
+  private readonly ambientLight: AmbientLight;
+  private readonly directionalLight: DirectionalLight;
+  private axisHelper: AxesHelper | null = null;
 
   constructor(sceneConstructor: typeof ThreeScene = ThreeScene) {
     this.scene = new sceneConstructor();
     this.scene.background = new Color(sceneConfig.backgroundColor);
+
+    this.ambientLight = new AmbientLight(0xffffff, 0.6);
+    this.directionalLight = new DirectionalLight(0xffffff, 0.8);
     this.setupLighting();
   }
 
   private setupLighting(): void {
-    // Ambient light provides base illumination
-    const ambientLight = new AmbientLight(0xffffff, 0.6);
-    this.scene.add(ambientLight);
+    this.scene.add(this.ambientLight);
 
-    // Directional light simulates sunlight
-    const directionalLight = new DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(1, 1, 1).normalize();
-    this.scene.add(directionalLight);
+    this.directionalLight.position.set(1, 1, 1).normalize();
+    this.scene.add(this.directionalLight);
 
     // Debug axes helper: red=X, green=Y, blue=Z
     // Position at the drone's initial location in Mercator coordinates
     if (debugConfig.showAxisHelper) {
-      const axisHelper = new AxesHelper(debugConfig.axesHelperSize);
+      this.axisHelper = new AxesHelper(debugConfig.axesHelperSize);
       const mercatorCoords = Drone.latLonToMercator(
         droneConfig.initialCoordinates.latitude,
         droneConfig.initialCoordinates.longitude
       );
-      axisHelper.position.set(mercatorCoords.x, 0, -mercatorCoords.y);
-      this.scene.add(axisHelper);
+      this.axisHelper.position.set(mercatorCoords.x, 0, -mercatorCoords.y);
+      this.scene.add(this.axisHelper);
     }
   }
 
@@ -51,5 +53,19 @@ export class Scene {
 
   remove(object: Object3D): void {
     this.scene.remove(object);
+  }
+
+  dispose(): void {
+    this.scene.remove(this.ambientLight);
+    this.ambientLight.dispose();
+
+    this.scene.remove(this.directionalLight);
+    this.directionalLight.dispose();
+
+    if (this.axisHelper) {
+      this.scene.remove(this.axisHelper);
+      this.axisHelper.geometry.dispose();
+      this.axisHelper = null;
+    }
   }
 }
