@@ -8,6 +8,7 @@ export class DroneController {
   private keyupHandler!: (event: KeyboardEvent) => void;
   private mousemoveHandler!: (event: MouseEvent) => void;
   private wheelHandler!: (event: WheelEvent) => void;
+  private lastMouseX: number | null = null;
 
   constructor(containerRef: HTMLElement, drone: Drone) {
     this.containerRef = containerRef;
@@ -57,23 +58,21 @@ export class DroneController {
   }
 
   private setupMouseListeners() {
-    let lastX: number | null = null;
-
     this.mousemoveHandler = (event: MouseEvent) => {
       const currentX = event.clientX;
 
-      if (lastX === null) {
-        lastX = currentX;
+      if (this.lastMouseX === null) {
+        this.lastMouseX = currentX;
         return;
       }
 
-      const deltaX = currentX - lastX;
+      const deltaX = currentX - this.lastMouseX;
       if (deltaX !== 0) {
         const deltaDegrees = deltaX * droneConfig.mouseSensitivity;
         this.drone.rotateAzimuth(deltaDegrees);
       }
 
-      lastX = currentX;
+      this.lastMouseX = currentX;
     };
     if (this.containerRef) {
       this.containerRef.addEventListener('mousemove', this.mousemoveHandler);

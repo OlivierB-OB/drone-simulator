@@ -104,7 +104,11 @@ export class ElevationDataManager {
 
     this.loadingCount++;
 
-    const loadPromise = ElevationDataTileLoader.loadTileWithCache(coordinates)
+    const loadPromise = ElevationDataTileLoader.loadTileWithCache(
+      coordinates,
+      3,
+      this.abortController.signal
+    )
       .then((tile) => {
         this.loadingCount--;
 
@@ -173,11 +177,26 @@ export class ElevationDataManager {
   }
 
   /**
-   * Parses a tile key string back into coordinates.
+   * Parses a tile key string back into coordinates with validation.
+   * @throws Error if key format is invalid or contains non-integer values
    */
   private parseTileKey(key: string): [number, number, number] {
-    const parts = key.split(':').map(Number);
-    return [parts[0]!, parts[1]!, parts[2]!];
+    const parts = key.split(':');
+    if (parts.length !== 3) {
+      throw new Error(`Invalid tile key format: "${key}". Expected "z:x:y".`);
+    }
+
+    const z = Number(parts[0]);
+    const x = Number(parts[1]);
+    const y = Number(parts[2]);
+
+    if (!Number.isInteger(z) || !Number.isInteger(x) || !Number.isInteger(y)) {
+      throw new Error(
+        `Tile key contains non-integer values: "${key}". Got z=${z}, x=${x}, y=${y}.`
+      );
+    }
+
+    return [z, x, y];
   }
 
   /**

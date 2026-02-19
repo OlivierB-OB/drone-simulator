@@ -1,6 +1,7 @@
 import { Viewer3D } from '../3Dviewer/Viewer3D';
 import { Drone } from '../drone/Drone';
 import { Camera } from '../3Dviewer/Camera';
+import { mercatorToThreeJs } from '../gis/types';
 import type { ElevationDataManager } from '../data/elevation/ElevationDataManager';
 import type { ContextDataManager } from '../data/contextual/ContextDataManager';
 import type { TerrainObjectManager } from '../visualization/terrain/TerrainObjectManager';
@@ -45,14 +46,22 @@ export class AnimationLoop {
       this.terrainObjectManager.refresh();
       this.contextObjectManager.refresh();
 
-      // Convert Mercator to Three.js: X=Mercator.X, Y=elevation, Z=-Mercator.Y
-      // Mercator Y increases northward; negating gives North = -Z in Three.js
-      const threeX = droneLocation.x;
-      const threeY = droneElevation;
-      const threeZ = -droneLocation.y;
+      // Convert Mercator to Three.js coordinates
+      const threeCoords = mercatorToThreeJs(droneLocation, droneElevation);
 
-      this.droneObject.update(threeX, threeY, threeZ, droneAzimuth, deltaTime);
-      this.camera.updateChaseCamera(threeX, threeY, threeZ, droneAzimuth);
+      this.droneObject.update(
+        threeCoords.x,
+        threeCoords.y,
+        threeCoords.z,
+        droneAzimuth,
+        deltaTime
+      );
+      this.camera.updateChaseCamera(
+        threeCoords.x,
+        threeCoords.y,
+        threeCoords.z,
+        droneAzimuth
+      );
 
       this.viewer3D.render();
     };

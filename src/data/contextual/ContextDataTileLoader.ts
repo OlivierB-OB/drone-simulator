@@ -147,6 +147,7 @@ out qt;`;
    * @param endpoint - Overpass API endpoint
    * @param timeout - Query timeout in milliseconds
    * @param statusManager - Optional OverpassStatusManager for respecting API rate limits
+   * @param signal - Optional AbortSignal for cancellation
    * @returns Loaded context tile
    * @throws Error if tile cannot be loaded or parsed
    */
@@ -154,7 +155,8 @@ out qt;`;
     coordinates: TileCoordinates,
     endpoint: string,
     timeout: number,
-    statusManager?: OverpassStatusManager
+    statusManager?: OverpassStatusManager,
+    signal?: AbortSignal
   ): Promise<ContextDataTile> {
     const bounds = this.getTileMercatorBounds(coordinates);
     const query = this.generateOverpassQuery(bounds);
@@ -175,39 +177,52 @@ out qt;`;
     }
 
     try {
+      // Create an AbortController that combines external signal with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      // If external signal is provided, abort controller when it signals
+      if (signal) {
+        signal.addEventListener('abort', () => controller.abort());
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
         body: query,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        signal: AbortSignal.timeout(timeout),
+        signal: controller.signal,
       });
 
-      if (!response.ok) {
-        // Check for rate limiting
-        if (response.status === 429) {
-          const error = new Error(
-            `Overpass API rate limited (429): ${response.statusText}`
-          );
-          (error as Error & { statusCode: number }).statusCode = 429;
-          throw error;
+      try {
+        if (!response.ok) {
+          // Check for rate limiting
+          if (response.status === 429) {
+            const error = new Error(
+              `Overpass API rate limited (429): ${response.statusText}`
+            );
+            (error as Error & { statusCode: number }).statusCode = 429;
+            throw error;
+          }
+          throw new Error(`Overpass API error: ${response.statusText}`);
         }
-        throw new Error(`Overpass API error: ${response.statusText}`);
+
+        const osmData = await response.json();
+
+        // Parse OSM data and group features by type
+        const features = this.parseOSMData(osmData, bounds, coordinates.z);
+
+        return {
+          coordinates,
+          mercatorBounds: bounds,
+          zoomLevel: coordinates.z,
+          features,
+          colorPalette,
+        };
+      } finally {
+        clearTimeout(timeoutId);
       }
-
-      const osmData = await response.json();
-
-      // Parse OSM data and group features by type
-      const features = this.parseOSMData(osmData, bounds, coordinates.z);
-
-      return {
-        coordinates,
-        mercatorBounds: bounds,
-        zoomLevel: coordinates.z,
-        features,
-        colorPalette,
-      };
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(
@@ -716,7 +731,8 @@ out qt;`;
     endpoint: string,
     timeout: number,
     maxRetries: number = 3,
-    statusManager?: OverpassStatusManager
+    statusManager?: OverpassStatusManager,
+    signal?: AbortSignal
   ): Promise<ContextDataTile | null> {
     let lastError: Error | null = null;
 
@@ -726,7 +742,8 @@ out qt;`;
           coordinates,
           endpoint,
           timeout,
-          statusManager
+          statusManager,
+          signal
         );
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
@@ -767,6 +784,7 @@ out qt;`;
    * @param timeout - Query timeout in milliseconds
    * @param maxRetries - Maximum number of retry attempts (default: 3)
    * @param statusManager - Optional OverpassStatusManager for respecting API rate limits
+   * @param signal - Optional AbortSignal for cancellation
    * @returns Loaded context tile or null if load fails
    */
   static async loadTileWithCache(
@@ -774,7 +792,8 @@ out qt;`;
     endpoint: string,
     timeout: number,
     maxRetries: number = 3,
-    statusManager?: OverpassStatusManager
+    statusManager?: OverpassStatusManager,
+    signal?: AbortSignal
   ): Promise<ContextDataTile | null> {
     const tileKey = `${coordinates.z}:${coordinates.x}:${coordinates.y}`;
 
@@ -790,7 +809,8 @@ out qt;`;
       endpoint,
       timeout,
       maxRetries,
-      statusManager
+      statusManager,
+      signal
     );
     if (tile) {
       // Store in persistent cache for future use

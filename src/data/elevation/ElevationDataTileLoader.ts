@@ -71,11 +71,13 @@ export class ElevationDataTileLoader {
    * PNG-encoded elevation: elevation = (R × 256 + G + B/256) - 32768 meters
    *
    * @param coordinates - Tile coordinates to load
+   * @param signal - Optional AbortSignal for cancellation
    * @returns Loaded elevation tile with raster data
    * @throws Error if tile cannot be loaded or parsed
    */
   static async loadTile(
-    coordinates: TileCoordinates
+    coordinates: TileCoordinates,
+    signal?: AbortSignal
   ): Promise<ElevationDataTile> {
     const { z, x, y } = coordinates;
 
@@ -84,7 +86,7 @@ export class ElevationDataTileLoader {
     const url = `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
 
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch tile: ${response.statusText}`);
@@ -220,17 +222,19 @@ export class ElevationDataTileLoader {
    *
    * @param coordinates - Tile coordinates to load
    * @param maxRetries - Maximum retry attempts (default: 3)
+   * @param signal - Optional AbortSignal for cancellation
    * @returns Loaded tile or null if loading failed
    */
   static async loadTileWithRetry(
     coordinates: TileCoordinates,
-    maxRetries: number = 3
+    maxRetries: number = 3,
+    signal?: AbortSignal
   ): Promise<ElevationDataTile | null> {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        return await ElevationDataTileLoader.loadTile(coordinates);
+        return await ElevationDataTileLoader.loadTile(coordinates, signal);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
 
@@ -254,11 +258,13 @@ export class ElevationDataTileLoader {
    *
    * @param coordinates - Tile coordinates to load
    * @param maxRetries - Maximum retry attempts for network fetch (default: 3)
+   * @param signal - Optional AbortSignal for cancellation
    * @returns Loaded tile or null if loading failed
    */
   static async loadTileWithCache(
     coordinates: TileCoordinates,
-    maxRetries: number = 3
+    maxRetries: number = 3,
+    signal?: AbortSignal
   ): Promise<ElevationDataTile | null> {
     const tileKey = `${coordinates.z}:${coordinates.x}:${coordinates.y}`;
 
@@ -279,7 +285,8 @@ export class ElevationDataTileLoader {
     // Fetch from network with retries if not in cache
     const tile = await ElevationDataTileLoader.loadTileWithRetry(
       coordinates,
-      maxRetries
+      maxRetries,
+      signal
     );
 
     // Cache successful tile for future sessions

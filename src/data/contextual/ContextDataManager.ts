@@ -21,6 +21,10 @@ export class ContextDataManager {
   private lastRequestTime: number = 0;
   private readonly throttleDelayMs: number = 200;
   private statusManager: OverpassStatusManager | null = null;
+  private pendingResolvers: Array<{
+    key: string;
+    resolve: (tile: ContextDataTile | null) => void;
+  }> = [];
 
   constructor(initialLocation: MercatorCoordinates) {
     // Initialize status manager if enabled
@@ -134,20 +138,26 @@ export class ContextDataManager {
         // Queue for later when slot opens and throttle allows
         this.pendingQueue.push(key);
 
-        // Poll the cache to detect when the tile is loaded
-        const pollInterval = setInterval(() => {
-          const tile = this.tileCache.get(key);
-          if (tile) {
-            clearInterval(pollInterval);
-            resolve(tile);
+        // Set up resolver to be called when tile loads
+        const timeoutId = setTimeout(() => {
+          // Remove resolver and resolve with null if timeout exceeded
+          const resolverIndex = this.pendingResolvers.findIndex(
+            (r) => r.key === key
+          );
+          if (resolverIndex >= 0) {
+            this.pendingResolvers.splice(resolverIndex, 1);
           }
-        }, 100);
-
-        // Give up after 30 seconds
-        setTimeout(() => {
-          clearInterval(pollInterval);
           resolve(null);
-        }, 30000);
+        }, contextDataConfig.queryTimeout);
+
+        // Store resolver to be called when tile loads
+        this.pendingResolvers.push({
+          key,
+          resolve: (tile: ContextDataTile | null) => {
+            clearTimeout(timeoutId);
+            resolve(tile);
+          },
+        });
       }
     });
 
@@ -171,13 +181,24 @@ export class ContextDataManager {
       contextDataConfig.overpassEndpoint,
       contextDataConfig.queryTimeout,
       3,
-      this.statusManager ?? undefined
+      this.statusManager ?? undefined,
+      this.abortController.signal
     );
 
     this.loadingCount--;
 
     if (tile) {
       this.tileCache.set(key, tile);
+
+      // Notify any pending resolvers waiting for this tile
+      const resolverIndex = this.pendingResolvers.findIndex(
+        (r) => r.key === key
+      );
+      if (resolverIndex >= 0) {
+        const resolver = this.pendingResolvers[resolverIndex]!;
+        this.pendingResolvers.splice(resolverIndex, 1);
+        resolver.resolve(tile);
+      }
     }
 
     this.loadPromises.delete(key);
@@ -229,11 +250,26 @@ export class ContextDataManager {
   }
 
   /**
-   * Parses a tile key string into coordinates.
+   * Parses a tile key string into coordinates with validation.
+   * @throws Error if key format is invalid or contains non-integer values
    */
   private parseTileKey(key: string): [number, number, number] {
-    const parts = key.split(':').map(Number);
-    return [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0];
+    const parts = key.split(':');
+    if (parts.length !== 3) {
+      throw new Error(`Invalid tile key format: "${key}". Expected "z:x:y".`);
+    }
+
+    const z = Number(parts[0]);
+    const x = Number(parts[1]);
+    const y = Number(parts[2]);
+
+    if (!Number.isInteger(z) || !Number.isInteger(x) || !Number.isInteger(y)) {
+      throw new Error(
+        `Tile key contains non-integer values: "${key}". Got z=${z}, x=${x}, y=${y}.`
+      );
+    }
+
+    return [z, x, y];
   }
 
   /**
@@ -288,6 +324,7 @@ export class ContextDataManager {
     this.tileCache.clear();
     this.pendingQueue = [];
     this.loadPromises.clear();
+    this.pendingResolvers = [];
     this.loadingCount = 0;
     this.statusManager?.dispose();
   }
