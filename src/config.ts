@@ -62,7 +62,7 @@ export const elevationConfig = {
 
 export const contextDataConfig = {
   // Web Mercator zoom level for context data tiles (14-15 balances detail vs. request size)
-  zoomLevel: 14,
+  zoomLevel: 15,
 
   // Number of tiles in each direction from center (1 = 3×3 grid of tiles)
   ringRadius: 1,
