@@ -15,6 +15,7 @@ import type { TileCoordinates, MercatorBounds } from '../elevation/types';
 import type { MercatorCoordinates } from '../../gis/types';
 import { colorPalette } from '../../config';
 import type { OverpassStatusManager } from './OverpassStatusManager';
+import { ContextTilePersistenceCache } from './ContextTilePersistenceCache';
 
 /**
  * Factory for loading and parsing context data tiles from OSM Overpass API.
@@ -755,5 +756,47 @@ out qt;`;
       `Failed to load context tile ${coordinates.z}/${coordinates.x}/${coordinates.y}: ${lastError?.message}`
     );
     return null;
+  }
+
+  /**
+   * Loads a context data tile from the persistence cache if available,
+   * otherwise fetches from Overpass API with retries and caches the result.
+   *
+   * @param coordinates - Tile coordinates to load
+   * @param endpoint - Overpass API endpoint
+   * @param timeout - Query timeout in milliseconds
+   * @param maxRetries - Maximum number of retry attempts (default: 3)
+   * @param statusManager - Optional OverpassStatusManager for respecting API rate limits
+   * @returns Loaded context tile or null if load fails
+   */
+  static async loadTileWithCache(
+    coordinates: TileCoordinates,
+    endpoint: string,
+    timeout: number,
+    maxRetries: number = 3,
+    statusManager?: OverpassStatusManager
+  ): Promise<ContextDataTile | null> {
+    const tileKey = `${coordinates.z}:${coordinates.x}:${coordinates.y}`;
+
+    // Try to get from persistent cache first
+    const cachedTile = await ContextTilePersistenceCache.get(tileKey);
+    if (cachedTile) {
+      return cachedTile;
+    }
+
+    // Cache miss: load from Overpass API with retry logic
+    const tile = await this.loadTileWithRetry(
+      coordinates,
+      endpoint,
+      timeout,
+      maxRetries,
+      statusManager
+    );
+    if (tile) {
+      // Store in persistent cache for future use
+      await ContextTilePersistenceCache.set(tileKey, tile);
+    }
+
+    return tile;
   }
 }

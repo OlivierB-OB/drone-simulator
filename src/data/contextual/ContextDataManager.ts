@@ -166,7 +166,7 @@ export class ContextDataManager {
     this.loadingCount++;
     this.lastRequestTime = Date.now();
 
-    const tile = await ContextDataTileLoader.loadTileWithRetry(
+    const tile = await ContextDataTileLoader.loadTileWithCache(
       coordinates,
       contextDataConfig.overpassEndpoint,
       contextDataConfig.queryTimeout,
