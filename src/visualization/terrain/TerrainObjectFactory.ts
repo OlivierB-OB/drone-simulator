@@ -2,6 +2,7 @@ import { Mesh, MeshPhongMaterial, MeshBasicMaterial } from 'three';
 import { debugConfig } from '../../config';
 import { TerrainObject } from './TerrainObject';
 import { TerrainGeometryObject } from './geometry/TerrainGeometryObject';
+import type { TerrainTextureObject } from './texture/TerrainTextureObject';
 
 /**
  * Factory for creating TerrainObject instances from TerrainGeometryObject.
@@ -14,19 +15,29 @@ export class TerrainObjectFactory {
   ) {}
 
   /**
-   * Create a TerrainObject from a TerrainGeometryObject.
-   * Creates a new mesh with a MeshPhongMaterial (or MeshBasicMaterial in debug mode) and wraps it in a TerrainObject.
+   * Create a TerrainObject from a TerrainGeometryObject with optional texture.
+   *
+   * @param geometryObject - The geometry to create mesh from
+   * @param textureObject - Optional texture object; if provided, texture is applied to material
+   *
+   * Creates a new mesh with a MeshPhongMaterial (or MeshBasicMaterial in debug mode).
+   * If texture provided, applies it to the material's map property.
    * Positions the mesh at the tile's Mercator coordinates.
    */
-  createTerrainObject(geometryObject: TerrainGeometryObject): TerrainObject {
-    const material = debugConfig.useSimpleTerrainMaterial
-      ? new MeshBasicMaterial({ color: 0x2d5016, wireframe: true })
-      : new this.materialConstructor({
-          color: 0x2d5016,
-          specular: 0x101010,
-          shininess: 100,
-          flatShading: false,
-        });
+  createTerrainObject(
+    geometryObject: TerrainGeometryObject,
+    textureObject?: TerrainTextureObject | null
+  ): TerrainObject {
+    const texture = textureObject?.getTexture();
+    const material =
+      debugConfig.useSimpleTerrainMaterial || !texture
+        ? new MeshBasicMaterial({
+            color: 0x111111,
+            wireframe: true,
+          })
+        : new this.materialConstructor({
+            map: texture,
+          });
 
     const mesh = new this.meshConstructor(
       geometryObject.getGeometry(),

@@ -5,7 +5,6 @@ import { mercatorToThreeJs } from '../gis/types';
 import type { ElevationDataManager } from '../data/elevation/ElevationDataManager';
 import type { ContextDataManager } from '../data/contextual/ContextDataManager';
 import type { TerrainObjectManager } from '../visualization/terrain/TerrainObjectManager';
-import type { ContextObjectManager } from '../visualization/context/ContextObjectManager';
 import type { DroneObject } from '../visualization/drone/DroneObject';
 
 export class AnimationLoop {
@@ -19,7 +18,6 @@ export class AnimationLoop {
     private readonly contextData: ContextDataManager,
     private readonly camera: Camera,
     private readonly terrainObjectManager: TerrainObjectManager,
-    private readonly contextObjectManager: ContextObjectManager,
     private readonly droneObject: DroneObject
   ) {}
 
@@ -44,7 +42,6 @@ export class AnimationLoop {
       this.contextData.setLocation(droneLocation);
 
       this.terrainObjectManager.refresh();
-      this.contextObjectManager.refresh();
 
       // Convert Mercator to Three.js coordinates
       const threeCoords = mercatorToThreeJs(droneLocation, droneElevation);

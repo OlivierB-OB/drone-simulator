@@ -95,6 +95,82 @@ describe('TerrainGeometryFactory', () => {
       expect(normals.count).toBe(256 * 256);
     });
 
+    it('should create geometry with UV coordinates', () => {
+      const tile: ElevationDataTile = {
+        coordinates: { z: 9, x: 261, y: 168 },
+        data: createFlatElevationData(256),
+        tileSize: 256,
+        zoomLevel: 9,
+        mercatorBounds: {
+          minX: 0,
+          maxX: 1000,
+          minY: 0,
+          maxY: 1000,
+        },
+      };
+
+      const geometry = factory.createGeometry(tile);
+      const uvs = geometry.getAttribute('uv');
+
+      expect(uvs).toBeDefined();
+      expect(uvs.itemSize).toBe(2); // U, V components
+      expect(uvs.count).toBe(256 * 256); // One UV pair per vertex
+    });
+
+    it('should map UV coordinates from 0 to 1 across tile', () => {
+      const tile: ElevationDataTile = {
+        coordinates: { z: 9, x: 261, y: 168 },
+        data: createFlatElevationData(256),
+        tileSize: 256,
+        zoomLevel: 9,
+        mercatorBounds: {
+          minX: 0,
+          maxX: 1000,
+          minY: 0,
+          maxY: 1000,
+        },
+      };
+
+      const geometry = factory.createGeometry(tile);
+      const uvs = geometry.getAttribute('uv');
+      const uvsArray = uvs.array as Float32Array;
+
+      // Check corners: (0,0) should be at start, (1,1) at end
+      // First vertex (0,0): indices 0, 1
+      expect(uvsArray[0]).toBe(0); // U = 0
+      expect(uvsArray[1]).toBe(0); // V = 0
+
+      // Last vertex (255,255): indices at end
+      const lastIndex = uvsArray.length - 2;
+      expect(uvsArray[lastIndex]).toBe(1); // U = 1
+      expect(uvsArray[lastIndex + 1]).toBe(1); // V = 1
+    });
+
+    it('should linearly interpolate UV coordinates across tile', () => {
+      const tile: ElevationDataTile = {
+        coordinates: { z: 9, x: 261, y: 168 },
+        data: createFlatElevationData(256),
+        tileSize: 256,
+        zoomLevel: 9,
+        mercatorBounds: {
+          minX: 0,
+          maxX: 1000,
+          minY: 0,
+          maxY: 1000,
+        },
+      };
+
+      const geometry = factory.createGeometry(tile);
+      const uvs = geometry.getAttribute('uv');
+      const uvsArray = uvs.array as Float32Array;
+
+      // Test middle vertex (128,128) = index 128*256 + 128 = 32896
+      const middleIndex = (128 * 256 + 128) * 2;
+      const expectedUV = 128 / 255;
+      expect(uvsArray[middleIndex]).toBeCloseTo(expectedUV, 4); // U
+      expect(uvsArray[middleIndex + 1]).toBeCloseTo(expectedUV, 4); // V
+    });
+
     it('should handle terrain with elevation variation', () => {
       const data: number[][] = [];
       for (let y = 0; y < 256; y++) {

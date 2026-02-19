@@ -71,6 +71,15 @@ export class TerrainGeometryFactory {
     );
     geometry.setIndex(new BufferAttribute(new Uint32Array(indices), 1));
 
+    // Create UV coordinates for texture mapping
+    const uvs: number[] = [];
+    for (let y = 0; y < tileSize; y++) {
+      for (let x = 0; x < tileSize; x++) {
+        uvs.push(x / (tileSize - 1), y / (tileSize - 1));
+      }
+    }
+    geometry.setAttribute('uv', new BufferAttribute(new Float32Array(uvs), 2));
+
     // Calculate normals for lighting
     geometry.computeVertexNormals();
 

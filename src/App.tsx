@@ -9,9 +9,10 @@ import { ElevationTilePersistenceCache } from './data/elevation/ElevationTilePer
 import { ContextTilePersistenceCache } from './data/contextual/ContextTilePersistenceCache';
 import { TerrainGeometryObjectManager } from './visualization/terrain/geometry/TerrainGeometryObjectManager';
 import { TerrainObjectManager } from './visualization/terrain/TerrainObjectManager';
+import { TerrainTextureObjectManager } from './visualization/terrain/texture/TerrainTextureObjectManager';
+import { TerrainTextureFactory } from './visualization/terrain/texture/TerrainTextureFactory';
+import { TerrainCanvasRenderer } from './visualization/terrain/texture/TerrainCanvasRenderer';
 import { DroneObject } from './visualization/drone/DroneObject';
-import { ContextGeometryObjectManager } from './visualization/context/geometry/ContextGeometryObjectManager';
-import { ContextObjectManager } from './visualization/context/ContextObjectManager';
 
 export function App() {
   let viewer3D: Viewer3D | null = null;
@@ -21,9 +22,8 @@ export function App() {
   let elevationData: ElevationDataManager | null = null;
   let contextData: ContextDataManager | null = null;
   let terrainGeometryManager: TerrainGeometryObjectManager | null = null;
+  let terrainTextureManager: TerrainTextureObjectManager | null = null;
   let terrainObjectManager: TerrainObjectManager | null = null;
-  let contextGeometryManager: ContextGeometryObjectManager | null = null;
-  let contextObjectManager: ContextObjectManager | null = null;
   let droneObject: DroneObject | null = null;
 
   onMount(async () => {
@@ -49,15 +49,15 @@ export function App() {
     viewer3D = new Viewer3D(containerRef);
 
     terrainGeometryManager = new TerrainGeometryObjectManager(elevationData);
+    terrainTextureManager = new TerrainTextureObjectManager(
+      elevationData,
+      contextData,
+      new TerrainTextureFactory(contextData, new TerrainCanvasRenderer())
+    );
     terrainObjectManager = new TerrainObjectManager(
       viewer3D.getScene(),
-      terrainGeometryManager
-    );
-
-    contextGeometryManager = new ContextGeometryObjectManager(contextData);
-    contextObjectManager = new ContextObjectManager(
-      viewer3D.getScene(),
-      contextGeometryManager
+      terrainGeometryManager,
+      terrainTextureManager
     );
 
     droneObject = new DroneObject();
@@ -70,7 +70,6 @@ export function App() {
       contextData,
       viewer3D.getCamera(),
       terrainObjectManager,
-      contextObjectManager,
       droneObject
     );
     animationLoop.start();
@@ -84,9 +83,8 @@ export function App() {
       elevationData?.dispose();
       contextData?.dispose();
       terrainGeometryManager?.dispose();
+      terrainTextureManager?.dispose();
       terrainObjectManager?.dispose();
-      contextGeometryManager?.dispose();
-      contextObjectManager?.dispose();
       droneObject?.dispose();
     };
   });
