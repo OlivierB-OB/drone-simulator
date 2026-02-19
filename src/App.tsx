@@ -5,6 +5,7 @@ import { createDrone, Drone } from './drone/Drone';
 import { AnimationLoop } from './core/AnimationLoop';
 import { ContextDataManager } from './data/contextual/ContextDataManager';
 import { ElevationDataManager } from './data/elevation/ElevationDataManager';
+import { ElevationTilePersistenceCache } from './data/elevation/ElevationTilePersistenceCache';
 import { TerrainGeometryObjectManager } from './visualization/terrain/geometry/TerrainGeometryObjectManager';
 import { TerrainObjectManager } from './visualization/terrain/TerrainObjectManager';
 import { DroneObject } from './visualization/drone/DroneObject';
@@ -24,11 +25,19 @@ export function App() {
   let contextObjectManager: ContextObjectManager | null = null;
   let droneObject: DroneObject | null = null;
 
-  onMount(() => {
+  onMount(async () => {
     const containerRef = document.getElementById(
       'threejs-container'
     ) as HTMLDivElement;
     if (!containerRef) return;
+
+    // Initialize persistent cache (clean up expired tiles from previous sessions)
+    try {
+      await ElevationTilePersistenceCache.initialize();
+    } catch (error) {
+      console.warn('Failed to initialize elevation cache:', error);
+      // Continue anyway - cache is optional
+    }
 
     drone = createDrone();
     elevationData = new ElevationDataManager(drone.getLocation());

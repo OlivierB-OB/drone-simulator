@@ -4,6 +4,7 @@ import type {
   MercatorBounds,
 } from './types';
 import type { MercatorCoordinates } from '../../gis/types';
+import { ElevationTilePersistenceCache } from './ElevationTilePersistenceCache';
 
 /**
  * Factory for loading and parsing elevation data tiles from AWS Terrain Tiles.
@@ -245,5 +246,52 @@ export class ElevationDataTileLoader {
       `Failed to load tile ${coordinates.z}/${coordinates.x}/${coordinates.y}: ${lastError?.message}`
     );
     return null;
+  }
+
+  /**
+   * Loads a tile from persistent cache if available and not expired,
+   * otherwise fetches from S3 with retry logic and stores in cache.
+   *
+   * @param coordinates - Tile coordinates to load
+   * @param maxRetries - Maximum retry attempts for network fetch (default: 3)
+   * @returns Loaded tile or null if loading failed
+   */
+  static async loadTileWithCache(
+    coordinates: TileCoordinates,
+    maxRetries: number = 3
+  ): Promise<ElevationDataTile | null> {
+    const tileKey = `${coordinates.z}:${coordinates.x}:${coordinates.y}`;
+
+    // Check persistent cache first (fast path)
+    try {
+      const cachedTile = await ElevationTilePersistenceCache.get(tileKey);
+      if (cachedTile) {
+        console.debug(`Cache hit for tile ${tileKey}`);
+        return cachedTile;
+      }
+    } catch (error) {
+      console.warn(
+        'Persistent cache unavailable, falling back to network',
+        error
+      );
+    }
+
+    // Fetch from network with retries if not in cache
+    const tile = await ElevationDataTileLoader.loadTileWithRetry(
+      coordinates,
+      maxRetries
+    );
+
+    // Cache successful tile for future sessions
+    if (tile) {
+      try {
+        await ElevationTilePersistenceCache.set(tileKey, tile);
+      } catch (error) {
+        console.warn(`Failed to cache tile ${tileKey}:`, error);
+        // Continue anyway - cache is optional enhancement, not critical path
+      }
+    }
+
+    return tile;
   }
 }

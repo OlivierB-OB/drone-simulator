@@ -104,7 +104,7 @@ export class ElevationDataManager {
 
     this.loadingCount++;
 
-    const loadPromise = ElevationDataTileLoader.loadTileWithRetry(coordinates)
+    const loadPromise = ElevationDataTileLoader.loadTileWithCache(coordinates)
       .then((tile) => {
         this.loadingCount--;
 
