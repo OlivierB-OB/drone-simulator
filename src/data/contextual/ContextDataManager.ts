@@ -18,8 +18,6 @@ export class ContextDataManager {
     new Map();
   private loadingCount: number = 0;
   private abortController: AbortController = new AbortController();
-  private lastRequestTime: number = 0;
-  private readonly throttleDelayMs: number = 200;
   private statusManager: OverpassStatusManager | null = null;
   private pendingResolvers: Array<{
     key: string;
@@ -117,8 +115,9 @@ export class ContextDataManager {
   }
 
   /**
-   * Loads a tile asynchronously, respecting concurrency limits and request throttling.
-   * Queues the tile if max concurrent loads is reached or throttle delay hasn't passed.
+   * Loads a tile asynchronously, respecting concurrency limits.
+   * Queues the tile if max concurrent loads is reached.
+   * Throttling is delegated to ContextDataTileLoader and OverpassStatusManager.
    * Returns a promise that resolves when the tile is loaded or the load fails.
    */
   private loadTileAsync(key: string): Promise<ContextDataTile | null> {
@@ -130,14 +129,11 @@ export class ContextDataManager {
     const coordinates = { z, x, y };
 
     const promise = new Promise<ContextDataTile | null>((resolve) => {
-      // Check if we can load now (both concurrency and throttle constraints)
-      if (
-        this.loadingCount < contextDataConfig.maxConcurrentLoads &&
-        Date.now() - this.lastRequestTime >= this.throttleDelayMs
-      ) {
+      // Check if we can load now (concurrency constraint only)
+      if (this.loadingCount < contextDataConfig.maxConcurrentLoads) {
         this.startLoad(key, coordinates).then(resolve);
       } else {
-        // Queue for later when slot opens and throttle allows
+        // Queue for later when a load slot opens
         this.pendingQueue.push(key);
 
         // Set up resolver with timeout and resolved guard
@@ -176,7 +172,6 @@ export class ContextDataManager {
     coordinates: TileCoordinates
   ): Promise<ContextDataTile | null> {
     this.loadingCount++;
-    this.lastRequestTime = Date.now();
 
     try {
       const tile = await ContextDataTileLoader.loadTileWithCache(
@@ -211,20 +206,18 @@ export class ContextDataManager {
   }
 
   /**
-   * Processes the next tile in the pending queue if constraints allow.
+   * Processes the next tile in the pending queue if concurrency allows.
    * Called automatically when a load completes.
    * Only starts one tile at a time to prevent thundering herd.
+   * Throttling is delegated to ContextDataTileLoader and OverpassStatusManager.
    */
   private processQueuedTiles(): void {
     if (this.pendingQueue.length === 0) {
       return;
     }
 
-    // Check if we can start another load
-    if (
-      this.loadingCount < contextDataConfig.maxConcurrentLoads &&
-      Date.now() - this.lastRequestTime >= this.throttleDelayMs
-    ) {
+    // Check if we can start another load (concurrency constraint only)
+    if (this.loadingCount < contextDataConfig.maxConcurrentLoads) {
       const key = this.pendingQueue.shift();
       if (key) {
         const [z, x, y] = this.parseTileKey(key);
