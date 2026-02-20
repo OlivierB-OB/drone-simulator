@@ -28,13 +28,6 @@ describe('TerrainGeometryObjectManager', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize with empty objects map', () => {
-      const newManager = new TerrainGeometryObjectManager(
-        mockElevationData as ElevationDataManager
-      );
-      expect(newManager.getAllGeometries()).toEqual([]);
-    });
-
     it('should use provided factory', () => {
       expect(manager).toBeDefined();
     });
@@ -55,7 +48,7 @@ describe('TerrainGeometryObjectManager', () => {
 
       expect(result).toBeInstanceOf(TerrainGeometryObject);
       expect(result.getTileKey()).toBe('9:261:168');
-      expect(manager.getAllGeometries()).toHaveLength(1);
+      expect(manager.getTerrainGeometryObject('9:261:168')).toBe(result);
     });
 
     it('should call factory.createGeometry with correct tile', () => {
@@ -74,7 +67,8 @@ describe('TerrainGeometryObjectManager', () => {
       manager.createGeometry('9:262:168', tile2);
 
       expect(mockFactory.createGeometry).toHaveBeenCalledTimes(2);
-      expect(manager.getAllGeometries()).toHaveLength(2);
+      expect(manager.getTerrainGeometryObject('9:261:168')).toBeDefined();
+      expect(manager.getTerrainGeometryObject('9:262:168')).toBeDefined();
     });
   });
 
@@ -87,7 +81,7 @@ describe('TerrainGeometryObjectManager', () => {
       manager.removeGeometry('9:261:168');
 
       expect(disposeSpy).toHaveBeenCalled();
-      expect(manager.getAllGeometries()).toHaveLength(0);
+      expect(manager.getTerrainGeometryObject('9:261:168')).toBeUndefined();
     });
 
     it('should not error when removing non-existent tile', () => {
@@ -102,7 +96,7 @@ describe('TerrainGeometryObjectManager', () => {
 
       manager.removeGeometry('9:261:168');
 
-      expect(manager.getAllGeometries()).toHaveLength(1);
+      expect(manager.getTerrainGeometryObject('9:261:168')).toBeUndefined();
       expect(manager.getTerrainGeometryObject('9:262:168')).toBeDefined();
     });
   });
@@ -125,55 +119,29 @@ describe('TerrainGeometryObjectManager', () => {
     });
   });
 
-  describe('getAllGeometries', () => {
-    it('should return empty array when no geometries', () => {
-      expect(manager.getAllGeometries()).toEqual([]);
-    });
-
-    it('should return all geometry objects', () => {
-      const tile1 = createMockTile('9:261:168');
-      const tile2 = createMockTile('9:262:168');
-      manager.createGeometry('9:261:168', tile1);
-      manager.createGeometry('9:262:168', tile2);
-
-      const geometries = manager.getAllGeometries();
-
-      expect(geometries).toHaveLength(2);
-      expect(geometries).toEqual(
-        expect.arrayContaining([
-          expect.any(TerrainGeometryObject),
-          expect.any(TerrainGeometryObject),
-        ])
-      );
-    });
-  });
-
   describe('dispose', () => {
     it('should dispose all geometry objects', () => {
       const tile1 = createMockTile('9:261:168');
       const tile2 = createMockTile('9:262:168');
-      manager.createGeometry('9:261:168', tile1);
-      manager.createGeometry('9:262:168', tile2);
+      const geometry1 = manager.createGeometry('9:261:168', tile1);
+      const geometry2 = manager.createGeometry('9:262:168', tile2);
 
-      const geometries = manager.getAllGeometries();
-      geometries.forEach((geometry) => {
-        vi.spyOn(geometry, 'dispose');
-      });
+      const spy1 = vi.spyOn(geometry1, 'dispose');
+      const spy2 = vi.spyOn(geometry2, 'dispose');
 
       manager.dispose();
 
-      geometries.forEach((geometry) => {
-        expect(geometry.dispose).toHaveBeenCalled();
-      });
+      expect(spy1).toHaveBeenCalled();
+      expect(spy2).toHaveBeenCalled();
     });
 
     it('should clear the objects map', () => {
       const tile = createMockTile('9:261:168');
       manager.createGeometry('9:261:168', tile);
-      expect(manager.getAllGeometries()).toHaveLength(1);
+      expect(manager.getTerrainGeometryObject('9:261:168')).toBeDefined();
 
       manager.dispose();
-      expect(manager.getAllGeometries()).toHaveLength(0);
+      expect(manager.getTerrainGeometryObject('9:261:168')).toBeUndefined();
     });
   });
 });

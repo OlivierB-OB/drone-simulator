@@ -6,8 +6,6 @@ import type { TerrainTextureObjectManager } from './texture/TerrainTextureObject
 import type { TileKey } from './geometry/types';
 import type { TerrainGeometryObjectManagerEvents } from './geometry/TerrainGeometryObjectManager';
 import type { TerrainTextureObjectManagerEvents } from './texture/TerrainTextureObjectManager';
-import type { ElevationDataTile } from '../../data/elevation/types';
-import type { ContextDataTile } from '../../data/contextual/types';
 
 /**
  * Manages a collection of TerrainObject instances in the 3D scene.
@@ -46,13 +44,8 @@ export class TerrainObjectManager {
     this.factory = factory ?? new TerrainObjectFactory();
     this.objects = new Map();
     this.textureStateMap = new Map();
-  }
 
-  /**
-   * Subscribes to geometry and texture manager tile events.
-   * Geometry and texture managers are already initialized with their respective data sources in their constructors.
-   */
-  start(): void {
+    // Subscribe to geometry and texture manager tile events
     this.onGeometryAdded = (data) => {
       this.handleGeometryAdded(data);
     };
@@ -160,13 +153,6 @@ export class TerrainObjectManager {
   }
 
   /**
-   * Get all managed terrain objects
-   */
-  getAllObjects(): TerrainObject[] {
-    return Array.from(this.objects.values());
-  }
-
-  /**
    * Clean up all objects, remove from scene, and clear the collection.
    * Also disposes owned dependency managers (geometry and texture).
    */
@@ -195,68 +181,5 @@ export class TerrainObjectManager {
     // Dispose delegated managers (composed dependencies)
     this.geometryManager.dispose();
     this.textureManager?.dispose();
-  }
-
-  /**
-   * Test helper: Manually create geometry and handle it (for backward compatibility with tests)
-   */
-  handleElevationTileAdded(
-    key: TileKey,
-    elevationTile: ElevationDataTile,
-    contextTile: ContextDataTile | null
-  ): void {
-    const geometry = this.geometryManager.createGeometry(key, elevationTile);
-    const texture =
-      this.textureManager?.createTexture(key, contextTile) ?? null;
-
-    const terrainObject = this.factory.createTerrainObject(geometry, texture);
-    this.objects.set(key, terrainObject);
-    this.scene.add(terrainObject.getMesh());
-    this.textureStateMap.set(key, texture !== null);
-  }
-
-  /**
-   * Test helper: Manually remove geometry and handle it (for backward compatibility with tests)
-   */
-  handleElevationTileRemoved(key: TileKey): void {
-    const terrainObject = this.objects.get(key);
-    if (terrainObject) {
-      this.scene.remove(terrainObject.getMesh());
-      terrainObject.dispose();
-      this.objects.delete(key);
-    }
-    this.geometryManager.removeGeometry(key);
-    this.textureManager?.removeTexture(key);
-    this.textureStateMap.delete(key);
-  }
-
-  /**
-   * Test helper: Manually handle context tile addition (for backward compatibility with tests)
-   */
-  handleContextTileAdded(key: TileKey, contextTile: ContextDataTile): void {
-    const hadTexture = this.textureStateMap.get(key) ?? false;
-    if (hadTexture || !this.objects.has(key)) return;
-
-    const geometryObject = this.geometryManager.getTerrainGeometryObject(key);
-    const terrainObject = this.objects.get(key);
-    if (!geometryObject || !terrainObject) return;
-
-    // Remove old texture entry and create new one with actual context data
-    this.textureManager?.removeTexture(key);
-    const textureObject =
-      this.textureManager?.createTexture(key, contextTile) ?? null;
-    if (!textureObject) return;
-
-    // Swap mesh in scene
-    this.scene.remove(terrainObject.getMesh());
-    terrainObject.dispose();
-
-    const newTerrainObject = this.factory.createTerrainObject(
-      geometryObject,
-      textureObject
-    );
-    this.objects.set(key, newTerrainObject);
-    this.scene.add(newTerrainObject.getMesh());
-    this.textureStateMap.set(key, true);
   }
 }

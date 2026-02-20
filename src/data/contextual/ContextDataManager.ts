@@ -314,27 +314,6 @@ export class ContextDataManager {
   }
 
   /**
-   * Gets a cached tile by key, or null if not loaded.
-   */
-  getTile(key: string): ContextDataTile | null {
-    return this.tileCache.get(key) || null;
-  }
-
-  /**
-   * Gets the tile cache Map
-   */
-  getTileCache(): Map<string, ContextDataTile> {
-    return this.tileCache;
-  }
-
-  /**
-   * Gets all loaded tiles.
-   */
-  getAllTiles(): ContextDataTile[] {
-    return Array.from(this.tileCache.values());
-  }
-
-  /**
    * Gets tiles currently in the ring (loaded or pending).
    */
   getRingTiles(): string[] {

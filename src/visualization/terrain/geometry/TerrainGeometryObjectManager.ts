@@ -48,13 +48,6 @@ export class TerrainGeometryObjectManager extends TypedEventEmitter<TerrainGeome
   }
 
   /**
-   * Lifecycle hook for additional initialization if needed.
-   */
-  start(): void {
-    // Event subscriptions now happen in constructor
-  }
-
-  /**
    * Creates geometry for a specific elevation tile and stores it.
    */
   createGeometry(key: TileKey, tile: ElevationDataTile): TerrainGeometryObject {
@@ -86,13 +79,6 @@ export class TerrainGeometryObjectManager extends TypedEventEmitter<TerrainGeome
     tileKey: TileKey
   ): TerrainGeometryObject | undefined {
     return this.objects.get(tileKey);
-  }
-
-  /**
-   * Get all managed terrain geometry objects
-   */
-  getAllGeometries(): TerrainGeometryObject[] {
-    return Array.from(this.objects.values());
   }
 
   /**

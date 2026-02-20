@@ -50,13 +50,6 @@ export class TerrainTextureObjectManager extends TypedEventEmitter<TerrainTextur
   }
 
   /**
-   * Lifecycle hook for additional initialization if needed.
-   */
-  start(): void {
-    // Event subscriptions now happen in constructor
-  }
-
-  /**
    * Creates a texture for a tile using context data.
    * Returns null if context data is unavailable (graceful degradation).
    */
@@ -87,13 +80,6 @@ export class TerrainTextureObjectManager extends TypedEventEmitter<TerrainTextur
     tileKey: TileKey
   ): TerrainTextureObject | null | undefined {
     return this.objects.get(tileKey);
-  }
-
-  /**
-   * Get all managed texture entries (including null entries for unavailable context)
-   */
-  getAllTextures(): (TerrainTextureObject | null)[] {
-    return Array.from(this.objects.values());
   }
 
   /**

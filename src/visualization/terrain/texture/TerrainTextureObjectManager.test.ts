@@ -35,13 +35,6 @@ describe('TerrainTextureObjectManager', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize with empty objects map', () => {
-      const newManager = new TerrainTextureObjectManager(
-        mockContextData as ContextDataManager
-      );
-      expect(newManager.getAllTextures()).toEqual([]);
-    });
-
     it('should use provided factory', () => {
       expect(manager).toBeDefined();
     });
@@ -55,7 +48,7 @@ describe('TerrainTextureObjectManager', () => {
 
       expect(result).toBeInstanceOf(TerrainTextureObject);
       expect(result?.getTileKey()).toBe('9:261:168');
-      expect(manager.getAllTextures()).toHaveLength(1);
+      expect(manager.getTerrainTextureObject('9:261:168')).toBe(result);
     });
 
     it('should call factory.createTexture with correct args', () => {
@@ -91,7 +84,8 @@ describe('TerrainTextureObjectManager', () => {
       manager.createTexture('9:261:168', tile1);
       manager.createTexture('9:262:168', tile2);
 
-      expect(manager.getAllTextures()).toHaveLength(2);
+      expect(manager.getTerrainTextureObject('9:261:168')).toBeDefined();
+      expect(manager.getTerrainTextureObject('9:262:168')).toBeDefined();
     });
   });
 
@@ -105,7 +99,7 @@ describe('TerrainTextureObjectManager', () => {
       manager.removeTexture('9:261:168');
 
       expect(disposeSpy).toHaveBeenCalled();
-      expect(manager.getAllTextures()).toHaveLength(0);
+      expect(manager.getTerrainTextureObject('9:261:168')).toBeUndefined();
     });
 
     it('should not error when removing non-existent tile', () => {
@@ -117,7 +111,7 @@ describe('TerrainTextureObjectManager', () => {
       manager.createTexture('9:261:168', null);
 
       expect(() => manager.removeTexture('9:261:168')).not.toThrow();
-      expect(manager.getAllTextures()).toHaveLength(0);
+      expect(manager.getTerrainTextureObject('9:261:168')).toBeUndefined();
     });
   });
 
@@ -147,54 +141,29 @@ describe('TerrainTextureObjectManager', () => {
     });
   });
 
-  describe('getAllTextures', () => {
-    it('should return empty array when no textures', () => {
-      expect(manager.getAllTextures()).toEqual([]);
-    });
-
-    it('should return all texture objects including null entries', () => {
-      const contextTile = createMockContextTile('9:261:168');
-      manager.createTexture('9:261:168', contextTile);
-
-      // Second tile has no context
-      mockFactory.createTexture = vi.fn(() => null);
-      manager.createTexture('9:262:168', null);
-
-      const textures = manager.getAllTextures();
-      expect(textures).toHaveLength(2);
-    });
-  });
-
   describe('dispose', () => {
     it('should dispose all texture objects', () => {
       const tile1 = createMockContextTile('9:261:168');
       const tile2 = createMockContextTile('9:262:168');
-      manager.createTexture('9:261:168', tile1);
-      manager.createTexture('9:262:168', tile2);
+      const texture1 = manager.createTexture('9:261:168', tile1)!;
+      const texture2 = manager.createTexture('9:262:168', tile2)!;
 
-      const textures = manager.getAllTextures();
-      textures.forEach((texture) => {
-        if (texture) {
-          vi.spyOn(texture, 'dispose');
-        }
-      });
+      const spy1 = vi.spyOn(texture1, 'dispose');
+      const spy2 = vi.spyOn(texture2, 'dispose');
 
       manager.dispose();
 
-      textures.forEach((texture) => {
-        if (texture) {
-          expect(texture.dispose).toHaveBeenCalled();
-        }
-      });
+      expect(spy1).toHaveBeenCalled();
+      expect(spy2).toHaveBeenCalled();
     });
 
     it('should clear the objects map', () => {
       const contextTile = createMockContextTile('9:261:168');
       manager.createTexture('9:261:168', contextTile);
-      expect(manager.getAllTextures()).toHaveLength(1);
+      expect(manager.getTerrainTextureObject('9:261:168')).toBeDefined();
 
       manager.dispose();
-      expect(manager.getAllTextures()).toHaveLength(0);
+      expect(manager.getTerrainTextureObject('9:261:168')).toBeUndefined();
     });
 
     it('should not error when disposing null entries', () => {

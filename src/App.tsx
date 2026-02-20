@@ -62,7 +62,6 @@ export function App() {
     // Start data managers and wire event subscriptions
     elevationData.start(drone);
     contextData.start(drone);
-    terrainObjectManager.start();
 
     droneObject = new DroneObject();
     viewer3D.getScene().add(droneObject.getMesh());
