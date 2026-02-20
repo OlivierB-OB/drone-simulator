@@ -4,6 +4,8 @@ import { TypedEventEmitter } from '../core/TypedEventEmitter';
 
 export type DroneEvents = {
   locationChanged: MercatorCoordinates;
+  azimuthChanged: number;
+  elevationChanged: number;
 };
 
 export class Drone {
@@ -58,6 +60,7 @@ export class Drone {
 
   rotateAzimuth(deltaDegrees: number): void {
     this.azimuth = (((this.azimuth + deltaDegrees) % 360) + 360) % 360;
+    this.emitter.emit('azimuthChanged', this.azimuth);
   }
 
   getElevation(): number {
@@ -69,6 +72,7 @@ export class Drone {
       droneConfig.elevationMinimum,
       Math.min(droneConfig.elevationMaximum, this.elevation + deltaMeters)
     );
+    this.emitter.emit('elevationChanged', this.elevation);
   }
 
   startMovingForward(): void {

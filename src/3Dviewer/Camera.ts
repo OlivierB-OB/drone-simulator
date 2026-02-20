@@ -1,12 +1,17 @@
 import { PerspectiveCamera } from 'three';
 import { cameraConfig } from '../config';
+import type { Drone } from '../drone/Drone';
+import { mercatorToThreeJs } from '../gis/types';
 
 export class Camera {
   private readonly camera: PerspectiveCamera;
+  private drone: Drone | null = null;
+  private boundUpdateFromDroneState: (() => void) | null = null;
 
   constructor(
     width: number,
     height: number,
+    drone: Drone,
     cameraConstructor: typeof PerspectiveCamera = PerspectiveCamera
   ) {
     this.camera = new cameraConstructor(
@@ -15,6 +20,14 @@ export class Camera {
       cameraConfig.near,
       cameraConfig.far
     );
+
+    this.drone = drone;
+    this.boundUpdateFromDroneState = () => this.updateFromDroneState();
+
+    // Subscribe to drone state changes
+    drone.on('locationChanged', this.boundUpdateFromDroneState);
+    drone.on('azimuthChanged', this.boundUpdateFromDroneState);
+    drone.on('elevationChanged', this.boundUpdateFromDroneState);
   }
 
   getCamera(): PerspectiveCamera {
@@ -28,6 +41,23 @@ export class Camera {
 
   setPosition(x: number, y: number, z: number): void {
     this.camera.position.set(x, y, z);
+  }
+
+  private updateFromDroneState(): void {
+    if (!this.drone) return;
+
+    const droneLocation = this.drone.getLocation();
+    const droneElevation = this.drone.getElevation();
+    const droneAzimuth = this.drone.getAzimuth();
+
+    const threeCoords = mercatorToThreeJs(droneLocation, droneElevation);
+
+    this.updateChaseCamera(
+      threeCoords.x,
+      threeCoords.y,
+      threeCoords.z,
+      droneAzimuth
+    );
   }
 
   /**
@@ -56,5 +86,16 @@ export class Camera {
 
     this.camera.position.set(behindX, aboveY, behindZ);
     this.camera.lookAt(droneX, droneY, droneZ);
+  }
+
+  unsubscribeFromDrone(): void {
+    if (!this.drone || !this.boundUpdateFromDroneState) return;
+
+    this.drone.off('locationChanged', this.boundUpdateFromDroneState);
+    this.drone.off('azimuthChanged', this.boundUpdateFromDroneState);
+    this.drone.off('elevationChanged', this.boundUpdateFromDroneState);
+
+    this.drone = null;
+    this.boundUpdateFromDroneState = null;
   }
 }

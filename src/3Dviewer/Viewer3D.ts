@@ -1,6 +1,7 @@
 import { Camera } from './Camera';
 import { Scene } from './Scene';
 import { Renderer } from './Renderer';
+import type { Drone } from '../drone/Drone';
 
 export class Viewer3D {
   private readonly camera: Camera;
@@ -10,6 +11,7 @@ export class Viewer3D {
 
   constructor(
     container: HTMLDivElement,
+    drone: Drone,
     camera?: Camera,
     renderer?: Renderer,
     scene?: Scene
@@ -17,7 +19,7 @@ export class Viewer3D {
     const width = container.clientWidth;
     const height = container.clientHeight;
 
-    this.camera = camera ?? new Camera(width, height);
+    this.camera = camera ?? new Camera(width, height, drone);
     this.scene = scene ?? new Scene();
     this.renderer = renderer ?? new Renderer(width, height);
 
@@ -52,6 +54,7 @@ export class Viewer3D {
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
     }
+    this.camera.unsubscribeFromDrone();
     this.scene.dispose();
     this.renderer.dispose();
   }

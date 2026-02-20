@@ -3,6 +3,7 @@ import { Viewer3D } from './Viewer3D';
 import { Camera } from './Camera';
 import { Renderer } from './Renderer';
 import { Scene } from './Scene';
+import { Drone } from '../drone/Drone';
 import * as THREE from 'three';
 
 describe('Viewer3D', () => {
@@ -14,6 +15,7 @@ describe('Viewer3D', () => {
   let camera: Camera;
   let renderer: Renderer;
   let scene: Scene;
+  let drone: Drone;
 
   beforeEach(() => {
     // Create a container with specific dimensions
@@ -31,6 +33,9 @@ describe('Viewer3D', () => {
       value: 600,
     });
     document.body.appendChild(container);
+
+    // Create a drone instance
+    drone = new Drone({ x: 0, y: 0 });
 
     // Create mock Three.js constructor classes
     const mockCameraConstructor = class MockCamera
@@ -65,12 +70,12 @@ describe('Viewer3D', () => {
     } as unknown as typeof THREE.Scene;
 
     // Create camera, renderer, and scene with injected mock constructors
-    camera = new Camera(800, 600, mockCameraConstructor);
+    camera = new Camera(800, 600, drone, mockCameraConstructor);
     renderer = new Renderer(800, 600, mockRendererConstructor);
     scene = new Scene(mockSceneConstructor);
 
     // Create viewer with injected components
-    viewer = new Viewer3D(container, camera, renderer, scene);
+    viewer = new Viewer3D(container, drone, camera, renderer, scene);
   });
 
   afterEach(() => {

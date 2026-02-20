@@ -1,13 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Camera } from './Camera';
 import { cameraConfig } from '../config';
+import { Drone } from '../drone/Drone';
 import * as THREE from 'three';
 
 describe('Camera', () => {
   let camera: Camera;
+  let drone: Drone;
 
   beforeEach(() => {
-    camera = new Camera(1920, 1080);
+    drone = new Drone({ x: 0, y: 0 });
+    camera = new Camera(1920, 1080, drone);
   });
 
   describe('constructor', () => {
@@ -39,6 +42,7 @@ describe('Camera', () => {
       const cameraInstance = new Camera(
         1920,
         1080,
+        drone,
         mockConstructor
       ).getCamera();
 
@@ -61,7 +65,7 @@ describe('Camera', () => {
         }
       } as unknown as typeof THREE.PerspectiveCamera;
 
-      new Camera(1920, 1080, mockConstructor);
+      new Camera(1920, 1080, drone, mockConstructor);
 
       expect(constructorCalls).toHaveLength(1);
       expect(constructorCalls[0]).toEqual({

@@ -1,7 +1,6 @@
 import { Viewer3D } from '../3Dviewer/Viewer3D';
 import { Drone } from '../drone/Drone';
 import { Camera } from '../3Dviewer/Camera';
-import { mercatorToThreeJs } from '../gis/types';
 import type { DroneObject } from '../visualization/drone/DroneObject';
 
 export class AnimationLoop {
@@ -28,27 +27,10 @@ export class AnimationLoop {
 
       this.drone.applyMove(deltaTime);
 
-      const droneLocation = this.drone.getLocation();
-      const droneElevation = this.drone.getElevation();
-      const droneAzimuth = this.drone.getAzimuth();
+      // DroneObject updates itself via Drone event subscriptions
+      this.droneObject.animateRotors();
 
-      // Convert Mercator to Three.js coordinates
-      const threeCoords = mercatorToThreeJs(droneLocation, droneElevation);
-
-      this.droneObject.update(
-        threeCoords.x,
-        threeCoords.y,
-        threeCoords.z,
-        droneAzimuth,
-        deltaTime
-      );
-      this.camera.updateChaseCamera(
-        threeCoords.x,
-        threeCoords.y,
-        threeCoords.z,
-        droneAzimuth
-      );
-
+      // Camera updates itself via Drone event subscriptions
       this.viewer3D.render();
     };
     animate(0);

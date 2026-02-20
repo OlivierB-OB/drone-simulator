@@ -46,7 +46,7 @@ export function App() {
     drone = createDrone();
     elevationData = new ElevationDataManager(drone);
     contextData = new ContextDataManager(drone);
-    viewer3D = new Viewer3D(containerRef);
+    viewer3D = new Viewer3D(containerRef, drone);
 
     terrainGeometryManager = new TerrainGeometryObjectManager(elevationData);
     terrainTextureManager = new TerrainTextureObjectManager(
@@ -59,7 +59,7 @@ export function App() {
       terrainTextureManager
     );
 
-    droneObject = new DroneObject();
+    droneObject = new DroneObject(drone);
     viewer3D.getScene().add(droneObject.getMesh());
 
     animationLoop = new AnimationLoop(
@@ -79,6 +79,7 @@ export function App() {
       elevationData?.dispose();
       contextData?.dispose();
       terrainObjectManager?.dispose();
+      droneObject?.unsubscribeFromDrone(drone!);
       droneObject?.dispose();
       drone?.dispose();
     };

@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DroneObject } from './DroneObject';
+import { Drone } from '../../drone/Drone';
 import { Group, Mesh } from 'three';
 
 describe('DroneObject', () => {
   let droneObject: DroneObject;
+  let drone: Drone;
 
   beforeEach(() => {
-    droneObject = new DroneObject();
+    drone = new Drone({ x: 0, y: 0 });
+    droneObject = new DroneObject(drone);
   });
 
   describe('constructor', () => {
