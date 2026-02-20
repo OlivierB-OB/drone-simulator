@@ -31,6 +31,7 @@ describe('TerrainObjectManager', () => {
       createTexture: vi.fn(() => null),
       removeTexture: vi.fn(),
       getTerrainTextureObject: vi.fn(() => undefined),
+      dispose: vi.fn(),
     } as unknown as TerrainTextureObjectManager;
 
     mockFactory = new TerrainObjectFactory();
@@ -291,6 +292,22 @@ describe('TerrainObjectManager', () => {
 
       manager.dispose();
       expect(manager.getAllObjects()).toHaveLength(0);
+    });
+
+    it('should dispose geometry manager', () => {
+      const disposeSpy = vi.spyOn(mockGeometryManager, 'dispose');
+
+      manager.dispose();
+
+      expect(disposeSpy).toHaveBeenCalled();
+    });
+
+    it('should dispose texture manager', () => {
+      const disposeSpy = vi.spyOn(mockTextureManager, 'dispose');
+
+      manager.dispose();
+
+      expect(disposeSpy).toHaveBeenCalled();
     });
   });
 });

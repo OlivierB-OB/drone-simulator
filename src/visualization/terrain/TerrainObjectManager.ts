@@ -121,14 +121,20 @@ export class TerrainObjectManager {
   }
 
   /**
-   * Clean up all objects, remove from scene, and clear the collection
+   * Clean up all objects, remove from scene, and clear the collection.
+   * Also disposes owned dependency managers (geometry and texture).
    */
   dispose(): void {
+    // Remove all meshes from scene and dispose TerrainObjects (mesh + material)
     for (const terrainObject of this.objects.values()) {
       this.scene.remove(terrainObject.getMesh());
       terrainObject.dispose();
     }
     this.objects.clear();
     this.textureStateMap.clear();
+
+    // Dispose delegated managers (composed dependencies)
+    this.geometryManager.dispose();
+    this.textureManager?.dispose();
   }
 }

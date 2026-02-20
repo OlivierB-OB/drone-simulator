@@ -101,8 +101,6 @@ export function App() {
       droneController?.dispose();
       elevationData?.dispose();
       contextData?.dispose();
-      terrainGeometryManager?.dispose();
-      terrainTextureManager?.dispose();
       terrainObjectManager?.dispose();
       droneObject?.dispose();
     };
