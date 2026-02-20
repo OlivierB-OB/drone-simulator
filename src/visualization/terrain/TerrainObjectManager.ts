@@ -18,7 +18,6 @@ export class TerrainObjectManager {
   private readonly geometryManager: TerrainGeometryObjectManager;
   private readonly textureManager: TerrainTextureObjectManager | undefined;
   private readonly factory: TerrainObjectFactory;
-  private readonly textureStateMap: Map<TileKey, boolean>;
   private onGeometryAdded:
     | ((data: TerrainGeometryObjectManagerEvents['geometryAdded']) => void)
     | null = null;
@@ -28,9 +27,7 @@ export class TerrainObjectManager {
   private onTextureAdded:
     | ((data: TerrainTextureObjectManagerEvents['textureAdded']) => void)
     | null = null;
-  private onTextureRemoved:
-    | ((data: TerrainTextureObjectManagerEvents['textureRemoved']) => void)
-    | null = null;
+  private onTextureRemoved: (() => void) | null = null;
 
   constructor(
     scene: Scene,
@@ -43,7 +40,6 @@ export class TerrainObjectManager {
     this.textureManager = textureManager;
     this.factory = factory ?? new TerrainObjectFactory();
     this.objects = new Map();
-    this.textureStateMap = new Map();
 
     // Subscribe to geometry and texture manager tile events
     this.onGeometryAdded = (data) => {
@@ -61,8 +57,8 @@ export class TerrainObjectManager {
     };
     this.textureManager?.on('textureAdded', this.onTextureAdded);
 
-    this.onTextureRemoved = (data) => {
-      this.handleTextureRemoved(data);
+    this.onTextureRemoved = () => {
+      this.handleTextureRemoved();
     };
     this.textureManager?.on('textureRemoved', this.onTextureRemoved);
   }
@@ -84,7 +80,6 @@ export class TerrainObjectManager {
     );
     this.objects.set(key, terrainObject);
     this.scene.add(terrainObject.getMesh());
-    this.textureStateMap.set(key, textureObject !== null);
   }
 
   /**
@@ -101,7 +96,6 @@ export class TerrainObjectManager {
       terrainObject.dispose();
       this.objects.delete(key);
     }
-    this.textureStateMap.delete(key);
   }
 
   /**
@@ -112,8 +106,7 @@ export class TerrainObjectManager {
     data: TerrainTextureObjectManagerEvents['textureAdded']
   ): void {
     const { key, texture } = data;
-    const hadTexture = this.textureStateMap.get(key) ?? false;
-    if (hadTexture || !this.objects.has(key)) return;
+    if (!this.objects.has(key)) return;
 
     const geometryObject = this.geometryManager.getTerrainGeometryObject(key);
     const terrainObject = this.objects.get(key);
@@ -131,18 +124,14 @@ export class TerrainObjectManager {
     );
     this.objects.set(key, newTerrainObject);
     this.scene.add(newTerrainObject.getMesh());
-    this.textureStateMap.set(key, true);
   }
 
   /**
    * Called when a texture is removed for a tile.
-   * Updates terrain state to reflect loss of texture.
+   * Texture state is managed implicitly through TerrainObject lifecycle.
    */
-  handleTextureRemoved(
-    data: TerrainTextureObjectManagerEvents['textureRemoved']
-  ): void {
-    const { key } = data;
-    this.textureStateMap.set(key, false);
+  handleTextureRemoved(): void {
+    // No-op
   }
 
   /**
@@ -176,7 +165,6 @@ export class TerrainObjectManager {
       terrainObject.dispose();
     }
     this.objects.clear();
-    this.textureStateMap.clear();
 
     // Dispose delegated managers (composed dependencies)
     this.geometryManager.dispose();

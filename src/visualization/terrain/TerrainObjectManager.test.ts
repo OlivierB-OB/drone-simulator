@@ -196,12 +196,7 @@ describe('TerrainObjectManager', () => {
   });
 
   describe('texture addition', () => {
-    it('should not upgrade if terrain object already has texture', () => {
-      const elevTile = createMockElevationTile('9:261:168');
-      mockGeometryManager.createGeometry('9:261:168', elevTile);
-      vi.clearAllMocks();
-
-      // Create a mock texture object
+    it('should skip texture upgrade if terrain object does not exist', () => {
       const mockTextureObj = {
         getTexture: () => ({}),
         getTileKey: () => '9:261:168',
@@ -209,17 +204,12 @@ describe('TerrainObjectManager', () => {
         dispose: vi.fn(),
       } as any;
 
-      (mockTextureManager.getTerrainTextureObject as any).mockReturnValue(
-        mockTextureObj
-      );
-
-      // Try to add texture - should not upgrade since it already has one
-      mockTextureManager.emit('textureAdded', {
-        key: '9:261:168',
-        texture: mockTextureObj,
-      });
-
-      expect(mockScene.remove).not.toHaveBeenCalled();
+      expect(() =>
+        mockTextureManager.emit('textureAdded', {
+          key: '9:261:168',
+          texture: mockTextureObj,
+        })
+      ).not.toThrow();
       expect(mockScene.add).not.toHaveBeenCalled();
     });
 
