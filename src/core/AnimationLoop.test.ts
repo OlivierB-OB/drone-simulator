@@ -7,46 +7,19 @@ describe('AnimationLoop', () => {
   let drone: Drone;
   let mockViewer3D: any;
   let mockCamera: any;
-  let mockElevationData: any;
-  let mockContextData: any;
-  let mockTerrainObjectManager: any;
-  let mockContextObjectManager: any;
   let mockDroneObject: any;
 
   beforeEach(() => {
     drone = createDrone();
 
-    // Mock Viewer3D
     mockViewer3D = {
       render: vi.fn(),
     };
 
-    // Mock Camera
     mockCamera = {
       updateChaseCamera: vi.fn(),
     };
 
-    // Mock ElevationDataManager
-    mockElevationData = {
-      setLocation: vi.fn(),
-    };
-
-    // Mock ContextDataManager
-    mockContextData = {
-      setLocation: vi.fn(),
-    };
-
-    // Mock TerrainObjectManager
-    mockTerrainObjectManager = {
-      refresh: vi.fn(),
-    };
-
-    // Mock ContextObjectManager
-    mockContextObjectManager = {
-      refresh: vi.fn(),
-    };
-
-    // Mock DroneObject
     mockDroneObject = {
       update: vi.fn(),
     };
@@ -54,10 +27,7 @@ describe('AnimationLoop', () => {
     animationLoop = new AnimationLoop(
       mockViewer3D,
       drone,
-      mockElevationData,
-      mockContextData,
       mockCamera,
-      mockTerrainObjectManager,
       mockDroneObject
     );
 
@@ -65,7 +35,6 @@ describe('AnimationLoop', () => {
     vi.stubGlobal(
       'requestAnimationFrame',
       vi.fn((callback: unknown) => {
-        // Store the callback on the AnimationLoop for testing
         (animationLoop as any).__testCallback = callback;
         return 1;
       })
@@ -88,7 +57,6 @@ describe('AnimationLoop', () => {
       const droneSpy = vi.spyOn(drone, 'applyMove');
       animationLoop.start();
 
-      // Get the callback and invoke it
       const callback = (animationLoop as any).__testCallback;
       if (callback) {
         callback(100);
@@ -112,7 +80,6 @@ describe('AnimationLoop', () => {
 
       const callback = (animationLoop as any).__testCallback;
       if (callback) {
-        // Verify delta time is calculated for subsequent frames
         droneSpy.mockClear();
         callback(0);
         const firstCallDelta = droneSpy.mock.calls[0]?.[0];
@@ -121,7 +88,6 @@ describe('AnimationLoop', () => {
         callback(1000);
         const secondCallDelta = droneSpy.mock.calls[0]?.[0];
 
-        // Second frame should have larger delta time than first
         expect(secondCallDelta).toBeGreaterThanOrEqual(firstCallDelta!);
       }
     });
@@ -188,14 +154,11 @@ describe('AnimationLoop', () => {
         callback(0);
         expect(mockCamera.updateChaseCamera).toHaveBeenCalled();
 
-        // Start moving forward for next frame
         drone.startMovingForward();
         mockCamera.updateChaseCamera.mockClear();
 
-        // Second call - with movement
         callback(1000);
 
-        // Verify updateChaseCamera was called again
         expect(mockCamera.updateChaseCamera).toHaveBeenCalled();
       }
     });
@@ -235,16 +198,10 @@ describe('AnimationLoop', () => {
   });
 
   describe('execution order', () => {
-    it('should execute in correct order: applyMove -> terrainRefresh -> contextRefresh -> droneObject.update -> updateChaseCamera -> render', () => {
+    it('should execute in correct order: applyMove -> droneObject.update -> updateChaseCamera -> render', () => {
       const callOrder: string[] = [];
       vi.spyOn(drone, 'applyMove').mockImplementation(() => {
         callOrder.push('applyMove');
-      });
-      mockTerrainObjectManager.refresh.mockImplementation(() => {
-        callOrder.push('terrainRefresh');
-      });
-      mockContextObjectManager.refresh.mockImplementation(() => {
-        callOrder.push('contextRefresh');
       });
       mockDroneObject.update.mockImplementation(() => {
         callOrder.push('droneObject.update');
@@ -260,15 +217,12 @@ describe('AnimationLoop', () => {
 
       const callback = (animationLoop as any).__testCallback;
       if (callback) {
-        // Only test the second call where delta time is non-zero
-        callback(0); // First call
-        callOrder.length = 0; // Clear the order
-        callback(100); // Second call
+        callback(0);
+        callOrder.length = 0;
+        callback(100);
 
         expect(callOrder).toEqual([
           'applyMove',
-          'terrainRefresh',
-          'contextRefresh',
           'droneObject.update',
           'updateChaseCamera',
           'render',
@@ -286,7 +240,6 @@ describe('AnimationLoop', () => {
       const callback = (animationLoop as any).__testCallback;
       if (callback) {
         callback(0);
-        // Verify all components were called
         expect(droneSpy).toHaveBeenCalled();
         expect(mockDroneObject.update).toHaveBeenCalled();
         expect(mockCamera.updateChaseCamera).toHaveBeenCalled();

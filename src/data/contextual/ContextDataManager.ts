@@ -4,11 +4,21 @@ import type { ContextDataTile } from './types';
 import { contextDataConfig } from '../../config';
 import { ContextDataTileLoader } from './ContextDataTileLoader';
 import { OverpassStatusManager } from './OverpassStatusManager';
+import { TypedEventEmitter } from '../../core/TypedEventEmitter';
+
+export type ContextDataEvents = {
+  tileAdded: { key: string; tile: ContextDataTile };
+  tileRemoved: { key: string };
+};
 
 /**
  * Manages context data (OSM features) loading and caching.
  * Maintains a ring of tiles around the drone's current location and automatically
  * loads/unloads tiles as the drone moves. Uses OSM Overpass API for data.
+ *
+ * Emits `tileAdded` when a tile finishes loading and is cached.
+ * Emits `tileRemoved` when a tile is evicted from the cache.
+ * Call `start()` after wiring event handlers to begin initial tile loading.
  */
 export class ContextDataManager {
   private currentTileCenter: TileCoordinates | null = null;
@@ -25,8 +35,12 @@ export class ContextDataManager {
     resolved: boolean;
     resolve: (tile: ContextDataTile | null) => void;
   }> = [];
+  private readonly emitter = new TypedEventEmitter<ContextDataEvents>();
+  private initialLocation: MercatorCoordinates;
 
   constructor(initialLocation: MercatorCoordinates) {
+    this.initialLocation = initialLocation;
+
     // Initialize status manager if enabled
     if (contextDataConfig.statusCheckEnabled) {
       this.statusManager = new OverpassStatusManager(
@@ -36,8 +50,27 @@ export class ContextDataManager {
         contextDataConfig.statusCacheTtlMs
       );
     }
+  }
 
-    this.initializeTileRing(initialLocation);
+  /**
+   * Begins initial tile loading. Call after event handlers are wired.
+   */
+  start(): void {
+    this.initializeTileRing(this.initialLocation);
+  }
+
+  on<K extends keyof ContextDataEvents>(
+    event: K,
+    handler: (data: ContextDataEvents[K]) => void
+  ): void {
+    this.emitter.on(event, handler);
+  }
+
+  off<K extends keyof ContextDataEvents>(
+    event: K,
+    handler: (data: ContextDataEvents[K]) => void
+  ): void {
+    this.emitter.off(event, handler);
   }
 
   /**
@@ -98,6 +131,7 @@ export class ContextDataManager {
       if (!desiredTiles.has(key)) {
         this.tileCache.delete(key);
         this.loadPromises.delete(key);
+        this.emitter.emit('tileRemoved', { key });
       }
     }
 
@@ -185,6 +219,7 @@ export class ContextDataManager {
 
       if (tile && this.loadPromises.has(key)) {
         this.tileCache.set(key, tile);
+        this.emitter.emit('tileAdded', { key, tile });
 
         // Notify any pending resolvers waiting for this tile
         const resolverIndex = this.pendingResolvers.findIndex(
@@ -326,5 +361,6 @@ export class ContextDataManager {
     this.pendingResolvers = [];
     this.loadingCount = 0;
     this.statusManager?.dispose();
+    this.emitter.removeAllListeners();
   }
 }

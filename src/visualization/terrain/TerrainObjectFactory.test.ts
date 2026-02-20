@@ -2,11 +2,13 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   Mesh,
   BufferGeometry,
+  Texture,
   MeshPhongMaterial,
   MeshBasicMaterial,
 } from 'three';
 import { TerrainObjectFactory } from './TerrainObjectFactory';
 import { TerrainGeometryObject } from './geometry/TerrainGeometryObject';
+import { TerrainTextureObject } from './texture/TerrainTextureObject';
 import { debugConfig } from '../../config';
 
 describe('TerrainObjectFactory', () => {
@@ -61,31 +63,42 @@ describe('TerrainObjectFactory', () => {
 
     describe('material type', () => {
       const originalUseSimple = debugConfig.useSimpleTerrainMaterial;
+      let textureObject: TerrainTextureObject;
+      let texture: Texture;
 
       beforeEach(() => {
         (debugConfig as any).useSimpleTerrainMaterial = false;
+        texture = new Texture();
+        textureObject = new TerrainTextureObject(
+          tileKey,
+          texture,
+          mercatorBounds
+        );
       });
 
       afterEach(() => {
         (debugConfig as any).useSimpleTerrainMaterial = originalUseSimple;
       });
 
-      it('should create a mesh with a MeshPhongMaterial', () => {
-        const terrainObject = factory.createTerrainObject(geometryObject);
+      it('should create a mesh with a MeshPhongMaterial when texture is provided', () => {
+        const terrainObject = factory.createTerrainObject(
+          geometryObject,
+          textureObject
+        );
         const mesh = terrainObject.getMesh();
 
         expect(mesh.material).toBeInstanceOf(MeshPhongMaterial);
       });
 
-      it('should configure material with appropriate properties', () => {
-        const terrainObject = factory.createTerrainObject(geometryObject);
+      it('should apply texture map to material', () => {
+        const terrainObject = factory.createTerrainObject(
+          geometryObject,
+          textureObject
+        );
         const mesh = terrainObject.getMesh();
         const material = mesh.material as MeshPhongMaterial;
 
-        expect(material.color.getHex()).toBe(0x2d5016);
-        expect(material.specular.getHex()).toBe(0x101010);
-        expect(material.shininess).toBe(100);
-        expect(material.flatShading).toBe(false);
+        expect(material.map).toBe(texture);
       });
     });
 

@@ -6,13 +6,10 @@ import type { ContextDataTile } from '../../../data/contextual/types';
 
 describe('TerrainTextureFactory', () => {
   let factory: TerrainTextureFactory;
-  let mockContextManager: any;
   let mockCanvasRenderer: any;
   let mockTextureConstructor: any;
 
   beforeEach(() => {
-    mockContextManager = {};
-
     mockCanvasRenderer = {
       renderTile: vi.fn(),
     };
@@ -21,7 +18,6 @@ describe('TerrainTextureFactory', () => {
     mockTextureConstructor = THREE.CanvasTexture;
 
     factory = new TerrainTextureFactory(
-      mockContextManager,
       mockCanvasRenderer,
       mockTextureConstructor
     );
@@ -117,7 +113,7 @@ describe('TerrainTextureFactory', () => {
 
   describe('constructor', () => {
     it('should create default canvas renderer if not provided', () => {
-      const factoryWithDefaults = new TerrainTextureFactory(mockContextManager);
+      const factoryWithDefaults = new TerrainTextureFactory();
       expect(factoryWithDefaults).toBeDefined();
     });
 

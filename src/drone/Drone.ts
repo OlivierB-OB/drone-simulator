@@ -1,5 +1,10 @@
 import { droneConfig } from '../config';
 import type { MercatorCoordinates } from '../gis/types';
+import { TypedEventEmitter } from '../core/TypedEventEmitter';
+
+export type DroneEvents = {
+  locationChanged: MercatorCoordinates;
+};
 
 export class Drone {
   private readonly location: MercatorCoordinates;
@@ -9,6 +14,7 @@ export class Drone {
   private isMovingBackward: boolean = false;
   private isMovingLeft: boolean = false;
   private isMovingRight: boolean = false;
+  private readonly emitter = new TypedEventEmitter<DroneEvents>();
 
   constructor(
     location: MercatorCoordinates,
@@ -18,6 +24,24 @@ export class Drone {
     this.location = location;
     this.azimuth = azimuth;
     this.elevation = elevation;
+  }
+
+  on<K extends keyof DroneEvents>(
+    event: K,
+    handler: (data: DroneEvents[K]) => void
+  ): void {
+    this.emitter.on(event, handler);
+  }
+
+  off<K extends keyof DroneEvents>(
+    event: K,
+    handler: (data: DroneEvents[K]) => void
+  ): void {
+    this.emitter.off(event, handler);
+  }
+
+  removeAllListeners(): void {
+    this.emitter.removeAllListeners();
   }
 
   getLocation(): MercatorCoordinates {
@@ -122,6 +146,8 @@ export class Drone {
     // Apply movement to location
     this.location.x += forwardVector.x + rightVector.x;
     this.location.y += forwardVector.y + rightVector.y;
+
+    this.emitter.emit('locationChanged', this.getLocation());
   }
 
   /**

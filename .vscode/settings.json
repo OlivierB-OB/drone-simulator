@@ -2,5 +2,5 @@
   "claudeCode.disableLoginPrompt": true,
   "claudeCode.selectedModel": "claude-haiku-4-5@20251001"
   // "claudeCode.selectedModel": "claude-sonnet-4-5@20250929"
-  //   "claudeCode.selectedModel": "claude-opus-4-6@default"
+  // "claudeCode.selectedModel": "claude-opus-4-6@default"
 }

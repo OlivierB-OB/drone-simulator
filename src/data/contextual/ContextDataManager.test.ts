@@ -11,6 +11,7 @@ describe('ContextDataManager', () => {
 
   beforeEach(() => {
     contextManager = new ContextDataManager(initialLocation);
+    contextManager.start();
   });
 
   afterEach(() => {

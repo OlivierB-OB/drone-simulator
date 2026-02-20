@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Drone, createDrone } from './Drone';
 import { droneConfig } from '../config';
 import type { MercatorCoordinates } from '../gis/types';
@@ -435,6 +435,74 @@ describe('Drone', () => {
       const newLocation = drone.getLocation();
       expect(newLocation.x).toBeLessThan(initialLocation.x); // Left decreases X
       expect(newLocation.y).toBeLessThan(initialLocation.y); // Backward decreases Y (south)
+    });
+  });
+
+  describe('locationChanged event', () => {
+    it('should emit when drone moves forward', () => {
+      const handler = vi.fn();
+      drone.on('locationChanged', handler);
+
+      drone.startMovingForward();
+      drone.applyMove(1);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith(drone.getLocation());
+    });
+
+    it('should not emit when no movement flags are set', () => {
+      const handler = vi.fn();
+      drone.on('locationChanged', handler);
+
+      drone.applyMove(1);
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('should not emit when opposite movements cancel out', () => {
+      const handler = vi.fn();
+      drone.on('locationChanged', handler);
+
+      drone.startMovingForward();
+      drone.startMovingBackward();
+      drone.applyMove(1);
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('should emit a copy of location, not a reference', () => {
+      const handler = vi.fn();
+      drone.on('locationChanged', handler);
+
+      drone.startMovingForward();
+      drone.applyMove(1);
+
+      const emittedLocation = handler.mock.calls[0]![0] as MercatorCoordinates;
+      emittedLocation.x = 999999;
+
+      expect(drone.getLocation().x).not.toEqual(999999);
+    });
+
+    it('should stop receiving events after off()', () => {
+      const handler = vi.fn();
+      drone.on('locationChanged', handler);
+      drone.off('locationChanged', handler);
+
+      drone.startMovingForward();
+      drone.applyMove(1);
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('should stop all events after removeAllListeners()', () => {
+      const handler = vi.fn();
+      drone.on('locationChanged', handler);
+      drone.removeAllListeners();
+
+      drone.startMovingForward();
+      drone.applyMove(1);
+
+      expect(handler).not.toHaveBeenCalled();
     });
   });
 

@@ -2,11 +2,21 @@ import type { MercatorCoordinates } from '../../gis/types';
 import type { TileCoordinates, ElevationDataTile } from './types';
 import { elevationConfig } from '../../config';
 import { ElevationDataTileLoader } from './ElevationDataTileLoader';
+import { TypedEventEmitter } from '../../core/TypedEventEmitter';
+
+export type ElevationDataEvents = {
+  tileAdded: { key: string; tile: ElevationDataTile };
+  tileRemoved: { key: string };
+};
 
 /**
  * Manages elevation data loading and caching for geographic regions.
  * Maintains a ring of tiles around the drone's current location and automatically
  * loads/unloads tiles as the drone moves.
+ *
+ * Emits `tileAdded` when a tile finishes loading and is cached.
+ * Emits `tileRemoved` when a tile is evicted from the cache.
+ * Call `start()` after wiring event handlers to begin initial tile loading.
  */
 export class ElevationDataManager {
   private currentTileCenter: TileCoordinates | null = null;
@@ -15,9 +25,32 @@ export class ElevationDataManager {
     new Map();
   private loadingCount: number = 0;
   private abortController: AbortController = new AbortController();
+  private readonly emitter = new TypedEventEmitter<ElevationDataEvents>();
+  private initialLocation: MercatorCoordinates;
 
   constructor(initialLocation: MercatorCoordinates) {
-    this.initializeTileRing(initialLocation);
+    this.initialLocation = initialLocation;
+  }
+
+  /**
+   * Begins initial tile loading. Call after event handlers are wired.
+   */
+  start(): void {
+    this.initializeTileRing(this.initialLocation);
+  }
+
+  on<K extends keyof ElevationDataEvents>(
+    event: K,
+    handler: (data: ElevationDataEvents[K]) => void
+  ): void {
+    this.emitter.on(event, handler);
+  }
+
+  off<K extends keyof ElevationDataEvents>(
+    event: K,
+    handler: (data: ElevationDataEvents[K]) => void
+  ): void {
+    this.emitter.off(event, handler);
   }
 
   /**
@@ -78,6 +111,7 @@ export class ElevationDataManager {
       if (!desiredTiles.has(key)) {
         this.tileCache.delete(key);
         this.pendingLoads.delete(key);
+        this.emitter.emit('tileRemoved', { key });
       }
     }
 
@@ -114,6 +148,7 @@ export class ElevationDataManager {
 
         if (tile && this.pendingLoads.has(tileKey)) {
           this.tileCache.set(tileKey, tile);
+          this.emitter.emit('tileAdded', { key: tileKey, tile });
         }
 
         this.pendingLoads.delete(tileKey);
@@ -221,5 +256,6 @@ export class ElevationDataManager {
     this.tileCache.clear();
     this.pendingLoads.clear();
     this.loadingCount = 0;
+    this.emitter.removeAllListeners();
   }
 }

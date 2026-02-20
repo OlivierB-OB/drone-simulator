@@ -3,7 +3,6 @@ import type { ContextDataTile } from '../../../data/contextual/types';
 import type { TileKey } from '../geometry/types';
 import { TerrainTextureObject } from './TerrainTextureObject';
 import { TerrainCanvasRenderer } from './TerrainCanvasRenderer';
-import type { ContextDataManager } from '../../../data/contextual/ContextDataManager';
 
 /**
  * Factory for creating terrain textures from context data tiles.
@@ -21,7 +20,6 @@ export class TerrainTextureFactory {
   private readonly canvasRenderer: TerrainCanvasRenderer;
 
   constructor(
-    private readonly contextDataManager: ContextDataManager,
     canvasRenderer?: TerrainCanvasRenderer,
     private readonly textureConstructor: typeof THREE.CanvasTexture = THREE.CanvasTexture
   ) {

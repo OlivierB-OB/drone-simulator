@@ -8,11 +8,8 @@ import type { ContextDataTile } from '../../../data/contextual/types';
 describe('TerrainTextureObjectManager', () => {
   let manager: TerrainTextureObjectManager;
   let mockFactory: TerrainTextureFactory;
-  let mockElevationManager: any;
-  let mockContextManager: any;
 
   beforeEach(() => {
-    // Create mock factory
     mockFactory = {
       createTexture: vi.fn((tile: ContextDataTile | null, tileKey: string) => {
         if (tile === null) return null;
@@ -24,119 +21,44 @@ describe('TerrainTextureObjectManager', () => {
       }),
     } as unknown as TerrainTextureFactory;
 
-    // Create mock elevation manager
-    mockElevationManager = {
-      getTileCache: vi.fn(() => new Map()),
-    };
-
-    // Create mock context manager
-    mockContextManager = {
-      getTile: vi.fn(() => null),
-    };
-
-    manager = new TerrainTextureObjectManager(
-      mockElevationManager,
-      mockContextManager,
-      mockFactory
-    );
+    manager = new TerrainTextureObjectManager(mockFactory);
   });
 
   describe('constructor', () => {
     it('should initialize with empty objects map', () => {
-      const newManager = new TerrainTextureObjectManager(
-        mockElevationManager,
-        mockContextManager
-      );
+      const newManager = new TerrainTextureObjectManager();
       expect(newManager.getAllTextures()).toEqual([]);
     });
 
     it('should use provided factory', () => {
       expect(manager).toBeDefined();
     });
-
-    it('should create default factory if not provided', () => {
-      const newManager = new TerrainTextureObjectManager(
-        mockElevationManager,
-        mockContextManager
-      );
-      expect(newManager).toBeDefined();
-    });
   });
 
-  describe('refresh', () => {
-    it('should not change anything when tile set is unchanged', () => {
-      const elevationTiles = new Map([['9:261:168', {}]]);
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
+  describe('createTexture', () => {
+    it('should create and store texture for a tile', () => {
+      const contextTile = createMockContextTile('9:261:168');
 
-      // Add initial tile
-      manager.refresh();
-      expect(mockFactory.createTexture).toHaveBeenCalledOnce();
+      const result = manager.createTexture('9:261:168', contextTile);
 
-      // Refresh without changes
-      vi.clearAllMocks();
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
-      manager.refresh();
-
-      expect(mockFactory.createTexture).not.toHaveBeenCalled();
-    });
-
-    it('should add new tiles from elevation manager', () => {
-      const elevationTiles = new Map([
-        ['9:261:168', {}],
-        ['9:262:168', {}],
-      ]);
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
-
-      manager.refresh();
-
-      expect(mockFactory.createTexture).toHaveBeenCalledTimes(2);
-      expect(manager.getAllTextures()).toHaveLength(2);
-    });
-
-    it('should remove tiles no longer in elevation manager', () => {
-      // First refresh: add both tiles
-      let elevationTiles = new Map([
-        ['9:261:168', {}],
-        ['9:262:168', {}],
-      ]);
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
-      manager.refresh();
-
-      expect(manager.getAllTextures()).toHaveLength(2);
-
-      // Second refresh: remove one tile
-      vi.clearAllMocks();
-      elevationTiles = new Map([['9:261:168', {}]]);
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
-      manager.refresh();
-
+      expect(result).toBeInstanceOf(TerrainTextureObject);
+      expect(result?.getTileKey()).toBe('9:261:168');
       expect(manager.getAllTextures()).toHaveLength(1);
     });
 
-    it('should retrieve context tile data when creating texture', () => {
-      const mockContextTile: ContextDataTile =
-        createMockContextTile('9:261:168');
-      const elevationTiles = new Map([['9:261:168', {}]]);
+    it('should call factory.createTexture with correct args', () => {
+      const contextTile = createMockContextTile('9:261:168');
 
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
-      mockContextManager.getTile.mockReturnValue(mockContextTile);
+      manager.createTexture('9:261:168', contextTile);
 
-      manager.refresh();
-
-      expect(mockContextManager.getTile).toHaveBeenCalledWith('9:261:168');
       expect(mockFactory.createTexture).toHaveBeenCalledWith(
-        mockContextTile,
+        contextTile,
         '9:261:168'
       );
     });
 
     it('should handle null context tile (unavailable data)', () => {
-      const elevationTiles = new Map([['9:261:168', {}]]);
-
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
-      mockContextManager.getTile.mockReturnValue(null);
-
-      manager.refresh();
+      manager.createTexture('9:261:168', null);
 
       expect(mockFactory.createTexture).toHaveBeenCalledWith(null, '9:261:168');
     });
@@ -144,25 +66,54 @@ describe('TerrainTextureObjectManager', () => {
     it('should store null entries for unavailable context', () => {
       mockFactory.createTexture = vi.fn(() => null);
 
-      const elevationTiles = new Map([['9:261:168', {}]]);
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
-      mockContextManager.getTile.mockReturnValue(null);
-
-      manager.refresh();
+      manager.createTexture('9:261:168', null);
 
       const textureObject = manager.getTerrainTextureObject('9:261:168');
       expect(textureObject).toBeNull();
+    });
+
+    it('should create multiple textures', () => {
+      const tile1 = createMockContextTile('9:261:168');
+      const tile2 = createMockContextTile('9:262:168');
+
+      manager.createTexture('9:261:168', tile1);
+      manager.createTexture('9:262:168', tile2);
+
+      expect(manager.getAllTextures()).toHaveLength(2);
+    });
+  });
+
+  describe('removeTexture', () => {
+    it('should remove and dispose texture for a tile', () => {
+      const contextTile = createMockContextTile('9:261:168');
+      manager.createTexture('9:261:168', contextTile);
+      const textureObj = manager.getTerrainTextureObject('9:261:168')!;
+      const disposeSpy = vi.spyOn(textureObj, 'dispose');
+
+      manager.removeTexture('9:261:168');
+
+      expect(disposeSpy).toHaveBeenCalled();
+      expect(manager.getAllTextures()).toHaveLength(0);
+    });
+
+    it('should not error when removing non-existent tile', () => {
+      expect(() => manager.removeTexture('9:999:999')).not.toThrow();
+    });
+
+    it('should not error when removing null entry', () => {
+      mockFactory.createTexture = vi.fn(() => null);
+      manager.createTexture('9:261:168', null);
+
+      expect(() => manager.removeTexture('9:261:168')).not.toThrow();
+      expect(manager.getAllTextures()).toHaveLength(0);
     });
   });
 
   describe('getTerrainTextureObject', () => {
     it('should return texture object for a tile key', () => {
-      const mockContextTile = createMockContextTile('9:261:168');
-      const elevationTiles = new Map([['9:261:168', {}]]);
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
-      mockContextManager.getTile.mockReturnValue(mockContextTile);
+      const contextTile = createMockContextTile('9:261:168');
+      manager.createTexture('9:261:168', contextTile);
 
-      manager.refresh();
       const textureObject = manager.getTerrainTextureObject('9:261:168');
 
       expect(textureObject).toBeDefined();
@@ -172,14 +123,9 @@ describe('TerrainTextureObjectManager', () => {
 
     it('should return null for unavailable context', () => {
       mockFactory.createTexture = vi.fn(() => null);
+      manager.createTexture('9:261:168', null);
 
-      const elevationTiles = new Map([['9:261:168', {}]]);
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
-      mockContextManager.getTile.mockReturnValue(null);
-
-      manager.refresh();
       const textureObject = manager.getTerrainTextureObject('9:261:168');
-
       expect(textureObject).toBeNull();
     });
 
@@ -191,49 +137,29 @@ describe('TerrainTextureObjectManager', () => {
 
   describe('getAllTextures', () => {
     it('should return empty array when no textures', () => {
-      const textures = manager.getAllTextures();
-      expect(textures).toEqual([]);
+      expect(manager.getAllTextures()).toEqual([]);
     });
 
     it('should return all texture objects including null entries', () => {
-      mockFactory.createTexture = vi.fn(
-        (tile: ContextDataTile | null, tileKey: string) => {
-          // Return texture for first tile, null for second
-          if (tile === null) return null;
-          return new TerrainTextureObject(
-            tileKey,
-            new THREE.CanvasTexture(document.createElement('canvas')),
-            { minX: 0, maxX: 1000, minY: 0, maxY: 1000 }
-          );
-        }
-      );
+      const contextTile = createMockContextTile('9:261:168');
+      manager.createTexture('9:261:168', contextTile);
 
-      const elevationTiles = new Map([
-        ['9:261:168', {}],
-        ['9:262:168', {}],
-      ]);
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
-      mockContextManager.getTile.mockReturnValue(null);
+      // Second tile has no context
+      mockFactory.createTexture = vi.fn(() => null);
+      manager.createTexture('9:262:168', null);
 
-      manager.refresh();
       const textures = manager.getAllTextures();
-
       expect(textures).toHaveLength(2);
-      expect(textures[1]).toBeNull(); // Second entry is null
     });
   });
 
   describe('dispose', () => {
     it('should dispose all texture objects', () => {
-      const elevationTiles = new Map([
-        ['9:261:168', {}],
-        ['9:262:168', {}],
-      ]);
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
+      const tile1 = createMockContextTile('9:261:168');
+      const tile2 = createMockContextTile('9:262:168');
+      manager.createTexture('9:261:168', tile1);
+      manager.createTexture('9:262:168', tile2);
 
-      manager.refresh();
-
-      // Spy on dispose for texture objects
       const textures = manager.getAllTextures();
       textures.forEach((texture) => {
         if (texture) {
@@ -251,10 +177,8 @@ describe('TerrainTextureObjectManager', () => {
     });
 
     it('should clear the objects map', () => {
-      const elevationTiles = new Map([['9:261:168', {}]]);
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
-
-      manager.refresh();
+      const contextTile = createMockContextTile('9:261:168');
+      manager.createTexture('9:261:168', contextTile);
       expect(manager.getAllTextures()).toHaveLength(1);
 
       manager.dispose();
@@ -263,12 +187,7 @@ describe('TerrainTextureObjectManager', () => {
 
     it('should not error when disposing null entries', () => {
       mockFactory.createTexture = vi.fn(() => null);
-
-      const elevationTiles = new Map([['9:261:168', {}]]);
-      mockElevationManager.getTileCache.mockReturnValue(elevationTiles);
-      mockContextManager.getTile.mockReturnValue(null);
-
-      manager.refresh();
+      manager.createTexture('9:261:168', null);
 
       expect(() => {
         manager.dispose();
