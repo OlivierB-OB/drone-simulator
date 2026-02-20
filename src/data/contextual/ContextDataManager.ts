@@ -5,6 +5,7 @@ import { contextDataConfig } from '../../config';
 import { ContextDataTileLoader } from './ContextDataTileLoader';
 import { OverpassStatusManager } from './OverpassStatusManager';
 import { TypedEventEmitter } from '../../core/TypedEventEmitter';
+import type { Drone } from '../../drone/Drone';
 
 export type ContextDataEvents = {
   tileAdded: { key: string; tile: ContextDataTile };
@@ -37,6 +38,10 @@ export class ContextDataManager {
   }> = [];
   private readonly emitter = new TypedEventEmitter<ContextDataEvents>();
   private initialLocation: MercatorCoordinates;
+  private onDroneLocationChanged:
+    | ((location: MercatorCoordinates) => void)
+    | null = null;
+  private drone: Drone | null = null;
 
   constructor(initialLocation: MercatorCoordinates) {
     this.initialLocation = initialLocation;
@@ -53,9 +58,14 @@ export class ContextDataManager {
   }
 
   /**
-   * Begins initial tile loading. Call after event handlers are wired.
+   * Begins initial tile loading and subscribes to drone location changes.
    */
-  start(): void {
+  start(drone: Drone): void {
+    this.drone = drone;
+    this.onDroneLocationChanged = (location) => {
+      this.setLocation(location);
+    };
+    drone.on('locationChanged', this.onDroneLocationChanged);
     this.initializeTileRing(this.initialLocation);
   }
 
@@ -351,6 +361,9 @@ export class ContextDataManager {
    * Aborts pending requests and clears all cached data.
    */
   dispose(): void {
+    if (this.drone && this.onDroneLocationChanged) {
+      this.drone.off('locationChanged', this.onDroneLocationChanged);
+    }
     this.abortController.abort();
     this.tileCache.clear();
     this.pendingQueue = [];

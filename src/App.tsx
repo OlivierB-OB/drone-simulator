@@ -48,8 +48,9 @@ export function App() {
     contextData = new ContextDataManager(drone.getLocation());
     viewer3D = new Viewer3D(containerRef);
 
-    terrainGeometryManager = new TerrainGeometryObjectManager();
+    terrainGeometryManager = new TerrainGeometryObjectManager(elevationData);
     terrainTextureManager = new TerrainTextureObjectManager(
+      contextData,
       new TerrainTextureFactory(new TerrainCanvasRenderer())
     );
     terrainObjectManager = new TerrainObjectManager(
@@ -58,29 +59,10 @@ export function App() {
       terrainTextureManager
     );
 
-    // Wire drone location events to data managers
-    drone.on('locationChanged', (location) => {
-      elevationData!.setLocation(location);
-      contextData!.setLocation(location);
-    });
-
-    // Wire elevation tile events to terrain visualization
-    elevationData.on('tileAdded', ({ key, tile }) => {
-      const contextTile = contextData!.getTile(key);
-      terrainObjectManager!.handleElevationTileAdded(key, tile, contextTile);
-    });
-    elevationData.on('tileRemoved', ({ key }) => {
-      terrainObjectManager!.handleElevationTileRemoved(key);
-    });
-
-    // Wire context tile events for texture upgrades
-    contextData.on('tileAdded', ({ key, tile }) => {
-      terrainObjectManager!.handleContextTileAdded(key, tile);
-    });
-
-    // Start loading tiles after all event wiring is complete
-    elevationData.start();
-    contextData.start();
+    // Start data managers and wire event subscriptions
+    elevationData.start(drone);
+    contextData.start(drone);
+    terrainObjectManager.start();
 
     droneObject = new DroneObject();
     viewer3D.getScene().add(droneObject.getMesh());
@@ -103,6 +85,7 @@ export function App() {
       contextData?.dispose();
       terrainObjectManager?.dispose();
       droneObject?.dispose();
+      drone?.dispose();
     };
   });
 

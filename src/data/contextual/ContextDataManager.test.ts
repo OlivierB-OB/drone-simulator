@@ -1,21 +1,25 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { ContextDataManager } from './ContextDataManager';
+import { createDrone } from '../../drone/Drone';
 import type { MercatorCoordinates } from '../../gis/types';
 
 describe('ContextDataManager', () => {
   let contextManager: ContextDataManager;
+  let drone: ReturnType<typeof createDrone>;
   const initialLocation: MercatorCoordinates = {
     x: 0,
     y: 0,
   };
 
   beforeEach(() => {
+    drone = createDrone();
     contextManager = new ContextDataManager(initialLocation);
-    contextManager.start();
+    contextManager.start(drone);
   });
 
   afterEach(() => {
     contextManager.dispose();
+    drone.dispose();
   });
 
   it('initializes with a tile ring around the initial location', () => {

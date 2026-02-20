@@ -4,12 +4,19 @@ import { TerrainTextureObject } from './TerrainTextureObject';
 import { TerrainTextureFactory } from './TerrainTextureFactory';
 import * as THREE from 'three';
 import type { ContextDataTile } from '../../../data/contextual/types';
+import type { ContextDataManager } from '../../../data/contextual/ContextDataManager';
 
 describe('TerrainTextureObjectManager', () => {
   let manager: TerrainTextureObjectManager;
+  let mockContextData: Partial<ContextDataManager>;
   let mockFactory: TerrainTextureFactory;
 
   beforeEach(() => {
+    mockContextData = {
+      on: vi.fn(),
+      off: vi.fn(),
+    };
+
     mockFactory = {
       createTexture: vi.fn((tile: ContextDataTile | null, tileKey: string) => {
         if (tile === null) return null;
@@ -21,12 +28,17 @@ describe('TerrainTextureObjectManager', () => {
       }),
     } as unknown as TerrainTextureFactory;
 
-    manager = new TerrainTextureObjectManager(mockFactory);
+    manager = new TerrainTextureObjectManager(
+      mockContextData as ContextDataManager,
+      mockFactory
+    );
   });
 
   describe('constructor', () => {
     it('should initialize with empty objects map', () => {
-      const newManager = new TerrainTextureObjectManager();
+      const newManager = new TerrainTextureObjectManager(
+        mockContextData as ContextDataManager
+      );
       expect(newManager.getAllTextures()).toEqual([]);
     });
 

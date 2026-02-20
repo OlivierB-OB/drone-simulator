@@ -8,6 +8,7 @@ import { TerrainObject } from './TerrainObject';
 import { Scene } from '../../3Dviewer/Scene';
 import type { ElevationDataTile } from '../../data/elevation/types';
 import type { ContextDataTile } from '../../data/contextual/types';
+import type { ElevationDataManager } from '../../data/elevation/ElevationDataManager';
 
 describe('TerrainObjectManager', () => {
   let manager: TerrainObjectManager;
@@ -15,6 +16,7 @@ describe('TerrainObjectManager', () => {
   let mockGeometryManager: TerrainGeometryObjectManager;
   let mockTextureManager: TerrainTextureObjectManager;
   let mockFactory: TerrainObjectFactory;
+  let mockElevationData: Partial<ElevationDataManager>;
 
   beforeEach(() => {
     mockScene = {
@@ -22,10 +24,18 @@ describe('TerrainObjectManager', () => {
       remove: vi.fn(),
     } as unknown as Scene;
 
+    mockElevationData = {
+      on: vi.fn(),
+      off: vi.fn(),
+    };
+
     const mockGeometryFactory = {
       createGeometry: vi.fn(() => new BufferGeometry()),
     } as any;
-    mockGeometryManager = new TerrainGeometryObjectManager(mockGeometryFactory);
+    mockGeometryManager = new TerrainGeometryObjectManager(
+      mockElevationData as ElevationDataManager,
+      mockGeometryFactory
+    );
 
     mockTextureManager = {
       createTexture: vi.fn(() => null),

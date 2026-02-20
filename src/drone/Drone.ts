@@ -44,6 +44,10 @@ export class Drone {
     this.emitter.removeAllListeners();
   }
 
+  dispose(): void {
+    this.removeAllListeners();
+  }
+
   getLocation(): MercatorCoordinates {
     return { ...this.location };
   }

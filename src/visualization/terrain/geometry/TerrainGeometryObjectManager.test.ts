@@ -4,22 +4,34 @@ import { TerrainGeometryObjectManager } from './TerrainGeometryObjectManager';
 import { TerrainGeometryObject } from './TerrainGeometryObject';
 import { TerrainGeometryFactory } from './TerrainGeometryFactory';
 import type { ElevationDataTile } from '../../../data/elevation/types';
+import type { ElevationDataManager } from '../../../data/elevation/ElevationDataManager';
 
 describe('TerrainGeometryObjectManager', () => {
   let manager: TerrainGeometryObjectManager;
+  let mockElevationData: Partial<ElevationDataManager>;
   let mockFactory: TerrainGeometryFactory;
 
   beforeEach(() => {
+    mockElevationData = {
+      on: vi.fn(),
+      off: vi.fn(),
+    };
+
     mockFactory = {
       createGeometry: vi.fn(() => new BufferGeometry()),
     } as unknown as TerrainGeometryFactory;
 
-    manager = new TerrainGeometryObjectManager(mockFactory);
+    manager = new TerrainGeometryObjectManager(
+      mockElevationData as ElevationDataManager,
+      mockFactory
+    );
   });
 
   describe('constructor', () => {
     it('should initialize with empty objects map', () => {
-      const newManager = new TerrainGeometryObjectManager();
+      const newManager = new TerrainGeometryObjectManager(
+        mockElevationData as ElevationDataManager
+      );
       expect(newManager.getAllGeometries()).toEqual([]);
     });
 
@@ -28,7 +40,9 @@ describe('TerrainGeometryObjectManager', () => {
     });
 
     it('should create default factory if not provided', () => {
-      const newManager = new TerrainGeometryObjectManager();
+      const newManager = new TerrainGeometryObjectManager(
+        mockElevationData as ElevationDataManager
+      );
       expect(newManager).toBeDefined();
     });
   });

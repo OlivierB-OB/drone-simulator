@@ -3,6 +3,7 @@ import type { TileCoordinates, ElevationDataTile } from './types';
 import { elevationConfig } from '../../config';
 import { ElevationDataTileLoader } from './ElevationDataTileLoader';
 import { TypedEventEmitter } from '../../core/TypedEventEmitter';
+import type { Drone } from '../../drone/Drone';
 
 export type ElevationDataEvents = {
   tileAdded: { key: string; tile: ElevationDataTile };
@@ -27,15 +28,24 @@ export class ElevationDataManager {
   private abortController: AbortController = new AbortController();
   private readonly emitter = new TypedEventEmitter<ElevationDataEvents>();
   private initialLocation: MercatorCoordinates;
+  private onDroneLocationChanged:
+    | ((location: MercatorCoordinates) => void)
+    | null = null;
+  private drone: Drone | null = null;
 
   constructor(initialLocation: MercatorCoordinates) {
     this.initialLocation = initialLocation;
   }
 
   /**
-   * Begins initial tile loading. Call after event handlers are wired.
+   * Begins initial tile loading and subscribes to drone location changes.
    */
-  start(): void {
+  start(drone: Drone): void {
+    this.drone = drone;
+    this.onDroneLocationChanged = (location) => {
+      this.setLocation(location);
+    };
+    drone.on('locationChanged', this.onDroneLocationChanged);
     this.initializeTileRing(this.initialLocation);
   }
 
@@ -252,6 +262,9 @@ export class ElevationDataManager {
    * Cleans up resources and cancels pending tile loads.
    */
   dispose(): void {
+    if (this.drone && this.onDroneLocationChanged) {
+      this.drone.off('locationChanged', this.onDroneLocationChanged);
+    }
     this.abortController.abort();
     this.tileCache.clear();
     this.pendingLoads.clear();
