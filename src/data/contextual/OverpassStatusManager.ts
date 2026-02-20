@@ -249,7 +249,7 @@ export class OverpassStatusManager {
         } else if (trimmed.startsWith('Slot available after:')) {
           // Line format: "Slot available after: 2026-02-18T14:01:07Z, in 28 seconds."
           const match = trimmed.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)/);
-          if (match) {
+          if (match && match[1]) {
             slots.push({
               availableAfter: new Date(match[1]),
             });

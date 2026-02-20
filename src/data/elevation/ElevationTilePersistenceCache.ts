@@ -1,4 +1,4 @@
-import type { ElevationDataTile } from './types';
+import type { ElevationDataTile, ElevationDataTileCached } from './types';
 
 /**
  * Local persistence cache for elevation tiles using IndexedDB.
@@ -73,13 +73,14 @@ export class ElevationTilePersistenceCache {
       }
 
       // Check if tile has expired
-      if (entry.expiresAt < Date.now()) {
+      const cachedEntry = entry as ElevationDataTileCached;
+      if (cachedEntry.expiresAt < Date.now()) {
         // Delete expired tile
         await this.delete(key);
         return null;
       }
 
-      return entry as ElevationDataTile;
+      return cachedEntry as ElevationDataTile;
     } catch (error) {
       console.warn(`Error retrieving tile ${key} from cache:`, error);
       return null;
@@ -97,7 +98,7 @@ export class ElevationTilePersistenceCache {
 
     try {
       const now = Date.now();
-      const entry = {
+      const entry: ElevationDataTileCached = {
         ...tile,
         key,
         storedAt: now,

@@ -71,14 +71,10 @@ export class TerrainCanvasRenderer {
       ctx.lineWidth = 1;
 
       if (water.geometry.type === 'Polygon') {
-        this.drawPolygon(
-          ctx,
-          water.geometry.coordinates[0],
-          bounds,
-          scaleX,
-          scaleY,
-          true
-        );
+        const ring = water.geometry.coordinates[0];
+        if (ring) {
+          this.drawPolygon(ctx, ring, bounds, scaleX, scaleY, true);
+        }
       } else if (water.geometry.type === 'LineString') {
         this.drawLineString(
           ctx,
@@ -104,14 +100,10 @@ export class TerrainCanvasRenderer {
       ctx.lineWidth = 0.5;
 
       if (veg.geometry.type === 'Polygon') {
-        this.drawPolygon(
-          ctx,
-          veg.geometry.coordinates[0],
-          bounds,
-          scaleX,
-          scaleY,
-          true
-        );
+        const ring = veg.geometry.coordinates[0];
+        if (ring) {
+          this.drawPolygon(ctx, ring, bounds, scaleX, scaleY, true);
+        }
       } else if (veg.geometry.type === 'LineString') {
         this.drawLineString(
           ctx,
@@ -144,14 +136,10 @@ export class TerrainCanvasRenderer {
       ctx.lineWidth = 0.5;
 
       if (building.geometry.type === 'Polygon') {
-        this.drawPolygon(
-          ctx,
-          building.geometry.coordinates[0],
-          bounds,
-          scaleX,
-          scaleY,
-          true
-        );
+        const ring = building.geometry.coordinates[0];
+        if (ring) {
+          this.drawPolygon(ctx, ring, bounds, scaleX, scaleY, true);
+        }
       } else if (building.geometry.type === 'Point') {
         const [x, y] = building.geometry.coordinates;
         const canvasX = (x - bounds.minX) * scaleX;
@@ -241,14 +229,10 @@ export class TerrainCanvasRenderer {
         ctx.fill();
         ctx.stroke();
       } else if (airport.geometry.type === 'Polygon') {
-        this.drawPolygon(
-          ctx,
-          airport.geometry.coordinates[0],
-          bounds,
-          scaleX,
-          scaleY,
-          true
-        );
+        const ring = airport.geometry.coordinates[0];
+        if (ring) {
+          this.drawPolygon(ctx, ring, bounds, scaleX, scaleY, true);
+        }
       } else if (airport.geometry.type === 'LineString') {
         this.drawLineString(
           ctx,

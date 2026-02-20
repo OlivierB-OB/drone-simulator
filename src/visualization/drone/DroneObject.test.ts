@@ -78,7 +78,8 @@ describe('DroneObject', () => {
       droneObject.update(0, 0, 0, 0, 0.1);
 
       rotors.forEach((rotor, i) => {
-        expect(rotor.rotation.y).not.toBeCloseTo(initialY[i], 1);
+        const initialYVal = initialY[i];
+        expect(rotor.rotation.y).not.toBeCloseTo(initialYVal ?? 0, 1);
       });
     });
 
@@ -90,9 +91,13 @@ describe('DroneObject', () => {
       droneObject.update(0, 0, 0, 0, 0.1);
 
       // Even-indexed and odd-indexed rotors spin in opposite directions
-      const delta0 = rotors[0].rotation.y - initialY[0];
-      const delta1 = rotors[1].rotation.y - initialY[1];
-      expect(Math.sign(delta0)).not.toBe(Math.sign(delta1));
+      const rotor0 = rotors[0];
+      const rotor1 = rotors[1];
+      if (rotor0 && rotor1) {
+        const delta0 = rotor0.rotation.y - (initialY[0] ?? 0);
+        const delta1 = rotor1.rotation.y - (initialY[1] ?? 0);
+        expect(Math.sign(delta0)).not.toBe(Math.sign(delta1));
+      }
     });
 
     it('should have correct rotation at all cardinal azimuth values', () => {
@@ -114,7 +119,7 @@ describe('DroneObject', () => {
 
   describe('rotor positions', () => {
     it('should have rotors in all four diagonal quadrants', () => {
-      const group = droneObject.getMesh();
+      const group = droneObject.getMesh() as Group;
       const rotorPositions = collectRotorPositions(group);
 
       expect(rotorPositions.length).toBe(4);
@@ -132,7 +137,7 @@ describe('DroneObject', () => {
     });
 
     it('should have rotors positioned away from center (not crossing)', () => {
-      const group = droneObject.getMesh();
+      const group = droneObject.getMesh() as Group;
       const rotorPositions = collectRotorPositions(group);
 
       // All rotors should be well outside the fuselage (fuselage halfW=0.8, halfL=1.1)

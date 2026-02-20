@@ -1,4 +1,4 @@
-import type { ContextDataTile } from './types';
+import type { ContextDataTile, ContextDataTileCached } from './types';
 
 /**
  * Local persistence cache for context tiles using IndexedDB.
@@ -77,13 +77,14 @@ export class ContextTilePersistenceCache {
       }
 
       // Check if tile has expired
-      if (entry.expiresAt < Date.now()) {
+      const cachedEntry = entry as ContextDataTileCached;
+      if (cachedEntry.expiresAt < Date.now()) {
         // Delete expired tile
         await this.delete(key);
         return null;
       }
 
-      return entry as ContextDataTile;
+      return cachedEntry as ContextDataTile;
     } catch (error) {
       console.warn(`Error retrieving context tile ${key} from cache:`, error);
       return null;
@@ -101,7 +102,7 @@ export class ContextTilePersistenceCache {
 
     try {
       const now = Date.now();
-      const entry = {
+      const entry: ContextDataTileCached = {
         ...tile,
         key,
         storedAt: now,

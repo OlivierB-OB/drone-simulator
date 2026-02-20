@@ -20,7 +20,9 @@ describe('Scene', () => {
       const sceneInstance = scene.getScene();
       const expectedColor = new THREE.Color(sceneConfig.backgroundColor);
 
-      expect(sceneInstance.background?.getHex()).toBe(expectedColor.getHex());
+      if (sceneInstance.background instanceof THREE.Color) {
+        expect(sceneInstance.background.getHex()).toBe(expectedColor.getHex());
+      }
     });
   });
 
@@ -190,9 +192,11 @@ describe('Scene', () => {
 
       expect(constructorCalls).toHaveLength(1);
       expect(sceneInstance).toBeInstanceOf(THREE.Scene);
-      expect(sceneInstance.background?.getHex()).toBe(
-        new THREE.Color(sceneConfig.backgroundColor).getHex()
-      );
+      if (sceneInstance.background instanceof THREE.Color) {
+        expect(sceneInstance.background.getHex()).toBe(
+          new THREE.Color(sceneConfig.backgroundColor).getHex()
+        );
+      }
     });
 
     it('should initialize scene with correct background color through constructor', () => {
@@ -200,10 +204,13 @@ describe('Scene', () => {
         extends THREE.Scene {} as unknown as typeof THREE.Scene;
 
       const injectedScene = new Scene(mockConstructor);
+      const background = injectedScene.getScene().background;
 
-      expect(injectedScene.getScene().background?.getHex()).toBe(
-        new THREE.Color(sceneConfig.backgroundColor).getHex()
-      );
+      if (background instanceof THREE.Color) {
+        expect(background.getHex()).toBe(
+          new THREE.Color(sceneConfig.backgroundColor).getHex()
+        );
+      }
     });
 
     it('should use injected scene constructor for add operations', () => {

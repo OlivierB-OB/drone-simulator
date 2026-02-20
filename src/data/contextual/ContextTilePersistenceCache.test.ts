@@ -232,7 +232,9 @@ describe('ContextTilePersistenceCache', () => {
       // Perform concurrent sets - should not throw
       await expect(
         Promise.all(
-          tiles.map((tile, i) => ContextTilePersistenceCache.set(keys[i], tile))
+          tiles.map((tile, i) =>
+            ContextTilePersistenceCache.set(keys[i]!, tile)
+          )
         )
       ).resolves.not.toThrow();
     });

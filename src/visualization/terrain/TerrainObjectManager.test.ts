@@ -41,6 +41,7 @@ describe('TerrainObjectManager', () => {
     manager = new TerrainObjectManager(
       mockScene,
       mockGeometryManager,
+      undefined,
       mockFactory
     );
   });
@@ -55,6 +56,7 @@ describe('TerrainObjectManager', () => {
       const newManager = new TerrainObjectManager(
         mockScene,
         mockGeometryManager,
+        undefined,
         customFactory
       );
       expect(newManager).toBeDefined();

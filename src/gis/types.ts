@@ -28,3 +28,5 @@ export function mercatorToThreeJs(
     z: -location.y,
   };
 }
+
+export type { MercatorBounds } from '../data/elevation/types';

@@ -148,3 +148,17 @@ export interface ContextDataTile {
   /** Color palette for this tile's features */
   colorPalette: ColorPalette;
 }
+
+/**
+ * Context data tile with cache metadata (used internally by ContextTilePersistenceCache)
+ */
+export interface ContextDataTileCached extends ContextDataTile {
+  /** Cache key for this tile */
+  key: string;
+
+  /** Timestamp when tile was stored in cache */
+  storedAt: number;
+
+  /** Timestamp when tile expires from cache */
+  expiresAt: number;
+}

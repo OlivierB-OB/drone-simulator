@@ -151,7 +151,7 @@ function createMockContextTile(tileKey: string): ContextDataTile {
           id: 'building-1',
           geometry: {
             type: 'Polygon' as const,
-            coordinates: [[[[1000000, 3000000]]]],
+            coordinates: [[[1000000, 3000000]]],
           },
           type: 'residential',
           color: '#c4b8a0',

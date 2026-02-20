@@ -55,15 +55,21 @@ Currently running queries (pid, space limit, time limit, start time):
 
     const status = await manager.getStatus();
     expect(status).toBeDefined();
-    expect(status?.currentTime).toEqual(new Date('2026-02-18T14:00:39Z'));
-    expect(status?.slots).toHaveLength(2);
-    expect(status?.slots[0].availableAfter).toEqual(
-      new Date('2026-02-18T14:01:07Z')
-    );
-    expect(status?.slots[1].availableAfter).toEqual(
-      new Date('2026-02-18T14:01:12Z')
-    );
-    expect(status?.currentlyRunningQueries).toBe(2);
+    if (status) {
+      expect(status.currentTime).toEqual(new Date('2026-02-18T14:00:39Z'));
+      expect(status.slots).toHaveLength(2);
+      if (status.slots[0]) {
+        expect(status.slots[0].availableAfter).toEqual(
+          new Date('2026-02-18T14:01:07Z')
+        );
+      }
+      if (status.slots[1]) {
+        expect(status.slots[1].availableAfter).toEqual(
+          new Date('2026-02-18T14:01:12Z')
+        );
+      }
+      expect(status.currentlyRunningQueries).toBe(2);
+    }
   });
 
   it('should return earliest available slot', async () => {

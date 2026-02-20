@@ -37,8 +37,9 @@ bun run test src/drone/Drone.test.ts  # Single file
 
 # Quality
 bun run build          # Production build → dist/
-bun run lint           # Check issues
-bun run lint:fix       # Auto-fix
+bun run type-check     # TypeScript type checking (no emit)
+bun run lint           # Check linting & type errors (ESLint + tsc)
+bun run lint:fix       # Auto-fix ESLint issues (type errors must be fixed manually)
 bun run format         # Format code
 bun run format:check   # Check without modifying
 ```

@@ -42,6 +42,20 @@ export interface ElevationDataTile {
 }
 
 /**
+ * Elevation data tile with cache metadata (used internally by ElevationTilePersistenceCache)
+ */
+export interface ElevationDataTileCached extends ElevationDataTile {
+  /** Cache key for this tile */
+  key: string;
+
+  /** Timestamp when tile was stored in cache */
+  storedAt: number;
+
+  /** Timestamp when tile expires from cache */
+  expiresAt: number;
+}
+
+/**
  * Configuration for the tile ring management system
  */
 export interface TileRingConfig {

@@ -295,7 +295,7 @@ out qt;`;
   private static getColorForBuilding(buildingType: string): HexColor {
     const typeNormalized = buildingType.toLowerCase();
     const colors = colorPalette.buildings as Record<string, HexColor>;
-    return colors[typeNormalized] || colors.default;
+    return (colors[typeNormalized] || colors.default) as HexColor;
   }
 
   /**
@@ -316,7 +316,7 @@ out qt;`;
   private static getColorForRoad(roadType: string): HexColor {
     const typeNormalized = roadType.toLowerCase();
     const colors = colorPalette.roads as Record<string, HexColor>;
-    return colors[typeNormalized] || colors.default;
+    return (colors[typeNormalized] || colors.default) as HexColor;
   }
 
   /**
@@ -325,7 +325,7 @@ out qt;`;
   private static getColorForRailway(railwayType: string): HexColor {
     const typeNormalized = railwayType.toLowerCase();
     const colors = colorPalette.railways as Record<string, HexColor>;
-    return colors[typeNormalized] || colors.default;
+    return (colors[typeNormalized] || colors.default) as HexColor;
   }
 
   /**
@@ -344,7 +344,7 @@ out qt;`;
   private static getColorForWater(waterType: string): HexColor {
     const typeNormalized = waterType.toLowerCase();
     const colors = colorPalette.waters as Record<string, HexColor>;
-    return colors[typeNormalized] || colors.default;
+    return (colors[typeNormalized] || colors.default) as HexColor;
   }
 
   /**
@@ -365,7 +365,7 @@ out qt;`;
   private static getColorForVegetation(vegType: string): HexColor {
     const typeNormalized = vegType.toLowerCase();
     const colors = colorPalette.vegetation as Record<string, HexColor>;
-    return colors[typeNormalized] || colors.default;
+    return (colors[typeNormalized] || colors.default) as HexColor;
   }
 
   /**

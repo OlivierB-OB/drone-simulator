@@ -41,7 +41,7 @@ export class TerrainGeometryFactory {
     for (let y = 0; y < tileSize; y++) {
       for (let x = 0; x < tileSize; x++) {
         const posX = x * cellWidth - width / 2;
-        const posY = data[y][x] ?? 0; // Elevation is vertical (Y-axis)
+        const posY = data[y]?.[x] ?? 0; // Elevation is vertical (Y-axis)
         const posZ = y * cellHeight - height / 2;
 
         vertices.push(posX, posY, posZ);

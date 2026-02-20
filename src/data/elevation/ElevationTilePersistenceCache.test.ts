@@ -206,7 +206,7 @@ describe('ElevationTilePersistenceCache', () => {
       await expect(
         Promise.all(
           tiles.map((tile, i) =>
-            ElevationTilePersistenceCache.set(keys[i], tile)
+            ElevationTilePersistenceCache.set(keys[i]!, tile)
           )
         )
       ).resolves.not.toThrow();

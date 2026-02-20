@@ -58,7 +58,6 @@ describe('AnimationLoop', () => {
       mockContextData,
       mockCamera,
       mockTerrainObjectManager,
-      mockContextObjectManager,
       mockDroneObject
     );
 

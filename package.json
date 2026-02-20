@@ -31,7 +31,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "lint": "eslint src --ext .ts,.tsx",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx && bun run type-check",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json,md}\""

@@ -174,11 +174,12 @@ describe('TerrainGeometryFactory', () => {
     it('should handle terrain with elevation variation', () => {
       const data: number[][] = [];
       for (let y = 0; y < 256; y++) {
-        data[y] = [];
+        const row: number[] = [];
         for (let x = 0; x < 256; x++) {
           // Create a simple gradient
-          data[y][x] = (x + y) * 10;
+          row[x] = (x + y) * 10;
         }
+        data[y] = row;
       }
 
       const tile: ElevationDataTile = {
@@ -199,14 +200,16 @@ describe('TerrainGeometryFactory', () => {
 
       // Verify Y values vary (elevation on Y-axis, not all flat)
       const positionArray = positions.array as Float32Array;
-      const yValues = [];
+      const yValues: number[] = [];
       for (let i = 1; i < positionArray.length; i += 3) {
-        yValues.push(positionArray[i]);
+        yValues.push(positionArray[i]!);
       }
 
-      const minY = Math.min(...yValues);
-      const maxY = Math.max(...yValues);
-      expect(maxY).toBeGreaterThan(minY);
+      if (yValues.length > 0) {
+        const minY = Math.min(...yValues);
+        const maxY = Math.max(...yValues);
+        expect(maxY).toBeGreaterThan(minY);
+      }
     });
   });
 
@@ -241,10 +244,11 @@ function createFlatElevationData(
 ): number[][] {
   const data: number[][] = [];
   for (let y = 0; y < size; y++) {
-    data[y] = [];
+    const row: number[] = [];
     for (let x = 0; x < size; x++) {
-      data[y][x] = elevation;
+      row[x] = elevation;
     }
+    data[y] = row;
   }
   return data;
 }
