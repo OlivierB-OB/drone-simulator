@@ -7,19 +7,11 @@ import type { MercatorBounds } from '../../../data/elevation/types';
  * Holds a reference to the Three.js BufferGeometry and its associated tile identifier.
  */
 export class TerrainGeometryObject {
-  private readonly geometry: BufferGeometry;
-  private readonly tileKey: TileKey;
-  private readonly mercatorBounds: MercatorBounds;
-
   constructor(
-    tileKey: TileKey,
-    geometry: BufferGeometry,
-    mercatorBounds: MercatorBounds
-  ) {
-    this.tileKey = tileKey;
-    this.geometry = geometry;
-    this.mercatorBounds = mercatorBounds;
-  }
+    private readonly tileKey: TileKey,
+    private readonly geometry: BufferGeometry,
+    private readonly mercatorBounds: MercatorBounds
+  ) {}
 
   /**
    * Get the tile identifier (format: "z:x:y")

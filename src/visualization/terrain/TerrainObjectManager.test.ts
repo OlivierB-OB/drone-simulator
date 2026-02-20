@@ -60,7 +60,8 @@ describe('TerrainObjectManager', () => {
     it('should create default factory if not provided', () => {
       const newManager = new TerrainObjectManager(
         mockScene,
-        mockGeometryManager
+        mockGeometryManager,
+        mockTextureManager
       );
       expect(newManager).toBeDefined();
     });

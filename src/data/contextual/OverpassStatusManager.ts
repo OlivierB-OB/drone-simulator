@@ -12,6 +12,8 @@
  * Gracefully degrades if the status endpoint is unavailable (exceptions are caught).
  */
 
+import { contextDataConfig } from '../../config';
+
 export type OverpassStatus = {
   currentTime: Date;
   slots: Array<{
@@ -21,11 +23,6 @@ export type OverpassStatus = {
 };
 
 export class OverpassStatusManager {
-  private statusUrl: string;
-  private pollIntervalMs: number;
-  private timeoutMs: number;
-  private cacheTtlMs: number;
-
   private cachedStatus: OverpassStatus | null = null;
   private cacheTimestamp: number = 0;
   private pollTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -34,16 +31,11 @@ export class OverpassStatusManager {
   private isDisposed = false;
 
   constructor(
-    statusUrl: string = 'https://overpass-api.de/api/status',
-    pollIntervalMs: number = 30000,
-    timeoutMs: number = 5000,
-    cacheTtlMs: number = 30000
+    private readonly statusUrl: string = contextDataConfig.statusEndpoint,
+    private readonly pollIntervalMs: number = contextDataConfig.statusCheckIntervalMs,
+    private readonly timeoutMs: number = contextDataConfig.statusCheckTimeoutMs,
+    private readonly cacheTtlMs: number = contextDataConfig.statusCacheTtlMs
   ) {
-    this.statusUrl = statusUrl;
-    this.pollIntervalMs = pollIntervalMs;
-    this.timeoutMs = timeoutMs;
-    this.cacheTtlMs = cacheTtlMs;
-
     // Start polling immediately (non-blocking)
     this.schedulePoll();
   }

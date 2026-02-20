@@ -22,9 +22,6 @@ interface ArmConfig {
  * Assembles the complete drone visual from components.
  */
 export class DroneGeometryFactory {
-  private readonly materialFactory: DronePartMaterialFactory;
-  private readonly textureFactory: DroneRotorTextureFactory;
-
   constructor(
     private readonly MeshConstructor: typeof Mesh = Mesh,
     private readonly GroupConstructor: typeof Group = Group,
@@ -32,12 +29,9 @@ export class DroneGeometryFactory {
     private readonly BoxGeometryConstructor: typeof BoxGeometry = BoxGeometry,
     private readonly CylinderGeometryConstructor: typeof CylinderGeometry = CylinderGeometry,
     private readonly CircleGeometryConstructor: typeof CircleGeometry = CircleGeometry,
-    materialFactory?: DronePartMaterialFactory,
-    textureFactory?: DroneRotorTextureFactory
-  ) {
-    this.materialFactory = materialFactory ?? new DronePartMaterialFactory();
-    this.textureFactory = textureFactory ?? new DroneRotorTextureFactory();
-  }
+    private readonly materialFactory: DronePartMaterialFactory = new DronePartMaterialFactory(),
+    private readonly textureFactory: DroneRotorTextureFactory = new DroneRotorTextureFactory()
+  ) {}
 
   createDroneGeometry(): DroneGeometryResult {
     const group = new this.GroupConstructor();

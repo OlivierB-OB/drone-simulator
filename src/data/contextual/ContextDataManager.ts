@@ -35,23 +35,16 @@ export class ContextDataManager extends TypedEventEmitter<ContextDataEvents> {
     resolved: boolean;
     resolve: (tile: ContextDataTile | null) => void;
   }> = [];
-  private drone: Drone;
   private onDroneLocationChanged = (location: MercatorCoordinates) => {
     this.setLocation(location);
   };
 
-  constructor(drone: Drone) {
+  constructor(private readonly drone: Drone) {
     super();
-    this.drone = drone;
 
     // Initialize status manager if enabled
     if (contextDataConfig.statusCheckEnabled) {
-      this.statusManager = new OverpassStatusManager(
-        contextDataConfig.statusEndpoint,
-        contextDataConfig.statusCheckIntervalMs,
-        contextDataConfig.statusCheckTimeoutMs,
-        contextDataConfig.statusCacheTtlMs
-      );
+      this.statusManager = new OverpassStatusManager();
     }
 
     drone.on('locationChanged', this.onDroneLocationChanged);

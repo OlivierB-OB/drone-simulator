@@ -13,11 +13,7 @@ import type { TerrainTextureObjectManagerEvents } from './texture/TerrainTexture
  * to create and manage terrain objects.
  */
 export class TerrainObjectManager {
-  private readonly objects: Map<TileKey, TerrainObject>;
-  private readonly scene: Scene;
-  private readonly geometryManager: TerrainGeometryObjectManager;
-  private readonly textureManager: TerrainTextureObjectManager | undefined;
-  private readonly factory: TerrainObjectFactory;
+  private readonly objects = new Map<TileKey, TerrainObject>();
   private onGeometryAdded = (
     data: TerrainGeometryObjectManagerEvents['geometryAdded']
   ) => {
@@ -38,26 +34,18 @@ export class TerrainObjectManager {
   };
 
   constructor(
-    scene: Scene,
-    geometryManager: TerrainGeometryObjectManager,
-    textureManager?: TerrainTextureObjectManager,
-    factory?: TerrainObjectFactory
+    private readonly scene: Scene,
+    private readonly geometryManager: TerrainGeometryObjectManager,
+    private readonly textureManager: TerrainTextureObjectManager,
+    private readonly factory: TerrainObjectFactory = new TerrainObjectFactory()
   ) {
-    this.scene = scene;
-    this.geometryManager = geometryManager;
-    this.textureManager = textureManager;
-    this.factory = factory ?? new TerrainObjectFactory();
-    this.objects = new Map();
-
     // Subscribe to geometry manager tile events
     this.geometryManager.on('geometryAdded', this.onGeometryAdded);
     this.geometryManager.on('geometryRemoved', this.onGeometryRemoved);
 
-    // Subscribe to texture manager tile events (if available)
-    if (this.textureManager) {
-      this.textureManager.on('textureAdded', this.onTextureAdded);
-      this.textureManager.on('textureRemoved', this.onTextureRemoved);
-    }
+    // Subscribe to texture manager tile events
+    this.textureManager.on('textureAdded', this.onTextureAdded);
+    this.textureManager.on('textureRemoved', this.onTextureRemoved);
   }
 
   /**
@@ -145,11 +133,8 @@ export class TerrainObjectManager {
   dispose(): void {
     this.geometryManager.off('geometryAdded', this.onGeometryAdded);
     this.geometryManager.off('geometryRemoved', this.onGeometryRemoved);
-
-    if (this.textureManager) {
-      this.textureManager.off('textureAdded', this.onTextureAdded);
-      this.textureManager.off('textureRemoved', this.onTextureRemoved);
-    }
+    this.textureManager.off('textureAdded', this.onTextureAdded);
+    this.textureManager.off('textureRemoved', this.onTextureRemoved);
 
     // Remove all meshes from scene and dispose TerrainObjects (mesh + material)
     for (const terrainObject of this.objects.values()) {

@@ -12,16 +12,16 @@ export class Viewer3D {
   constructor(
     container: HTMLDivElement,
     drone: Drone,
-    camera?: Camera,
-    renderer?: Renderer,
-    scene?: Scene
+    cameraContructor: typeof Camera = Camera,
+    rendererContructor: typeof Renderer = Renderer,
+    sceneContructor: typeof Scene = Scene
   ) {
     const width = container.clientWidth;
     const height = container.clientHeight;
 
-    this.camera = camera ?? new Camera(width, height, drone);
-    this.scene = scene ?? new Scene();
-    this.renderer = renderer ?? new Renderer(width, height);
+    this.camera = new cameraContructor(width, height, drone);
+    this.renderer = new rendererContructor(width, height);
+    this.scene = new sceneContructor();
 
     container.appendChild(this.renderer.getDomElement());
 
@@ -37,7 +37,7 @@ export class Viewer3D {
   }
 
   public render(): void {
-    this.renderer.render(this.scene.getScene(), this.camera.getCamera());
+    this.renderer.render(this.scene.getObject(), this.camera.getObject());
   }
 
   private setupResizeHandler(container: HTMLDivElement): void {

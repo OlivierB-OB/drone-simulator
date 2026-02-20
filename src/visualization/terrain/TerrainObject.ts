@@ -6,13 +6,10 @@ import type { TileKey } from './geometry/types';
  * Wraps a Three.js Mesh (geometry + material) with its associated tile identifier.
  */
 export class TerrainObject {
-  private readonly mesh: Mesh;
-  private readonly tileKey: TileKey;
-
-  constructor(tileKey: TileKey, mesh: Mesh) {
-    this.tileKey = tileKey;
-    this.mesh = mesh;
-  }
+  constructor(
+    private readonly tileKey: TileKey,
+    private readonly mesh: Mesh
+  ) {}
 
   /**
    * Get the tile identifier (format: "z:x:y")

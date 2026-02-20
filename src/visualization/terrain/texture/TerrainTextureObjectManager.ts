@@ -18,9 +18,7 @@ export type TerrainTextureObjectManagerEvents = {
  * graceful degradation to solid material without texture overlay.
  */
 export class TerrainTextureObjectManager extends TypedEventEmitter<TerrainTextureObjectManagerEvents> {
-  private readonly objects: Map<TileKey, TerrainTextureObject | null>;
-  private readonly factory: TerrainTextureFactory;
-  private readonly contextData: ContextDataManager;
+  private readonly objects = new Map<TileKey, TerrainTextureObject | null>();
   private onContextTileAdded = ({
     key,
     tile,
@@ -37,14 +35,10 @@ export class TerrainTextureObjectManager extends TypedEventEmitter<TerrainTextur
   };
 
   constructor(
-    contextData: ContextDataManager,
-    factory?: TerrainTextureFactory
+    private readonly contextData: ContextDataManager,
+    private readonly factory: TerrainTextureFactory = new TerrainTextureFactory()
   ) {
     super();
-    this.objects = new Map();
-    this.contextData = contextData;
-    this.factory = factory ?? new TerrainTextureFactory();
-
     this.contextData.on('tileAdded', this.onContextTileAdded);
     this.contextData.on('tileRemoved', this.onContextTileRemoved);
   }

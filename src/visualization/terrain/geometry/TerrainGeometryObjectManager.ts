@@ -15,9 +15,7 @@ export type TerrainGeometryObjectManagerEvents = {
  * Listens to elevation data tile events and emits geometry events.
  */
 export class TerrainGeometryObjectManager extends TypedEventEmitter<TerrainGeometryObjectManagerEvents> {
-  private readonly objects: Map<TileKey, TerrainGeometryObject>;
-  private readonly factory: TerrainGeometryFactory;
-  private readonly elevationData: ElevationDataManager;
+  private readonly objects = new Map<TileKey, TerrainGeometryObject>();
   private onElevationTileAdded = ({
     key,
     tile,
@@ -34,14 +32,10 @@ export class TerrainGeometryObjectManager extends TypedEventEmitter<TerrainGeome
   };
 
   constructor(
-    elevationData: ElevationDataManager,
-    factory?: TerrainGeometryFactory
+    private readonly elevationData: ElevationDataManager,
+    private readonly factory: TerrainGeometryFactory = new TerrainGeometryFactory()
   ) {
     super();
-    this.objects = new Map();
-    this.elevationData = elevationData;
-    this.factory = factory ?? new TerrainGeometryFactory();
-
     this.elevationData.on('tileAdded', this.onElevationTileAdded);
     this.elevationData.on('tileRemoved', this.onElevationTileRemoved);
   }

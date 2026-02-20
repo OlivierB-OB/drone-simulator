@@ -9,9 +9,6 @@ export type DroneEvents = {
 };
 
 export class Drone {
-  private readonly location: MercatorCoordinates;
-  private azimuth: number; // in degrees, 0 = North
-  private elevation: number; // altitude in meters, 0 = ground level
   private isMovingForward: boolean = false;
   private isMovingBackward: boolean = false;
   private isMovingLeft: boolean = false;
@@ -19,14 +16,10 @@ export class Drone {
   private readonly emitter = new TypedEventEmitter<DroneEvents>();
 
   constructor(
-    location: MercatorCoordinates,
-    azimuth: number = 0,
-    elevation: number = 0
-  ) {
-    this.location = location;
-    this.azimuth = azimuth;
-    this.elevation = elevation;
-  }
+    private readonly location: MercatorCoordinates,
+    private azimuth: number = 0,
+    private elevation: number = 0
+  ) {}
 
   on<K extends keyof DroneEvents>(
     event: K,

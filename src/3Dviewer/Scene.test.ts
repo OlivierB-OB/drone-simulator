@@ -12,12 +12,12 @@ describe('Scene', () => {
 
   describe('constructor', () => {
     it('should create a Three.js Scene', () => {
-      const sceneInstance = scene.getScene();
+      const sceneInstance = scene.getObject();
       expect(sceneInstance).toBeInstanceOf(THREE.Scene);
     });
 
     it('should set background color to dark navy', () => {
-      const sceneInstance = scene.getScene();
+      const sceneInstance = scene.getObject();
       const expectedColor = new THREE.Color(sceneConfig.backgroundColor);
 
       if (sceneInstance.background instanceof THREE.Color) {
@@ -28,21 +28,21 @@ describe('Scene', () => {
 
   describe('getScene()', () => {
     it('should return the internal scene instance', () => {
-      const scene1 = scene.getScene();
-      const scene2 = scene.getScene();
+      const scene1 = scene.getObject();
+      const scene2 = scene.getObject();
 
       expect(scene1).toBe(scene2); // Should be same reference
     });
 
     it('should return a Scene instance', () => {
-      const sceneInstance = scene.getScene();
+      const sceneInstance = scene.getObject();
       expect(sceneInstance).toBeInstanceOf(THREE.Scene);
     });
   });
 
   describe('add()', () => {
     it('should add object to scene', () => {
-      const sceneInstance = scene.getScene();
+      const sceneInstance = scene.getObject();
       const sceneAddSpy = vi.spyOn(sceneInstance, 'add');
 
       const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -56,7 +56,7 @@ describe('Scene', () => {
     });
 
     it('should handle multiple objects', () => {
-      const sceneInstance = scene.getScene();
+      const sceneInstance = scene.getObject();
       const initialChildCount = sceneInstance.children.length; // Account for lights added in constructor
 
       const mesh1 = new THREE.Mesh();
@@ -74,7 +74,7 @@ describe('Scene', () => {
     });
 
     it('should add various object types', () => {
-      const sceneInstance = scene.getScene();
+      const sceneInstance = scene.getObject();
 
       const mesh = new THREE.Mesh();
       const light = new THREE.DirectionalLight();
@@ -92,7 +92,7 @@ describe('Scene', () => {
 
   describe('remove()', () => {
     it('should remove object from scene', () => {
-      const sceneInstance = scene.getScene();
+      const sceneInstance = scene.getObject();
       const sceneRemoveSpy = vi.spyOn(sceneInstance, 'remove');
 
       const mesh = new THREE.Mesh();
@@ -106,7 +106,7 @@ describe('Scene', () => {
     });
 
     it('should handle removing multiple objects', () => {
-      const sceneInstance = scene.getScene();
+      const sceneInstance = scene.getObject();
       const initialChildCount = sceneInstance.children.length; // Account for lights added in constructor
 
       const mesh1 = new THREE.Mesh();
@@ -138,7 +138,7 @@ describe('Scene', () => {
 
   describe('add and remove workflow', () => {
     it('should handle adding and removing same object multiple times', () => {
-      const sceneInstance = scene.getScene();
+      const sceneInstance = scene.getObject();
       const mesh = new THREE.Mesh();
 
       scene.add(mesh);
@@ -152,7 +152,7 @@ describe('Scene', () => {
     });
 
     it('should maintain correct scene state after mixed operations', () => {
-      const sceneInstance = scene.getScene();
+      const sceneInstance = scene.getObject();
       const initialChildCount = sceneInstance.children.length; // Account for lights added in constructor
 
       const meshA = new THREE.Mesh();
@@ -188,7 +188,7 @@ describe('Scene', () => {
       } as unknown as typeof THREE.Scene;
 
       const injectedScene = new Scene(mockConstructor);
-      const sceneInstance = injectedScene.getScene();
+      const sceneInstance = injectedScene.getObject();
 
       expect(constructorCalls).toHaveLength(1);
       expect(sceneInstance).toBeInstanceOf(THREE.Scene);
@@ -204,7 +204,7 @@ describe('Scene', () => {
         extends THREE.Scene {} as unknown as typeof THREE.Scene;
 
       const injectedScene = new Scene(mockConstructor);
-      const background = injectedScene.getScene().background;
+      const background = injectedScene.getObject().background;
 
       if (background instanceof THREE.Color) {
         expect(background.getHex()).toBe(
@@ -221,7 +221,7 @@ describe('Scene', () => {
       const mesh = new THREE.Mesh();
       injectedScene.add(mesh);
 
-      expect(injectedScene.getScene().children).toContain(mesh);
+      expect(injectedScene.getObject().children).toContain(mesh);
     });
 
     it('should use injected scene constructor for remove operations', () => {
@@ -233,7 +233,7 @@ describe('Scene', () => {
       injectedScene.add(mesh);
       injectedScene.remove(mesh);
 
-      expect(injectedScene.getScene().children).not.toContain(mesh);
+      expect(injectedScene.getObject().children).not.toContain(mesh);
     });
   });
 });

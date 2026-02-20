@@ -11,7 +11,6 @@ import type { Scene } from '../../3Dviewer/Scene';
  * Subscribes to Drone events for automatic position/orientation updates.
  */
 export class DroneObject {
-  private readonly drone: Drone;
   private readonly group;
   private readonly rotorMeshes;
   private onLocationChanged = () => this.updatePosition();
@@ -19,22 +18,21 @@ export class DroneObject {
   private onElevationChanged = () => this.updatePosition();
 
   constructor(
-    drone: Drone,
-    scene: Scene,
+    private readonly drone: Drone,
+    private readonly scene: Scene,
     private readonly geometryFactory: DroneGeometryFactory = new DroneGeometryFactory()
   ) {
-    this.drone = drone;
     const { group, rotors } = this.geometryFactory.createDroneGeometry();
     this.group = group;
     this.rotorMeshes = rotors;
 
     // Add the drone mesh to the scene
-    scene.add(this.group);
+    this.scene.add(this.group);
 
     // Subscribe to Drone events for automatic position/orientation updates
-    drone.on('locationChanged', this.onLocationChanged);
-    drone.on('azimuthChanged', this.onAzimuthChanged);
-    drone.on('elevationChanged', this.onElevationChanged);
+    this.drone.on('locationChanged', this.onLocationChanged);
+    this.drone.on('azimuthChanged', this.onAzimuthChanged);
+    this.drone.on('elevationChanged', this.onElevationChanged);
   }
 
   /**

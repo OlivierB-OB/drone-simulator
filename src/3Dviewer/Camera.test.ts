@@ -15,7 +15,7 @@ describe('Camera', () => {
 
   describe('constructor', () => {
     it('should create a PerspectiveCamera with correct parameters', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
 
       expect(cameraInstance).toBeInstanceOf(THREE.PerspectiveCamera);
       expect(cameraInstance.fov).toBe(cameraConfig.fov);
@@ -24,7 +24,7 @@ describe('Camera', () => {
     });
 
     it('should set correct aspect ratio based on dimensions', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
       const expectedAspect = 1920 / 1080;
 
       expect(cameraInstance.aspect).toBeCloseTo(expectedAspect, 5);
@@ -44,7 +44,7 @@ describe('Camera', () => {
         1080,
         drone,
         mockConstructor
-      ).getCamera();
+      ).getObject();
 
       expect(constructorCalls).toHaveLength(1);
       expect(constructorCalls[0]).toEqual({
@@ -79,21 +79,21 @@ describe('Camera', () => {
 
   describe('getCamera()', () => {
     it('should return the internal camera instance', () => {
-      const camera1 = camera.getCamera();
-      const camera2 = camera.getCamera();
+      const camera1 = camera.getObject();
+      const camera2 = camera.getObject();
 
       expect(camera1).toBe(camera2); // Should be same reference
     });
 
     it('should return a PerspectiveCamera', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
       expect(cameraInstance).toBeInstanceOf(THREE.PerspectiveCamera);
     });
   });
 
   describe('updateAspectRatio()', () => {
     it('should update aspect ratio based on new dimensions', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
       const updateProjectionMatrixSpy = vi.spyOn(
         cameraInstance,
         'updateProjectionMatrix'
@@ -107,28 +107,28 @@ describe('Camera', () => {
     });
 
     it('should handle square dimensions', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
       camera.updateAspectRatio(800, 800);
 
       expect(cameraInstance.aspect).toBe(1);
     });
 
     it('should handle wide aspect ratios', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
       camera.updateAspectRatio(3840, 1080);
 
       expect(cameraInstance.aspect).toBeCloseTo(3.556, 3);
     });
 
     it('should handle portrait dimensions', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
       camera.updateAspectRatio(1080, 1920);
 
       expect(cameraInstance.aspect).toBeCloseTo(0.5625, 5);
     });
 
     it('should update projection matrix after changing aspect ratio', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
       const updateProjectionMatrixSpy = vi.spyOn(
         cameraInstance,
         'updateProjectionMatrix'
@@ -140,7 +140,7 @@ describe('Camera', () => {
     });
 
     it('should handle multiple resize calls', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
       const updateProjectionMatrixSpy = vi.spyOn(
         cameraInstance,
         'updateProjectionMatrix'
@@ -157,7 +157,7 @@ describe('Camera', () => {
 
   describe('setPosition()', () => {
     it('should update camera position to given coordinates', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
 
       camera.setPosition(10, 20, 30);
 
@@ -167,7 +167,7 @@ describe('Camera', () => {
     });
 
     it('should handle negative coordinates', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
 
       camera.setPosition(-100, -50, -25);
 
@@ -177,7 +177,7 @@ describe('Camera', () => {
     });
 
     it('should handle zero coordinates', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
 
       camera.setPosition(0, 0, 0);
 
@@ -187,7 +187,7 @@ describe('Camera', () => {
     });
 
     it('should allow multiple position updates', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
 
       camera.setPosition(10, 20, 30);
       expect(cameraInstance.position).toEqual(new THREE.Vector3(10, 20, 30));
@@ -200,7 +200,7 @@ describe('Camera', () => {
     });
 
     it('should handle fractional coordinates', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
 
       camera.setPosition(1.5, 2.75, 3.333);
 
@@ -212,7 +212,7 @@ describe('Camera', () => {
 
   describe('updateChaseCamera()', () => {
     it('should position camera behind drone facing North (azimuth 0)', () => {
-      const cam = camera.getCamera();
+      const cam = camera.getObject();
 
       // Drone at origin, elevation 10, facing North
       camera.updateChaseCamera(0, 10, 0, 0);
@@ -224,7 +224,7 @@ describe('Camera', () => {
     });
 
     it('should position camera behind drone facing East (azimuth 90)', () => {
-      const cam = camera.getCamera();
+      const cam = camera.getObject();
 
       // Drone at origin, elevation 10, facing East
       camera.updateChaseCamera(0, 10, 0, 90);
@@ -236,7 +236,7 @@ describe('Camera', () => {
     });
 
     it('should position camera behind drone facing South (azimuth 180)', () => {
-      const cam = camera.getCamera();
+      const cam = camera.getObject();
 
       camera.updateChaseCamera(0, 10, 0, 180);
 
@@ -247,7 +247,7 @@ describe('Camera', () => {
     });
 
     it('should position camera behind drone facing West (azimuth 270)', () => {
-      const cam = camera.getCamera();
+      const cam = camera.getObject();
 
       camera.updateChaseCamera(0, 10, 0, 270);
 
@@ -258,7 +258,7 @@ describe('Camera', () => {
     });
 
     it('should place camera at chaseHeight above the drone', () => {
-      const cam = camera.getCamera();
+      const cam = camera.getObject();
       const droneElevation = 50;
 
       camera.updateChaseCamera(100, droneElevation, -200, 0);
@@ -270,7 +270,7 @@ describe('Camera', () => {
     });
 
     it('should offset camera position relative to drone position', () => {
-      const cam = camera.getCamera();
+      const cam = camera.getObject();
 
       // Drone at non-origin position, facing North
       camera.updateChaseCamera(1000, 50, -5000, 0);
@@ -281,7 +281,7 @@ describe('Camera', () => {
     });
 
     it('should allow multiple chase camera updates', () => {
-      const cam = camera.getCamera();
+      const cam = camera.getObject();
 
       camera.updateChaseCamera(0, 10, 0, 0);
       expect(cam.position.z).toBeCloseTo(cameraConfig.chaseDistance, 5);
@@ -293,19 +293,19 @@ describe('Camera', () => {
 
   describe('edge cases', () => {
     it('should handle very small dimensions', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
       expect(() => camera.updateAspectRatio(1, 1)).not.toThrow();
       expect(cameraInstance.aspect).toBe(1);
     });
 
     it('should handle very large dimensions', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
       expect(() => camera.updateAspectRatio(7680, 4320)).not.toThrow();
       expect(cameraInstance.aspect).toBeCloseTo(7680 / 4320, 5);
     });
 
     it('should handle setPosition with very large values', () => {
-      const cameraInstance = camera.getCamera();
+      const cameraInstance = camera.getObject();
 
       camera.setPosition(10000, 10000, 10000);
 

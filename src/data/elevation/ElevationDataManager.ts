@@ -25,16 +25,14 @@ export class ElevationDataManager extends TypedEventEmitter<ElevationDataEvents>
     new Map();
   private loadingCount: number = 0;
   private abortController: AbortController = new AbortController();
-  private drone: Drone;
   private onDroneLocationChanged = (location: MercatorCoordinates) => {
     this.setLocation(location);
   };
 
-  constructor(drone: Drone) {
+  constructor(private readonly drone: Drone) {
     super();
-    this.drone = drone;
-    drone.on('locationChanged', this.onDroneLocationChanged);
-    this.initializeTileRing(drone.getLocation());
+    this.drone.on('locationChanged', this.onDroneLocationChanged);
+    this.initializeTileRing();
   }
 
   /**
@@ -57,9 +55,9 @@ export class ElevationDataManager extends TypedEventEmitter<ElevationDataEvents>
   /**
    * Initializes the tile ring around the initial location.
    */
-  private initializeTileRing(location: MercatorCoordinates): void {
+  private initializeTileRing(): void {
     const centerTile = ElevationDataTileLoader.getTileCoordinates(
-      location,
+      this.drone.getLocation(),
       elevationConfig.zoomLevel
     );
 

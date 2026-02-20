@@ -38,7 +38,7 @@ describe('Viewer3D', () => {
     drone = new Drone({ x: 0, y: 0 });
 
     // Create mock Three.js constructor classes
-    const mockCameraConstructor = class MockCamera
+    const mockThreeCameraConstructor = class MockCamera
       extends THREE.PerspectiveCamera
     {
       constructor(fov: number, aspect: number, near: number, far: number) {
@@ -47,7 +47,7 @@ describe('Viewer3D', () => {
       }
     } as unknown as typeof THREE.PerspectiveCamera;
 
-    const mockRendererConstructor = class MockRenderer {
+    const mockThreeRendererConstructor = class MockRenderer {
       domElement = document.createElement('canvas');
       render = vi.fn();
       setSize = vi.fn();
@@ -61,7 +61,7 @@ describe('Viewer3D', () => {
       }
     } as unknown as typeof THREE.WebGLRenderer;
 
-    const mockSceneConstructor = class MockScene extends THREE.Scene {
+    const mockThreeSceneConstructor = class MockScene extends THREE.Scene {
       constructor() {
         super();
         mockScene = this as unknown as THREE.Scene;
@@ -69,13 +69,38 @@ describe('Viewer3D', () => {
       }
     } as unknown as typeof THREE.Scene;
 
-    // Create camera, renderer, and scene with injected mock constructors
-    camera = new Camera(800, 600, drone, mockCameraConstructor);
-    renderer = new Renderer(800, 600, mockRendererConstructor);
-    scene = new Scene(mockSceneConstructor);
+    // Create Camera, Renderer, Scene with mocked Three.js constructors
+    const mockCameraConstructor = class MockCameraClass extends Camera {
+      constructor(width: number, height: number, d: Drone) {
+        super(width, height, d, mockThreeCameraConstructor);
+      }
+    } as unknown as typeof Camera;
 
-    // Create viewer with injected components
-    viewer = new Viewer3D(container, drone, camera, renderer, scene);
+    const mockRendererConstructor = class MockRendererClass extends Renderer {
+      constructor(width: number, height: number) {
+        super(width, height, mockThreeRendererConstructor);
+      }
+    } as unknown as typeof Renderer;
+
+    const mockSceneConstructor = class MockSceneClass extends Scene {
+      constructor() {
+        super(mockThreeSceneConstructor);
+      }
+    } as unknown as typeof Scene;
+
+    // Create viewer with injected constructors
+    viewer = new Viewer3D(
+      container,
+      drone,
+      mockCameraConstructor,
+      mockRendererConstructor,
+      mockSceneConstructor
+    );
+
+    // Get instances from viewer for testing
+    camera = viewer.getCamera();
+    scene = viewer.getScene();
+    renderer = (viewer as any).renderer;
   });
 
   afterEach(() => {
@@ -134,7 +159,7 @@ describe('Viewer3D', () => {
   describe('dependency injection', () => {
     it('should use injected camera', () => {
       expect((viewer as any).camera).toBe(camera);
-      expect((viewer as any).camera.getCamera()).toBe(mockCamera);
+      expect((viewer as any).camera.getObject()).toBe(mockCamera);
     });
 
     it('should use injected renderer', () => {
@@ -146,7 +171,7 @@ describe('Viewer3D', () => {
 
     it('should use injected scene', () => {
       expect((viewer as any).scene).toBe(scene);
-      expect((viewer as any).scene.getScene()).toBe(mockScene);
+      expect((viewer as any).scene.getObject()).toBe(mockScene);
     });
 
     it('should append renderer DOM element to container', () => {

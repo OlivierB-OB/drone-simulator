@@ -17,14 +17,10 @@ import { TerrainCanvasRenderer } from './TerrainCanvasRenderer';
  * to solid green material without texture overlay.
  */
 export class TerrainTextureFactory {
-  private readonly canvasRenderer: TerrainCanvasRenderer;
-
   constructor(
-    canvasRenderer?: TerrainCanvasRenderer,
+    private readonly canvasRenderer: TerrainCanvasRenderer = new TerrainCanvasRenderer(),
     private readonly textureConstructor: typeof THREE.CanvasTexture = THREE.CanvasTexture
-  ) {
-    this.canvasRenderer = canvasRenderer ?? new TerrainCanvasRenderer();
-  }
+  ) {}
 
   /**
    * Create a texture from a context data tile.

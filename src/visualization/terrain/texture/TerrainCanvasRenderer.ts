@@ -6,11 +6,7 @@ import type { MercatorBounds } from '../../../gis/types';
  * The canvas serves as a texture that will be applied to terrain meshes.
  */
 export class TerrainCanvasRenderer {
-  private readonly canvasSize: number;
-
-  constructor(canvasSize: number = 512) {
-    this.canvasSize = canvasSize;
-  }
+  constructor(private readonly canvasSize: number = 512) {}
 
   /**
    * Render a context tile's features onto a canvas.
