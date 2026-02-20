@@ -35,10 +35,10 @@ export class ContextDataManager extends TypedEventEmitter<ContextDataEvents> {
     resolved: boolean;
     resolve: (tile: ContextDataTile | null) => void;
   }> = [];
-  private onDroneLocationChanged:
-    | ((location: MercatorCoordinates) => void)
-    | null = null;
   private drone: Drone;
+  private onDroneLocationChanged = (location: MercatorCoordinates) => {
+    this.setLocation(location);
+  };
 
   constructor(drone: Drone) {
     super();
@@ -54,9 +54,6 @@ export class ContextDataManager extends TypedEventEmitter<ContextDataEvents> {
       );
     }
 
-    this.onDroneLocationChanged = (location) => {
-      this.setLocation(location);
-    };
     drone.on('locationChanged', this.onDroneLocationChanged);
     this.initializeTileRing(drone.getLocation());
   }
@@ -318,9 +315,7 @@ export class ContextDataManager extends TypedEventEmitter<ContextDataEvents> {
    * Aborts pending requests and clears all cached data.
    */
   dispose(): void {
-    if (this.onDroneLocationChanged) {
-      this.drone.off('locationChanged', this.onDroneLocationChanged);
-    }
+    this.drone.off('locationChanged', this.onDroneLocationChanged);
     this.abortController.abort();
     this.tileCache.clear();
     this.pendingQueue = [];

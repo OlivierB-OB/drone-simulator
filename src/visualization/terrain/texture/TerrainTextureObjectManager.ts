@@ -21,10 +21,20 @@ export class TerrainTextureObjectManager extends TypedEventEmitter<TerrainTextur
   private readonly objects: Map<TileKey, TerrainTextureObject | null>;
   private readonly factory: TerrainTextureFactory;
   private readonly contextData: ContextDataManager;
-  private onContextTileAdded:
-    | ((data: { key: string; tile: ContextDataTile }) => void)
-    | null = null;
-  private onContextTileRemoved: ((data: { key: string }) => void) | null = null;
+  private onContextTileAdded = ({
+    key,
+    tile,
+  }: {
+    key: string;
+    tile: ContextDataTile;
+  }) => {
+    const texture = this.createTexture(key as TileKey, tile);
+    this.emit('textureAdded', { key: key as TileKey, texture });
+  };
+  private onContextTileRemoved = ({ key }: { key: string }) => {
+    this.removeTexture(key as TileKey);
+    this.emit('textureRemoved', { key: key as TileKey });
+  };
 
   constructor(
     contextData: ContextDataManager,
@@ -34,16 +44,6 @@ export class TerrainTextureObjectManager extends TypedEventEmitter<TerrainTextur
     this.objects = new Map();
     this.contextData = contextData;
     this.factory = factory ?? new TerrainTextureFactory();
-
-    this.onContextTileAdded = ({ key, tile }) => {
-      const texture = this.createTexture(key as TileKey, tile);
-      this.emit('textureAdded', { key: key as TileKey, texture });
-    };
-
-    this.onContextTileRemoved = ({ key }) => {
-      this.removeTexture(key as TileKey);
-      this.emit('textureRemoved', { key: key as TileKey });
-    };
 
     this.contextData.on('tileAdded', this.onContextTileAdded);
     this.contextData.on('tileRemoved', this.onContextTileRemoved);
@@ -86,14 +86,8 @@ export class TerrainTextureObjectManager extends TypedEventEmitter<TerrainTextur
    * Clean up all textures, dispose resources, and clear the collection
    */
   dispose(): void {
-    if (
-      this.contextData &&
-      this.onContextTileAdded &&
-      this.onContextTileRemoved
-    ) {
-      this.contextData.off('tileAdded', this.onContextTileAdded);
-      this.contextData.off('tileRemoved', this.onContextTileRemoved);
-    }
+    this.contextData.off('tileAdded', this.onContextTileAdded);
+    this.contextData.off('tileRemoved', this.onContextTileRemoved);
 
     for (const textureObject of this.objects.values()) {
       if (textureObject) {

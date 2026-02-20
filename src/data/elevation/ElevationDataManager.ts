@@ -25,17 +25,14 @@ export class ElevationDataManager extends TypedEventEmitter<ElevationDataEvents>
     new Map();
   private loadingCount: number = 0;
   private abortController: AbortController = new AbortController();
-  private onDroneLocationChanged:
-    | ((location: MercatorCoordinates) => void)
-    | null = null;
   private drone: Drone;
+  private onDroneLocationChanged = (location: MercatorCoordinates) => {
+    this.setLocation(location);
+  };
 
   constructor(drone: Drone) {
     super();
     this.drone = drone;
-    this.onDroneLocationChanged = (location) => {
-      this.setLocation(location);
-    };
     drone.on('locationChanged', this.onDroneLocationChanged);
     this.initializeTileRing(drone.getLocation());
   }
@@ -232,9 +229,7 @@ export class ElevationDataManager extends TypedEventEmitter<ElevationDataEvents>
    * Cleans up resources and cancels pending tile loads.
    */
   dispose(): void {
-    if (this.onDroneLocationChanged) {
-      this.drone.off('locationChanged', this.onDroneLocationChanged);
-    }
+    this.drone.off('locationChanged', this.onDroneLocationChanged);
     this.abortController.abort();
     this.tileCache.clear();
     this.pendingLoads.clear();

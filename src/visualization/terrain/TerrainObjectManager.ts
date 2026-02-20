@@ -18,16 +18,24 @@ export class TerrainObjectManager {
   private readonly geometryManager: TerrainGeometryObjectManager;
   private readonly textureManager: TerrainTextureObjectManager | undefined;
   private readonly factory: TerrainObjectFactory;
-  private onGeometryAdded:
-    | ((data: TerrainGeometryObjectManagerEvents['geometryAdded']) => void)
-    | null = null;
-  private onGeometryRemoved:
-    | ((data: TerrainGeometryObjectManagerEvents['geometryRemoved']) => void)
-    | null = null;
-  private onTextureAdded:
-    | ((data: TerrainTextureObjectManagerEvents['textureAdded']) => void)
-    | null = null;
-  private onTextureRemoved: (() => void) | null = null;
+  private onGeometryAdded = (
+    data: TerrainGeometryObjectManagerEvents['geometryAdded']
+  ) => {
+    this.handleGeometryAdded(data);
+  };
+  private onGeometryRemoved = (
+    data: TerrainGeometryObjectManagerEvents['geometryRemoved']
+  ) => {
+    this.handleGeometryRemoved(data);
+  };
+  private onTextureAdded = (
+    data: TerrainTextureObjectManagerEvents['textureAdded']
+  ) => {
+    this.handleTextureAdded(data);
+  };
+  private onTextureRemoved = () => {
+    this.handleTextureRemoved();
+  };
 
   constructor(
     scene: Scene,
@@ -41,26 +49,15 @@ export class TerrainObjectManager {
     this.factory = factory ?? new TerrainObjectFactory();
     this.objects = new Map();
 
-    // Subscribe to geometry and texture manager tile events
-    this.onGeometryAdded = (data) => {
-      this.handleGeometryAdded(data);
-    };
+    // Subscribe to geometry manager tile events
     this.geometryManager.on('geometryAdded', this.onGeometryAdded);
-
-    this.onGeometryRemoved = (data) => {
-      this.handleGeometryRemoved(data);
-    };
     this.geometryManager.on('geometryRemoved', this.onGeometryRemoved);
 
-    this.onTextureAdded = (data) => {
-      this.handleTextureAdded(data);
-    };
-    this.textureManager?.on('textureAdded', this.onTextureAdded);
-
-    this.onTextureRemoved = () => {
-      this.handleTextureRemoved();
-    };
-    this.textureManager?.on('textureRemoved', this.onTextureRemoved);
+    // Subscribe to texture manager tile events (if available)
+    if (this.textureManager) {
+      this.textureManager.on('textureAdded', this.onTextureAdded);
+      this.textureManager.on('textureRemoved', this.onTextureRemoved);
+    }
   }
 
   /**
@@ -146,16 +143,11 @@ export class TerrainObjectManager {
    * Also disposes owned dependency managers (geometry and texture).
    */
   dispose(): void {
-    if (this.onGeometryAdded) {
-      this.geometryManager.off('geometryAdded', this.onGeometryAdded);
-    }
-    if (this.onGeometryRemoved) {
-      this.geometryManager.off('geometryRemoved', this.onGeometryRemoved);
-    }
-    if (this.onTextureAdded && this.textureManager) {
+    this.geometryManager.off('geometryAdded', this.onGeometryAdded);
+    this.geometryManager.off('geometryRemoved', this.onGeometryRemoved);
+
+    if (this.textureManager) {
       this.textureManager.off('textureAdded', this.onTextureAdded);
-    }
-    if (this.onTextureRemoved && this.textureManager) {
       this.textureManager.off('textureRemoved', this.onTextureRemoved);
     }
 

@@ -6,7 +6,7 @@ import { mercatorToThreeJs } from '../gis/types';
 export class Camera {
   private readonly camera: PerspectiveCamera;
   private drone: Drone | null = null;
-  private boundUpdateFromDroneState: (() => void) | null = null;
+  private boundUpdateFromDroneState = () => this.updateFromDroneState();
 
   constructor(
     width: number,
@@ -22,7 +22,6 @@ export class Camera {
     );
 
     this.drone = drone;
-    this.boundUpdateFromDroneState = () => this.updateFromDroneState();
 
     // Subscribe to drone state changes
     drone.on('locationChanged', this.boundUpdateFromDroneState);
@@ -89,13 +88,12 @@ export class Camera {
   }
 
   unsubscribeFromDrone(): void {
-    if (!this.drone || !this.boundUpdateFromDroneState) return;
+    if (!this.drone) return;
 
     this.drone.off('locationChanged', this.boundUpdateFromDroneState);
     this.drone.off('azimuthChanged', this.boundUpdateFromDroneState);
     this.drone.off('elevationChanged', this.boundUpdateFromDroneState);
 
     this.drone = null;
-    this.boundUpdateFromDroneState = null;
   }
 }

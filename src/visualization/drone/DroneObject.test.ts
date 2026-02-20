@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DroneObject } from './DroneObject';
 import { Drone } from '../../drone/Drone';
 import { Group, Mesh } from 'three';
@@ -9,7 +9,8 @@ describe('DroneObject', () => {
 
   beforeEach(() => {
     drone = new Drone({ x: 0, y: 0 });
-    droneObject = new DroneObject(drone);
+    const mockScene = { add: vi.fn() };
+    droneObject = new DroneObject(drone, mockScene as any);
   });
 
   describe('constructor', () => {
@@ -159,9 +160,112 @@ describe('DroneObject', () => {
     });
   });
 
+  describe('event subscription', () => {
+    it('should respond to locationChanged events', () => {
+      const initialPosition = droneObject.getMesh().position.clone();
+
+      // Simulate drone movement
+      drone.startMovingForward();
+      drone.applyMove(0.1);
+      drone.stopMovingForward();
+
+      // Position should have changed
+      expect(droneObject.getMesh().position).not.toEqual(initialPosition);
+    });
+
+    it('should respond to azimuthChanged events', () => {
+      const initialRotation = droneObject.getMesh().rotation.y;
+
+      drone.rotateAzimuth(45);
+
+      // Rotation should have changed
+      expect(droneObject.getMesh().rotation.y).not.toBeCloseTo(
+        initialRotation,
+        5
+      );
+    });
+
+    it('should respond to elevationChanged events', () => {
+      const initialPosition = droneObject.getMesh().position.clone();
+
+      drone.changeElevation(50);
+
+      // Position Y should have changed
+      expect(droneObject.getMesh().position.y).not.toBe(initialPosition.y);
+    });
+  });
+
   describe('dispose()', () => {
     it('should not throw when disposed', () => {
       expect(() => droneObject.dispose()).not.toThrow();
+    });
+
+    it('should unsubscribe from locationChanged event', () => {
+      const offSpy = vi.spyOn(drone, 'off');
+      droneObject.dispose();
+
+      expect(offSpy).toHaveBeenCalledWith(
+        'locationChanged',
+        expect.any(Function)
+      );
+    });
+
+    it('should unsubscribe from azimuthChanged event', () => {
+      const offSpy = vi.spyOn(drone, 'off');
+      droneObject.dispose();
+
+      expect(offSpy).toHaveBeenCalledWith(
+        'azimuthChanged',
+        expect.any(Function)
+      );
+    });
+
+    it('should unsubscribe from elevationChanged event', () => {
+      const offSpy = vi.spyOn(drone, 'off');
+      droneObject.dispose();
+
+      expect(offSpy).toHaveBeenCalledWith(
+        'elevationChanged',
+        expect.any(Function)
+      );
+    });
+
+    it('should stop responding to location changes after disposal', () => {
+      const initialPosition = droneObject.getMesh().position.clone();
+
+      droneObject.dispose();
+
+      // Try to move drone
+      drone.startMovingForward();
+      drone.applyMove(0.1);
+      drone.stopMovingForward();
+
+      // Position should not have changed
+      expect(droneObject.getMesh().position).toEqual(initialPosition);
+    });
+
+    it('should stop responding to azimuth changes after disposal', () => {
+      const initialRotation = droneObject.getMesh().rotation.y;
+
+      droneObject.dispose();
+
+      // Try to change drone azimuth
+      drone.rotateAzimuth(45);
+
+      // Rotation should not have changed
+      expect(droneObject.getMesh().rotation.y).toBeCloseTo(initialRotation, 5);
+    });
+
+    it('should stop responding to elevation changes after disposal', () => {
+      const initialPosition = droneObject.getMesh().position.clone();
+
+      droneObject.dispose();
+
+      // Try to change drone elevation
+      drone.changeElevation(50);
+
+      // Position Y should not have changed
+      expect(droneObject.getMesh().position.y).toBe(initialPosition.y);
     });
   });
 });
