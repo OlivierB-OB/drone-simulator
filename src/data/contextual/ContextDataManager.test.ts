@@ -1,20 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { ContextDataManager } from './ContextDataManager';
 import { createDrone } from '../../drone/Drone';
-import type { MercatorCoordinates } from '../../gis/types';
 
 describe('ContextDataManager', () => {
   let contextManager: ContextDataManager;
   let drone: ReturnType<typeof createDrone>;
-  const initialLocation: MercatorCoordinates = {
-    x: 0,
-    y: 0,
-  };
 
   beforeEach(() => {
     drone = createDrone();
-    contextManager = new ContextDataManager(initialLocation);
-    contextManager.start(drone);
+    contextManager = new ContextDataManager(drone);
   });
 
   afterEach(() => {
@@ -59,10 +53,11 @@ describe('ContextDataManager', () => {
     contextManager.dispose();
 
     // After dispose, verify cleanup by testing that we can create a new manager
-    const newManager = new ContextDataManager(initialLocation);
-    newManager.start(drone);
+    const newDrone = createDrone();
+    const newManager = new ContextDataManager(newDrone);
     expect(newManager.getRingTiles().length).toBeGreaterThan(0);
     newManager.dispose();
+    newDrone.dispose();
   });
 
   describe('Queue behavior - event-driven processing', () => {

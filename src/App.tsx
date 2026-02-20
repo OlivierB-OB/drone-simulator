@@ -44,8 +44,8 @@ export function App() {
     }
 
     drone = createDrone();
-    elevationData = new ElevationDataManager(drone.getLocation());
-    contextData = new ContextDataManager(drone.getLocation());
+    elevationData = new ElevationDataManager(drone);
+    contextData = new ContextDataManager(drone);
     viewer3D = new Viewer3D(containerRef);
 
     terrainGeometryManager = new TerrainGeometryObjectManager(elevationData);
@@ -58,10 +58,6 @@ export function App() {
       terrainGeometryManager,
       terrainTextureManager
     );
-
-    // Start data managers and wire event subscriptions
-    elevationData.start(drone);
-    contextData.start(drone);
 
     droneObject = new DroneObject();
     viewer3D.getScene().add(droneObject.getMesh());

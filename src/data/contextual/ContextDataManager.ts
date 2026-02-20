@@ -19,9 +19,8 @@ export type ContextDataEvents = {
  *
  * Emits `tileAdded` when a tile finishes loading and is cached.
  * Emits `tileRemoved` when a tile is evicted from the cache.
- * Call `start()` after wiring event handlers to begin initial tile loading.
  */
-export class ContextDataManager {
+export class ContextDataManager extends TypedEventEmitter<ContextDataEvents> {
   private currentTileCenter: TileCoordinates | null = null;
   private tileCache: Map<string, ContextDataTile> = new Map();
   private pendingQueue: string[] = [];
@@ -36,15 +35,14 @@ export class ContextDataManager {
     resolved: boolean;
     resolve: (tile: ContextDataTile | null) => void;
   }> = [];
-  private readonly emitter = new TypedEventEmitter<ContextDataEvents>();
-  private initialLocation: MercatorCoordinates;
   private onDroneLocationChanged:
     | ((location: MercatorCoordinates) => void)
     | null = null;
-  private drone: Drone | null = null;
+  private drone: Drone;
 
-  constructor(initialLocation: MercatorCoordinates) {
-    this.initialLocation = initialLocation;
+  constructor(drone: Drone) {
+    super();
+    this.drone = drone;
 
     // Initialize status manager if enabled
     if (contextDataConfig.statusCheckEnabled) {
@@ -55,32 +53,12 @@ export class ContextDataManager {
         contextDataConfig.statusCacheTtlMs
       );
     }
-  }
 
-  /**
-   * Begins initial tile loading and subscribes to drone location changes.
-   */
-  start(drone: Drone): void {
-    this.drone = drone;
     this.onDroneLocationChanged = (location) => {
       this.setLocation(location);
     };
     drone.on('locationChanged', this.onDroneLocationChanged);
-    this.initializeTileRing(this.initialLocation);
-  }
-
-  on<K extends keyof ContextDataEvents>(
-    event: K,
-    handler: (data: ContextDataEvents[K]) => void
-  ): void {
-    this.emitter.on(event, handler);
-  }
-
-  off<K extends keyof ContextDataEvents>(
-    event: K,
-    handler: (data: ContextDataEvents[K]) => void
-  ): void {
-    this.emitter.off(event, handler);
+    this.initializeTileRing(drone.getLocation());
   }
 
   /**
@@ -141,7 +119,7 @@ export class ContextDataManager {
       if (!desiredTiles.has(key)) {
         this.tileCache.delete(key);
         this.loadPromises.delete(key);
-        this.emitter.emit('tileRemoved', { key });
+        this.emit('tileRemoved', { key });
       }
     }
 
@@ -229,7 +207,7 @@ export class ContextDataManager {
 
       if (tile && this.loadPromises.has(key)) {
         this.tileCache.set(key, tile);
-        this.emitter.emit('tileAdded', { key, tile });
+        this.emit('tileAdded', { key, tile });
 
         // Notify any pending resolvers waiting for this tile
         const resolverIndex = this.pendingResolvers.findIndex(
@@ -340,7 +318,7 @@ export class ContextDataManager {
    * Aborts pending requests and clears all cached data.
    */
   dispose(): void {
-    if (this.drone && this.onDroneLocationChanged) {
+    if (this.onDroneLocationChanged) {
       this.drone.off('locationChanged', this.onDroneLocationChanged);
     }
     this.abortController.abort();
@@ -353,6 +331,6 @@ export class ContextDataManager {
     this.pendingResolvers = [];
     this.loadingCount = 0;
     this.statusManager?.dispose();
-    this.emitter.removeAllListeners();
+    this.removeAllListeners();
   }
 }
