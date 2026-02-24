@@ -77,7 +77,7 @@ export const contextDataConfig = {
   queryTimeout: 30000,
 
   // Overpass API endpoint
-  overpassEndpoint: 'https://overpass-api.de/api/interpreter',
+  overpassEndpoint: 'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
 
   // Enable checking Overpass API status endpoint for real-time rate limit information
   statusCheckEnabled: true,
