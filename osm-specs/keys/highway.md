@@ -4,7 +4,7 @@
 
 ## Description
 
-The primary key for tagging roads, paths, and related infrastructure in OpenStreetMap. Used on ways for linear features and on nodes for point features such as signs, crossings, and signals. Common sub-tags applicable across most highway ways include `surface=*`, `lanes=*`, `maxspeed=*`, `oneway=*`, `access=*`, `lit=*`, `name=*`, and `ref=*`.
+The primary key for tagging roads, paths, and related infrastructure in OpenStreetMap. Used on ways for linear features and on nodes for point features such as signs, crossings, and signals. Common sub-tags applicable across most highway ways include `surface=*`, `lanes=*`, `maxspeed=*`, `oneway=*`, `access=*`, `lit=*`, `name=*`, `ref=*`, and `tree_lined=*`.
 
 ## Values
 

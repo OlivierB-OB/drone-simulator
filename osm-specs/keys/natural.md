@@ -20,13 +20,43 @@ The `natural` key is used to describe natural physical land features, including 
 
 - **Element types**: way
 - **Description**: A line of trees, typically planted along a road, path, or field boundary.
-- **Common sub-tags**: `leaf_type=broadleaved/needleleaved/mixed`, `leaf_cycle=deciduous/evergreen/mixed`
+- **Common sub-tags**: same as `natural=tree` below — all physical attributes apply to every tree in the row.
+
+**Sub-tags:**
+
+| Tag | Values | Rendering use |
+|-----|--------|--------------|
+| `leaf_type` | `broadleaved`, `needleleaved`, `leafless` | Canopy shape: sphere vs cone |
+| `leaf_cycle` | `deciduous`, `evergreen`, `semi_deciduous`, `semi_evergreen` | Canopy color range |
+| `height` | number (metres) | Tree height; fallback 8–15 m random |
+| `diameter_crown` | number (metres) | Crown diameter; fallback `height × 0.8`. Also used as inter-tree spacing along the line |
+| `circumference` | number (metres) | Trunk circumference at 1.3 m; trunk radius = `circumference / (2π)` |
+| `diameter` | number (millimetres by convention) | Trunk diameter; radius = `diameter / 2000` |
+| `species` | scientific name e.g. `Juglans regia` | Informational; may drive species-specific shape in future |
+| `genus` | scientific name e.g. `Quercus` | Informational |
 
 ### `natural=tree`
 
 - **Element types**: node
-- **Description**: A single tree, notable or otherwise worthy of individual mapping.
-- **Common sub-tags**: `leaf_type=broadleaved/needleleaved/mixed`, `leaf_cycle=deciduous/evergreen/mixed`, `species=*`, `height=*`
+- **Description**: A single tree, notable or otherwise worthy of individual mapping. Placed at the exact node coordinate.
+
+**Sub-tags:**
+
+| Tag | Values | Rendering use |
+|-----|--------|--------------|
+| `leaf_type` | `broadleaved`, `needleleaved`, `leafless` | Canopy shape: sphere (broadleaved/default) or cone (needleleaved) |
+| `leaf_cycle` | `deciduous`, `evergreen`, `semi_deciduous`, `semi_evergreen` | Canopy color: darker/deeper for evergreen, brighter for deciduous |
+| `height` | number (metres) | Tree height; fallback 8–15 m random |
+| `diameter_crown` | number (metres) | Crown diameter; crown radius = `diameter_crown / 2`; fallback `height × 0.4` |
+| `circumference` | number (metres) | Trunk circumference at 1.3 m above ground (preferred trunk measurement); radius = `circumference / (2π)` |
+| `diameter` | number (millimetres by convention) | Trunk diameter at breast height (alternative); radius = `diameter / 2000` |
+| `species` | scientific name e.g. `Quercus robur` | Informational; may drive species-specific shape in future |
+| `genus` | scientific name e.g. `Quercus` | Informational |
+| `sex` | `male`, `female` | For dioecious species; no rendering distinction currently |
+| `protected` | `yes`, `no` | Legal protection status; no rendering distinction |
+| `denotation` | e.g. `natural_monument` | Significance marker; no rendering distinction |
+
+**Rendering priority for trunk radius** (highest to lowest): `circumference` tag → `diameter` tag → 0.3 m default.
 
 ### `natural=scrub`
 

@@ -24,12 +24,15 @@ This reference documents OpenStreetMap map feature tags relevant to 3D cartoonis
 | Landuse | `landuse` | Land classification including developed, rural/agricultural, traffic/transportation, and waterbody areas. | [landuse.md](landuse.md) |
 | Layer | `layer` | Vertical ordering of overlapping or crossing features; positive = above ground, negative = below. | [layer.md](layer.md) |
 | Leisure | `leisure` | Recreation and leisure facilities including parks, sports pitches, playgrounds, and swimming pools. | [leisure.md](leisure.md) |
+| Level | `level` | Zero-based floor index inside a structure; 0 = ground floor, negative = underground. | [level.md](level.md) |
+| Location | `location` | Physical placement of a feature: `underground`, `underwater`, `overhead`, `overground`. | [location.md](location.md) |
 | Man Made | `man_made` | Human-constructed features and structures not covered by other keys, such as towers, bridges, and pipelines. | [man_made.md](man_made.md) |
 | Natural | `natural` | Natural features including vegetation, water bodies, and geological formations. | [natural.md](natural.md) |
 | Power | `power` | Electrical power infrastructure including power lines, substations, generators, and transformers. | [power.md](power.md) |
 | Railway | `railway` | Rail infrastructure including tracks, stations, trams, subways, and level crossings. | [railway.md](railway.md) |
 | Roof | `roof:shape`, `roof:height`, `roof:colour`, `roof:material`, `roof:direction`, `roof:angle`, `roof:orientation` | Roof geometry and appearance attributes for 3D mesh generation. | [roof.md](roof.md) |
 | Surface | `surface` | Physical material of a road, path, or area surface; used for ground texture selection. | [surface.md](surface.md) |
+| Tree Lined | `tree_lined` | Trees deliberately planted along the sides of a highway or waterway. | [tree_lined.md](tree_lined.md) |
 | Water | `water` | Water body features including rivers, lakes, reservoirs, and ponds. | [water.md](water.md) |
 | Waterway | `waterway` | Natural and constructed waterways including rivers, canals, streams, and dams. | [waterway.md](waterway.md) |
 
@@ -260,6 +263,18 @@ This reference documents OpenStreetMap map feature tags relevant to 3D cartoonis
 - `layer=2` — Two levels above ground (flyover)
 - `layer=-1` — Below ground (tunnel, underpass)
 
+### Level
+- `level=0` — Ground floor
+- `level=1`, `level=2`, … — Floors above ground
+- `level=-1`, `level=-2`, … — Basement / underground floors
+- `level=0;1` — Feature spanning multiple floors
+
+### Location
+- `location=underground` — Feature buried below ground surface (not rendered)
+- `location=underwater` — Feature submerged below water surface (not rendered)
+- `location=overhead` — Feature elevated above ground without a bridge structure (rendered as elevated mesh)
+- `location=overground` — Feature explicitly at ground level (rendered normally)
+
 ### Roof
 - `roof:shape=flat` — Level roof (default when absent)
 - `roof:shape=gabled` — Two slopes meeting at a ridge
@@ -299,6 +314,14 @@ This reference documents OpenStreetMap map feature tags relevant to 3D cartoonis
 - `surface=metal` — Metal plate surface
 - `surface=artificial_turf` — Synthetic grass (sports)
 - `surface=tartan` — Synthetic running track
+
+### Tree Lined
+- `tree_lined=both` — Trees on both sides of the way
+- `tree_lined=left` — Trees on the left side (relative to way direction)
+- `tree_lined=right` — Trees on the right side
+- `tree_lined=yes` — Trees present, side unspecified (treated as `both`)
+- `tree_lined=no` — No tree lining (explicit absence)
+- `tree_lined=separate` — Trees mapped separately as `natural=tree_row`; skip auto-generation
 
 ### Bridge / Tunnel
 - `bridge=yes` — Standard bridge (add `layer=1`)

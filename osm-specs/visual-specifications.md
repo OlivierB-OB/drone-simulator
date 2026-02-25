@@ -3,7 +3,7 @@
 ## 1. Scope
 
 **In scope**: Physical features visible from a drone — terrain, buildings, roads, water,
-vegetation, infrastructure structures.
+vegetation, infrastructure structures, barriers (walls, hedges).
 
 **Out of scope**: Labels, administrative boundaries, POI icons, route relations, speed
 limits, turn restrictions, surveillance equipment, pipelines (underground), power lines
@@ -80,8 +80,8 @@ Default ground fill: `#d8c8a8`
 | `leisure=park` | Polygon | `#90b860` | |
 | `landuse=recreation_ground` | Polygon | `#90b860` | |
 | `landuse=farmland` | Polygon | `#c0cc70` | Yellow-green crops default |
-| `landuse=orchard` | Polygon | `#98c068` | Structured green rows |
-| `landuse=vineyard` | Polygon | `#98c068` | |
+| `landuse=orchard` | Polygon | `#98c068` | `both` — ground fill + instanced tree rows (see §7.3) |
+| `landuse=vineyard` | Polygon | `#88a048` | `both` — ground fill + instanced bush rows (see §7.4) |
 | `landuse=allotments` | Polygon | `#88aa50` | |
 | `landuse=cemetery` | Polygon | `#b0c8a8` | Muted green |
 | `landuse=construction` | Polygon | `#c0aa88` | Disturbed earth |
@@ -136,12 +136,16 @@ Default ground fill: `#d8c8a8`
 | `natural=fell` | Polygon | `#a0a070` | `ground` | |
 | `natural=tundra` | Polygon | `#a0a070` | `ground` | |
 | `landuse=plant_nursery` | Polygon | `#88b060` | `ground` | |
-| `natural=tree_row` | LineString | `#4a8a38` | `both` | Ground line + tree meshes along line |
+| `natural=tree_row` | LineString | — | `mesh` | Tree meshes placed along line at ~8 m intervals |
 | `natural=tree` | Point | — | `mesh` | Single tree mesh at point |
 
 ### 5.5 Roads / Highways
 
 Lines drawn with `lineCap: round`, `lineJoin: round`. No centerline markings (too small at tile scale). Drawn small → large so major roads appear on top.
+
+**Width priority:** When `width=*` (or `width:carriageway=*`) is present, convert metres
+to canvas pixels using the tile scale factor (see `others/width_of_streets.md`). The pixel
+values in the table below are fallbacks for when no width tag is available.
 
 | highway=* | Color | Width (px) |
 |-----------|-------|-----------|
@@ -165,6 +169,11 @@ Lines drawn with `lineCap: round`, `lineJoin: round`. No centerline markings (to
 | `steps` | `#aaaaaa` | 1 | Dash: [2, 2] |
 
 Bridge roads: same color, visually elevated via 3D mesh layer, not canvas.
+
+**Tree-lined roads:** When a highway way carries `tree_lined=both/left/right/yes`, tree
+meshes are generated along the road sides (see §7.5). Road canvas appearance (color,
+width) is unchanged. `tree_lined=separate` means trees are already mapped as
+`natural=tree_row`; no additional trees are generated.
 
 ### 5.6 Railways
 
@@ -190,18 +199,6 @@ Dashed lines on canvas. No tie/sleeper rendering (too fine).
 | `taxilane` | LineString (width 1.5px) | `#999990` | |
 | `apron` | Polygon | `#aaaaaa` | Light concrete |
 | `helipad` | Polygon or Point (circle r=4px) | `#ccccaa` | |
-
-### 5.8 Aerialways (Ground Only)
-
-Aerialway lines are thin and painted on ground only (cables not rendered as 3D).
-
-| aerialway=* | Color | Width (px) | Notes |
-|------------|-------|-----------|-------|
-| `cable_car`, `gondola` | `#888888` | 1 | |
-| `chair_lift`, `drag_lift` | `#aaaaaa` | 0.5 | |
-| `zip_line` | `#aaaaaa` | 0.5 | |
-
-Pylons → see section 5.11 (man-made structures).
 
 ---
 
@@ -317,6 +314,32 @@ Each part is extruded independently with its own height / min_height / color / r
 
 All structures: height from `height` tag takes priority over defaults above.
 
+### 6.4 Barriers
+
+Only linear barriers (`way` geometry) tall or wide enough to be visible from drone altitude are rendered. Point-only barriers (gate, stile, turnstile, etc.) are excluded — see §9.
+
+**Solid wall barriers** are extruded linear box meshes. Base sits at terrain elevation.
+
+| OSM tag | Render mode | Mesh width | Default height | Default color |
+|---------|------------|-----------|---------------|--------------|
+| `barrier=wall` | `mesh` | 0.3 m | `height` tag or 1.5 m | `#c8c4b8` (concrete) |
+| `barrier=city_wall` | `mesh` | 2 m | `height` tag or 5 m | `#c0b090` (stone) |
+| `barrier=retaining_wall` | `mesh` | 0.3 m | `height` tag or 1.5 m | `#b8a888` (earth/concrete) |
+| `barrier=hedge` | `both` | canvas 1.5 m | `height` tag or 1.2 m | `#4a7030` ground + bush meshes |
+
+**Wall color** (`material=*` tag, same palette as building walls):
+
+| `material=*` | Color |
+|-------------|-------|
+| `brick` | `#c87060` |
+| `concrete` | `#c8c4b8` |
+| `stone`, `sandstone`, `marble` | `#c0b090` |
+| `wood` | `#b89060` |
+| `metal` | `#a0a8b0` |
+| *(absent)* | type default (see table above) |
+
+**Hedge** (`barrier=hedge`): canvas line at color `#4a7030`, width 1.5 m in pixels (using tile scale factor). Bush meshes placed along the line at ~1 m intervals, using the same oblate-sphere mesh as §7.2 scrub (color `#3a6828`–`#5a8838`, width 0.4–0.8 m sphere radius). Height from `height` tag or default 1.2 m. Ground draw order: layer 6 (same as vegetation areas).
+
 ---
 
 ## 7. Vegetation 3D
@@ -337,10 +360,27 @@ Trees are clipped to polygon boundary.
 | Canopy — needleleaved (`leaf_type=needleleaved`) | Cone | `#2a7020` to `#4a9030` |
 | Total height | Random | 8–15 m |
 
-**Single trees** (`natural=tree`, Point): same mesh, placed at the node coordinate.
+> Forest/wood area tags (`leaf_type`, `leaf_cycle`) apply uniformly to all instanced trees in the area. No per-tree size data is available for area features — random fallbacks are always used.
+
+**Single trees** (`natural=tree`, Point): placed at the node coordinate. Tag-driven dimensions take priority over random fallbacks.
+
+| Property | Derivation |
+|----------|-----------|
+| Height | `height` tag if present, else 8–15 m random |
+| Canopy shape | `leaf_type=needleleaved` → cone; `leaf_type=broadleaved` or absent → sphere |
+| Canopy radius | `diameter_crown / 2` if present, else `height × 0.4` |
+| Canopy color — evergreen | `#2a7020` to `#3a8a2a` (dark, year-round) |
+| Canopy color — deciduous / absent | `#3a8a2a` to `#5aaa3a` (bright, spring/summer) |
+| Trunk radius | `circumference / (2π)` if present, else `diameter / 2000` (mm→m), else 0.3 m |
+| Trunk color | `#8B6340` |
 
 **Tree rows** (`natural=tree_row`, LineString): trees placed along the line at regular
-intervals (~8 m), plus a thin green line on the canvas (width 3px, `#4a8a38`).
+intervals. No canvas line — the trees themselves are the visual representation.
+
+| Property | Derivation |
+|----------|-----------|
+| Inter-tree spacing | `diameter_crown` if present, else 8 m default |
+| Individual tree | Same tag-driven rules as `natural=tree` above (all row trees share the same tags) |
 
 ### 7.2 Instanced Bushes
 
@@ -358,18 +398,101 @@ scaled ×0.6 relative to the sphere radius).
 | Width | Random | 1.0–2.5 m (sphere radius) |
 | Height | Random | 0.5–1.5 m (after Y scale) |
 
+### 7.3 Orchard Rows
+
+Applied to `landuse=orchard` (in addition to `#98c068` ground fill).
+
+**Row layout:**
+- Row direction: align to the **major axis of the polygon's bounding box** (longest side). Fallback: North–South.
+- Row spacing: **5 m** centre-to-centre.
+- Plant spacing along row: **4 m** centre-to-centre.
+- Rows and plants are clipped to the polygon boundary.
+
+**Tree mesh** (fruit/nut tree — shorter and more uniform than forest trees):
+
+| Part | Shape | Color range |
+|------|-------|------------|
+| Trunk | Cylinder, r: 0.2 m | `#8B6340` |
+| Canopy | Sphere (broadleaved) | `#4a9030` to `#70b848` (random per tree) |
+| Total height | Random | 3–6 m |
+
+### 7.4 Vineyard Rows
+
+Applied to `landuse=vineyard` (in addition to `#88a048` ground fill).
+
+**Row layout:**
+- Row direction: same algorithm as orchard (major bounding-box axis, fallback N–S).
+- Row spacing: **2 m** centre-to-centre (vine rows are tightly spaced).
+- Plant spacing along row: **1 m** centre-to-centre.
+- Rows and plants are clipped to the polygon boundary.
+
+**Bush mesh** (low vine plant — much smaller than `natural=scrub` bushes):
+
+| Part | Shape | Color range |
+|------|-------|------------|
+| Canopy | Sphere (flattened, ×0.5 Y) | `#4a7030` to `#6a9040` (random per plant) |
+| Width | Random | 0.4–0.8 m (sphere radius) |
+| Height | Random | 0.2–0.4 m (after Y scale) |
+
+Vines are extremely low — the row lines are the dominant aerial visual, not individual plant height.
+
+### 7.5 Tree-Lined Roads
+
+Applied to highway ways carrying `tree_lined=both`, `tree_lined=left`,
+`tree_lined=right`, or `tree_lined=yes`. No ground canvas change — road color and
+width are unchanged.
+
+**Side placement:**
+
+| Value | Left side | Right side |
+|-------|-----------|------------|
+| `both` | ✓ | ✓ |
+| `left` | ✓ | — |
+| `right` | — | ✓ |
+| `yes` | ✓ | ✓ |
+| `no` | — | — |
+| `separate` | — | — |
+
+**Lateral offset from road centerline:** `road_half_width + 1.5 m` (just outside the
+carriageway edge). `road_half_width` = rendered pixel width converted to metres / 2.
+For unknown widths use the highway-type fallback from §5.5.
+
+**Along-road spacing:** 8 m (same default as `natural=tree_row`).
+
+**Tree mesh:** Identical rules to §7.1 single-tree / tree-row mesh. No per-tree tags
+are available on the highway way — use the broadleaved random fallback:
+height 8–15 m, sphere canopy `#3a8a2a`–`#5aaa3a`, trunk r: 0.3 m color `#8B6340`.
+
 ---
 
-## 8. Bridges and Tunnels
+## 8. Bridges, Tunnels, and Vertical Placement
 
-**Bridges** (`bridge=yes` + `layer=1`):
+### Bridges
+
+`bridge=yes` + `layer=N` (N ≥ 1):
 - The road or rail geometry is elevated. Canvas does not render the bridge road separately.
 - A bridge deck mesh is generated: flat box at layer height, color `#b0a898` (concrete).
 - The road/rail mesh is placed on top of the deck.
 
-**Tunnels** (`tunnel=yes` + `layer=-1`):
-- Not rendered. The road/rail disappears underground and reappears at the portal.
-- Portal opening may be shown as a dark rectangle in the terrain (optional, low priority).
+### Underground features — not rendered
+
+Any feature tagged with any of the following is excluded from rendering:
+
+| Tag | Notes |
+|-----|-------|
+| `tunnel=yes` (any `layer`) | Physical tunnel — road/rail disappears underground, reappears at portal. Portal opening may be shown as a dark rectangle (optional, low priority). |
+| `location=underground` | Feature is buried without an explicit tunnel structure (e.g. underground city roads, metro sections, buried cables). Same rendering outcome as `tunnel=yes`. |
+| `level < 0` | Feature is on a basement/underground floor of a building (indoor mapping). Not visible from aerial view. |
+
+**Rule:** any one of these tags is sufficient to exclude the feature. They are not mutually exclusive — a feature may carry several.
+
+### Overhead features — rendered elevated
+
+`location=overhead`: feature is elevated above ground but has no associated bridge structure (e.g. an overhead cable line). Render as elevated geometry at the default `layer=1` height. No deck mesh is generated — only the feature geometry itself.
+
+### Layer stacking
+
+`layer=N` controls draw order at crossings only — it does not alone determine whether a feature is underground or should be hidden. A way with `layer=-1` but no `tunnel=*` or `location=underground` is likely a mapping error; render it at ground level conservatively rather than hiding it.
 
 ---
 
@@ -385,6 +508,8 @@ scaled ×0.6 relative to the sphere radius).
 - Route relations, turn restrictions, access rules, speed limits
 - Geological features (`geological=*`) — too rare and geologically subtle
 - Leisure=pitch, sport=* field markings
+- `barrier=fence`, `barrier=guard_rail`, `barrier=cable_barrier` — too thin to be visible at drone altitude
+- Point-only barriers: `barrier=gate`, `barrier=lift_gate`, `barrier=stile`, `barrier=turnstile`, `barrier=bollard`, etc. — point features too small for aerial rendering
 
 ---
 
