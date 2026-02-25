@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ContextDataTileLoader } from './ContextDataTileLoader';
+import { ContextDataTileParser } from './ContextDataTileParser';
 import type { TileCoordinates } from '../elevation/types';
 import type { MercatorCoordinates } from '../../gis/types';
 
@@ -101,11 +102,7 @@ describe('ContextDataTileLoader', () => {
         maxY: 6100000,
       };
 
-      // Use reflection to access private method for testing
-      const parseOSMData = (ContextDataTileLoader as any).parseOSMData.bind(
-        ContextDataTileLoader
-      );
-      const features = parseOSMData(osmData, bounds, 14);
+      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
 
       expect(features.buildings).toHaveLength(1);
       const building = features.buildings[0]!;
@@ -148,10 +145,7 @@ describe('ContextDataTileLoader', () => {
         maxY: 6100000,
       };
 
-      const parseOSMData = (ContextDataTileLoader as any).parseOSMData.bind(
-        ContextDataTileLoader
-      );
-      const features = parseOSMData(osmData, bounds, 14);
+      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
 
       // Building without height/levels should be filtered out
       expect(features.buildings).toHaveLength(0);
@@ -197,10 +191,7 @@ describe('ContextDataTileLoader', () => {
         maxY: 6100000,
       };
 
-      const parseOSMData = (ContextDataTileLoader as any).parseOSMData.bind(
-        ContextDataTileLoader
-      );
-      const features = parseOSMData(osmData, bounds, 14);
+      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
 
       expect(features.roads).toHaveLength(1);
       const road = features.roads[0]!;
@@ -239,10 +230,7 @@ describe('ContextDataTileLoader', () => {
         maxY: 6100000,
       };
 
-      const parseOSMData = (ContextDataTileLoader as any).parseOSMData.bind(
-        ContextDataTileLoader
-      );
-      const features = parseOSMData(osmData, bounds, 14);
+      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
 
       expect(features.railways).toHaveLength(1);
       const railway = features.railways[0]!;
@@ -295,10 +283,7 @@ describe('ContextDataTileLoader', () => {
         maxY: 6100000,
       };
 
-      const parseOSMData = (ContextDataTileLoader as any).parseOSMData.bind(
-        ContextDataTileLoader
-      );
-      const features = parseOSMData(osmData, bounds, 14);
+      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
 
       expect(features.waters).toHaveLength(2);
 
@@ -353,10 +338,7 @@ describe('ContextDataTileLoader', () => {
         maxY: 6100000,
       };
 
-      const parseOSMData = (ContextDataTileLoader as any).parseOSMData.bind(
-        ContextDataTileLoader
-      );
-      const features = parseOSMData(osmData, bounds, 14);
+      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
 
       expect(features.vegetation).toHaveLength(2);
 
@@ -399,10 +381,7 @@ describe('ContextDataTileLoader', () => {
         maxY: 6100000,
       };
 
-      const parseOSMData = (ContextDataTileLoader as any).parseOSMData.bind(
-        ContextDataTileLoader
-      );
-      const features = parseOSMData(osmData, bounds, 14);
+      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
 
       expect(features.airports).toHaveLength(1);
       const airport = features.airports[0]!;
