@@ -50,15 +50,17 @@ Colors are chosen to approximate real-world appearance seen from above.
 
 | Feature | Real-world appearance | Color |
 |---------|----------------------|-------|
-| Asphalt road | Dark gray | `#666055` |
-| Concrete surface | Light gray | `#aaaaaa` |
+| Asphalt road / sealed surface | Mid gray | `#777060` |
+| Light paving (footway, pedestrian) | Pale gray | `#ccccbb` |
 | Dirt track | Sandy brown | `#c4a882` |
+| Built-up area (any urban landuse) | Warm light gray | `#d8d4cc` |
 | Concrete building wall | Gray-white | `#d0ccbc` |
 | Plaster / render wall | Cream | `#ddd8c8` |
 | Brick wall | Warm red-brown | `#c87060` |
 | Grass / meadow | Mid green | `#90b860` |
 | Forest canopy | Dark green | `#3a7a30` |
-| Water body | Deep blue | `#3a6ab0` |
+| Water body / waterway | Deep blue | `#3a6ab0` |
+| Water line (river, stream, canal…) | Blue | `#4a7ac0` |
 | Sand / beach | Sandy yellow | `#e8d89a` |
 | Bare rock | Gray-brown | `#b8a888` |
 | Farmland (ploughed) | Dark brown | `#a0845a` |
@@ -85,11 +87,11 @@ Default ground fill: `#d8c8a8`
 | `landuse=allotments` | Polygon | `#88aa50` | |
 | `landuse=cemetery` | Polygon | `#b0c8a8` | Muted green |
 | `landuse=construction` | Polygon | `#c0aa88` | Disturbed earth |
-| `landuse=residential` | Polygon | `#e8e0d8` | Very light warm gray |
-| `landuse=commercial` | Polygon | `#e0d8e0` | Very light |
-| `landuse=retail` | Polygon | `#e0d8e0` | |
-| `landuse=industrial` | Polygon | `#d0ccc8` | Light gray |
-| `landuse=military` | Polygon | `#c8c0a0` | Khaki |
+| `landuse=residential` | Polygon | `#d8d4cc` | Built-up area |
+| `landuse=commercial` | Polygon | `#d8d4cc` | Built-up area |
+| `landuse=retail` | Polygon | `#d8d4cc` | Built-up area |
+| `landuse=industrial` | Polygon | `#d8d4cc` | Built-up area |
+| `landuse=military` | Polygon | `#d8d4cc` | Built-up area |
 | `natural=sand` | Polygon | `#e8d89a` | |
 | `natural=beach` | Polygon | `#e8d89a` | |
 | `natural=dune` | Polygon | `#e8d89a` | |
@@ -103,7 +105,7 @@ Default ground fill: `#d8c8a8`
 | OSM tag(s) | Geometry | Fill color | Notes |
 |-----------|---------|-----------|-------|
 | `natural=water` (any) | Polygon | `#3a6ab0` | Deep blue |
-| `water=river`, `water=oxbow` | Polygon | `#4a7ac0` | Slightly lighter |
+| `water=river`, `water=oxbow` | Polygon | `#3a6ab0` | |
 | `water=lake` | Polygon | `#3a6ab0` | |
 | `water=reservoir` | Polygon | `#3a6ab0` | |
 | `water=pond` | Polygon | `#3a6ab0` | |
@@ -117,11 +119,11 @@ Default ground fill: `#d8c8a8`
 | OSM tag(s) | Color | Width (px) | Notes |
 |-----------|-------|-----------|-------|
 | `waterway=river` | `#4a7ac0` | 4–8 | Graduated by `width` tag if available |
-| `waterway=stream` | `#5588cc` | 2 | |
-| `waterway=tidal_channel` | `#5588cc` | 2 | |
-| `waterway=canal` | `#3a6ab0` | 3 | |
-| `waterway=drain` | `#6688aa` | 1 | |
-| `waterway=ditch` | `#6688aa` | 1 | |
+| `waterway=stream` | `#4a7ac0` | 2 | |
+| `waterway=tidal_channel` | `#4a7ac0` | 2 | |
+| `waterway=canal` | `#4a7ac0` | 3 | |
+| `waterway=drain` | `#4a7ac0` | 1 | |
+| `waterway=ditch` | `#4a7ac0` | 1 | |
 | `waterway=dam` | `#888880` | 3 | Concrete/earth color |
 | `waterway=weir` | `#888880` | 2 | |
 
@@ -149,26 +151,49 @@ values in the table below are fallbacks for when no width tag is available.
 
 | highway=* | Color | Width (px) |
 |-----------|-------|-----------|
-| `motorway`, `trunk` | `#666055` | 6 |
+| `motorway`, `trunk` | `#777060` | 6 |
 | `motorway_link`, `trunk_link` | `#777060` | 4 |
 | `primary` | `#777060` | 5 |
-| `primary_link` | `#888070` | 3 |
-| `secondary` | `#888070` | 4 |
-| `secondary_link` | `#999080` | 2.5 |
-| `tertiary` | `#999080` | 3 |
-| `tertiary_link` | `#aaa090` | 2 |
-| `residential` | `#aaa090` | 2 |
-| `unclassified` | `#aaa090` | 2 |
-| `service` | `#bbbbaa` | 1.5 |
-| `living_street` | `#bbbbaa` | 1.5 |
+| `primary_link` | `#777060` | 3 |
+| `secondary` | `#777060` | 4 |
+| `secondary_link` | `#777060` | 2.5 |
+| `tertiary` | `#777060` | 3 |
+| `tertiary_link` | `#777060` | 2 |
+| `residential` | `#777060` | 2 |
+| `unclassified` | `#777060` | 2 |
+| `service` | `#777060` | 1.5 |
+| `living_street` | `#777060` | 1.5 |
 | `pedestrian` | `#ccccbb` | 2 |
-| `footway`, `path` | `#bbbbaa` | 1 |
-| `cycleway` | `#bbbbaa` | 1 |
+| `footway`, `path` | `#ccccbb` | 1 |
+| `cycleway` | `#ccccbb` | 1 |
 | `track` | `#c4a882` | 1 |
 | `bridleway` | `#c8b870` | 1 |
-| `steps` | `#aaaaaa` | 1 | Dash: [2, 2] |
+| `steps` | `#ccccbb` | 1 | Dash: [2, 2] |
 
 Bridge roads: same color, visually elevated via 3D mesh layer, not canvas.
+
+**Road color priority:** The `surface=*` tag overrides the highway-type color. Width is never affected by the surface tag.
+
+1. `surface=*` present → use color from surface table below
+2. No `surface` tag (or unrecognized value) → use highway-type color from table above
+
+| `surface=*` | Color | Notes |
+|-------------|-------|-------|
+| `asphalt` *(default fallback)* | `#777060` | Matches highway-type default |
+| `concrete`, `concrete:plates`, `concrete:lanes` | `#ccccbb` | Light paving |
+| `paving_stones`, `paving_stones:lanes` | `#ccccbb` | Light paving |
+| `sett`, `unhewn_cobblestone` | `#b0a090` | Stone — warm mid-gray |
+| `bricks` | `#c87060` | Warm red-brown |
+| `metal`, `metal_grid` | `#909090` | Cool gray |
+| `wood`, `stepping_stones` | `#b08860` | Warm brown |
+| `compacted`, `fine_gravel`, `gravel`, `pebblestone`, `shells` | `#c4a882` | Matches `track` color |
+| `dirt`, `mud` | `#a88060` | Dark sandy brown |
+| `grass` | `#90b860` | Matches grassland |
+| `sand` | `#e8d89a` | Matches beach |
+| `rock` | `#b8a888` | Matches `natural=bare_rock` |
+| `snow`, `ice` | `#e8f0ff` | Matches glacier |
+| `woodchips` | `#b09870` | Warm tan |
+| `clay`, `tartan`, `artificial_turf`, `acrylic`, `rubber`, `carpet`, `plastic` | `#ccccbb` | Sports surfaces |
 
 **Tree-lined roads:** When a highway way carries `tree_lined=both/left/right/yes`, tree
 meshes are generated along the road sides (see §7.5). Road canvas appearance (color,
