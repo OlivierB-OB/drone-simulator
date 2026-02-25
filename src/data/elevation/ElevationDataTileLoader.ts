@@ -5,6 +5,7 @@ import type {
 } from './types';
 import type { MercatorCoordinates } from '../../gis/types';
 import { ElevationTilePersistenceCache } from './ElevationTilePersistenceCache';
+import { ElevationDataTileParser } from './ElevationDataTileParser';
 
 /**
  * Factory for loading and parsing elevation data tiles from AWS Terrain Tiles.
@@ -96,48 +97,9 @@ export class ElevationDataTileLoader {
       const arrayBuffer = await response.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
 
-      // Decode PNG image to extract RGB pixel data
-      const imageData = await ElevationDataTileLoader.decodePNG(uint8Array);
-
-      if (!imageData) {
-        throw new Error('Failed to decode PNG image');
-      }
-
-      // Validate decoded image dimensions
+      // Delegate PNG decoding and elevation extraction to parser
       const tileSize = 256;
-      if (imageData.width !== tileSize || imageData.height !== tileSize) {
-        throw new Error(
-          `Invalid tile dimensions: expected 256×256, got ${imageData.width}×${imageData.height}`
-        );
-      }
-
-      // Decode elevation values from RGB pixels
-      const data: number[][] = [];
-      let pixelIndex = 0;
-
-      for (let row = 0; row < tileSize; row++) {
-        const rowData: number[] = [];
-
-        for (let col = 0; col < tileSize; col++) {
-          // Extract RGB values (skip alpha channel if present)
-          const r = imageData.data[pixelIndex++] ?? 0;
-          const g = imageData.data[pixelIndex++] ?? 0;
-          const b = imageData.data[pixelIndex++] ?? 0;
-
-          // Skip alpha channel if present (RGBA format)
-          if (imageData.data.length === tileSize * tileSize * 4) {
-            pixelIndex++;
-          }
-
-          // Decode elevation from Terrarium RGB encoding
-          // elevation = (R × 256 + G + B/256) - 32768
-          const elevation = r * 256 + g + b / 256 - 32768;
-
-          rowData.push(elevation);
-        }
-
-        data.push(rowData);
-      }
+      const data = await ElevationDataTileParser.parsePNG(uint8Array, tileSize);
 
       const mercatorBounds =
         ElevationDataTileLoader.getTileMercatorBounds(coordinates);
@@ -156,64 +118,6 @@ export class ElevationDataTileLoader {
         });
       }
       throw error;
-    }
-  }
-
-  /**
-   * Decodes a PNG image using the HTML5 Canvas API.
-   * Works in browser environments and returns ImageData with RGBA channels.
-   *
-   * @param pngData - PNG file as Uint8Array
-   * @returns ImageData with pixel data or null if decoding fails
-   */
-  private static async decodePNG(pngData: Uint8Array): Promise<{
-    data: Uint8ClampedArray;
-    width: number;
-    height: number;
-  } | null> {
-    try {
-      // Create a blob from the PNG data
-      const blob = new Blob([new Uint8Array(pngData)], { type: 'image/png' });
-      const url = URL.createObjectURL(blob);
-
-      return new Promise((resolve) => {
-        const image = new Image();
-
-        image.onload = () => {
-          // Create canvas and draw image
-          const canvas = document.createElement('canvas');
-          canvas.width = image.width;
-          canvas.height = image.height;
-
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            URL.revokeObjectURL(url);
-            resolve(null);
-            return;
-          }
-
-          ctx.drawImage(image, 0, 0);
-
-          // Extract pixel data
-          const imageData = ctx.getImageData(0, 0, image.width, image.height);
-          URL.revokeObjectURL(url);
-
-          resolve({
-            data: imageData.data,
-            width: image.width,
-            height: image.height,
-          });
-        };
-
-        image.onerror = () => {
-          URL.revokeObjectURL(url);
-          resolve(null);
-        };
-
-        image.src = url;
-      });
-    } catch {
-      return null;
     }
   }
 
