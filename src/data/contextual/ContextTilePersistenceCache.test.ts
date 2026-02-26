@@ -57,6 +57,8 @@ describe('ContextTilePersistenceCache', () => {
         airports: [],
         vegetation: [],
         landuse: [],
+        structures: [],
+        barriers: [],
       },
       colorPalette: {
         buildings: { residential: '#ff0000', commercial: '#00ff00' },

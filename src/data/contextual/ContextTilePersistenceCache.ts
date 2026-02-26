@@ -9,7 +9,7 @@ export class ContextTilePersistenceCache {
   private static db: IDBDatabase | null = null;
   private static initPromise: Promise<void> | null = null;
   private static readonly DB_NAME = 'drone-simulator-context';
-  private static readonly DB_VERSION = 2;
+  private static readonly DB_VERSION = 4;
   private static readonly STORE_NAME = 'contextTiles';
   private static readonly TTL_HOURS = 24;
   private static readonly TTL_MS =

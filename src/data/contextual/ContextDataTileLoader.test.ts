@@ -115,7 +115,7 @@ describe('ContextDataTileLoader', () => {
       expect((building as any)['addr:street']).toBeUndefined();
     });
 
-    it('filters buildings without height or levels', () => {
+    it('accepts buildings without height or levels (uses type-based defaults)', () => {
       const osmData = {
         elements: [
           {
@@ -123,7 +123,7 @@ describe('ContextDataTileLoader', () => {
             id: 1,
             tags: {
               building: 'yes',
-              // No height or levels - should be filtered
+              // No height or levels — will use buildingHeightDefaults at render time
               name: 'Unknown Building',
             },
             nodes: [1, 2, 3, 4, 1],
@@ -147,8 +147,10 @@ describe('ContextDataTileLoader', () => {
 
       const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
 
-      // Building without height/levels should be filtered out
-      expect(features.buildings).toHaveLength(0);
+      // Buildings without height/levels are now accepted for 3D rendering
+      expect(features.buildings).toHaveLength(1);
+      expect(features.buildings[0]!.height).toBeUndefined();
+      expect(features.buildings[0]!.levelCount).toBeUndefined();
     });
 
     it('extracts roads with correct widthMeters (footways also included)', () => {

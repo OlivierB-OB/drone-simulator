@@ -225,6 +225,18 @@ export class ElevationDataManager extends TypedEventEmitter<ElevationDataEvents>
   }
 
   /**
+   * Returns the elevation tile covering the given Mercator coordinate, or null if not loaded.
+   */
+  getTileAt(mercatorX: number, mercatorY: number): ElevationDataTile | null {
+    const coords = ElevationDataTileLoader.getTileCoordinates(
+      { x: mercatorX, y: mercatorY },
+      elevationConfig.zoomLevel
+    );
+    const key = `${coords.z}:${coords.x}:${coords.y}`;
+    return this.tileCache.get(key) ?? null;
+  }
+
+  /**
    * Cleans up resources and cancels pending tile loads.
    */
   dispose(): void {

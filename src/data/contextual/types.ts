@@ -33,8 +33,15 @@ export interface BuildingVisual {
   geometry: Polygon | Point | LineString; // Polygon for relations, Point for nodes, LineString for simple ways
   type: string; // Building category: residential, commercial, industrial, office, etc.
   height?: number; // meters above ground
+  minHeight?: number; // meters above ground (min_height tag — for building parts)
   levelCount?: number; // number of floors
-  color: HexColor; // Derived from building type
+  minLevelCount?: number; // number of floors at base (building:min_level tag)
+  color: HexColor; // Wall color: building:colour → building:material → type default
+  roofColor?: HexColor; // Roof color: roof:colour → roof:material → shape default
+  roofShape?: string; // flat | gabled | hipped | pyramidal | dome | onion | cone | skillion
+  roofHeight?: number; // roof height in meters (roof:height tag)
+  roofDirection?: number; // roof ridge direction in degrees
+  isPart?: boolean; // true when building:part=yes
 }
 
 /**
@@ -48,6 +55,9 @@ export interface RoadVisual {
   laneCount?: number; // Number of lanes if available
   color: HexColor; // Derived from road type
   surfaceColor?: HexColor; // Override color from surface tag (asphalt, concrete, etc.)
+  treeLined?: 'both' | 'left' | 'right' | 'yes'; // tree_lined tag
+  bridge?: boolean; // bridge=yes
+  layer?: number; // layer tag
 }
 
 /**
@@ -61,6 +71,8 @@ export interface RailwayVisual {
   widthMeters: number; // Real-world width in meters derived from railway type
   dash: number[]; // Line dash pattern [dashLen, gapLen]
   color: HexColor; // Derived from railway type
+  bridge?: boolean; // bridge=yes
+  layer?: number; // layer tag
 }
 
 /**
@@ -81,10 +93,14 @@ export interface WaterVisual {
 export interface VegetationVisual {
   id: string;
   geometry: LineString | Polygon | Point;
-  type: string; // Vegetation category: forest, wood, scrub, grass, tree, hedge, etc.
+  type: string; // Vegetation category: forest, wood, scrub, grass, tree, tree_row, hedge, etc.
   height?: number; // meters (for trees and tall vegetation)
   heightCategory: 'tall' | 'medium' | 'short'; // Normalized height
   color: HexColor; // Green variants derived from vegetation type
+  leafType?: 'broadleaved' | 'needleleaved'; // leaf_type tag — affects 3D canopy shape
+  leafCycle?: 'evergreen' | 'deciduous'; // leaf_cycle tag — affects 3D canopy color range
+  crownDiameter?: number; // diameter_crown tag in meters
+  trunkCircumference?: number; // circumference tag in meters
 }
 
 /**
@@ -112,6 +128,31 @@ export interface AerowayVisual {
 export type AirportVisual = AerowayVisual;
 
 /**
+ * Visual properties for man-made structures rendered as 3D meshes
+ */
+export interface StructureVisual {
+  id: string;
+  geometry: Point | Polygon;
+  type: string; // tower|chimney|mast|communications_tower|water_tower|silo|storage_tank|lighthouse|crane|power_tower|power_pole|aerialway_pylon
+  height?: number; // meters
+  diameter?: number; // meters (storage_tank, silo)
+  color: HexColor;
+}
+
+/**
+ * Visual properties for barriers rendered as 3D extruded segments
+ */
+export interface BarrierVisual {
+  id: string;
+  geometry: LineString;
+  type: string; // wall|city_wall|retaining_wall|hedge
+  height?: number; // meters (overrides type default)
+  width: number; // mesh width in meters
+  color: HexColor;
+  material?: string; // material tag for color override
+}
+
+/**
  * Union of all visual feature types
  */
 export type VisualFeature =
@@ -121,7 +162,9 @@ export type VisualFeature =
   | WaterVisual
   | VegetationVisual
   | AerowayVisual
-  | LanduseVisual;
+  | LanduseVisual
+  | StructureVisual
+  | BarrierVisual;
 
 /**
  * Color palette mapping for different feature categories
@@ -153,6 +196,8 @@ export interface ContextDataTile {
     airports: AirportVisual[];
     vegetation: VegetationVisual[];
     landuse: LanduseVisual[];
+    structures: StructureVisual[];
+    barriers: BarrierVisual[];
   };
 
   /** Color palette for this tile's features */

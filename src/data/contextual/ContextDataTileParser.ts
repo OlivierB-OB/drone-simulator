@@ -1,97 +1,39 @@
-import type {
-  ContextDataTile,
-  BuildingVisual,
-  RoadVisual,
-  RailwayVisual,
-  WaterVisual,
-  VegetationVisual,
-  AerowayVisual,
-  LanduseVisual,
-  Point,
-  LineString,
-  Polygon,
-  HexColor,
-} from './types';
+import type { ContextDataTile, Point, LineString, Polygon } from './types';
 import type { MercatorBounds } from '../elevation/types';
+import { latLngToMercator } from './strategies/parserUtils';
+import type { ClassifiedGeometry } from './strategies/parserUtils';
+import { classifyBuilding } from './strategies/buildingStrategy';
+import { classifyRoad } from './strategies/roadStrategy';
+import { classifyRailway } from './strategies/railwayStrategy';
+import { classifyWater } from './strategies/waterStrategy';
+import { classifyAeroway, AEROWAY_TYPES } from './strategies/aerowayStrategy';
+import { classifyVegetation } from './strategies/vegetationStrategy';
 import {
-  colorPalette,
-  groundColors,
-  roadSpec,
-  surfaceColors,
-  railwaySpec,
-  waterwayWidthsMeters,
-} from '../../config';
+  classifyLanduse,
+  LANDUSE_TYPES,
+  NATURAL_LANDUSE_TYPES,
+} from './strategies/landuseStrategy';
+import {
+  classifyStructure,
+  STRUCTURE_TYPES,
+} from './strategies/structureStrategy';
+import { classifyBarrier, BARRIER_TYPES } from './strategies/barrierStrategy';
 
 /**
  * Parser for OSM (OpenStreetMap) data tiles.
  * Converts raw Overpass API JSON responses into categorized visual features.
- * Focuses only on rendering-relevant attributes, ignoring non-visual data.
+ * Delegates feature classification to strategy functions in ./strategies/.
  */
 export class ContextDataTileParser {
-  private static readonly EARTH_RADIUS = 6378137; // meters
-  private static readonly MAX_EXTENT =
-    ContextDataTileParser.EARTH_RADIUS * Math.PI;
-
-  private static readonly LANDUSE_TYPES = new Set([
-    'grassland',
-    'meadow',
-    'park',
-    'recreation_ground',
-    'plant_nursery',
-    'farmland',
-    'orchard',
-    'vineyard',
-    'allotments',
-    'cemetery',
-    'construction',
-    'residential',
-    'commercial',
-    'retail',
-    'industrial',
-    'military',
-    'sand',
-    'beach',
-    'dune',
-    'bare_rock',
-    'scree',
-    'mud',
-    'glacier',
-  ]);
-
-  private static readonly NATURAL_LANDUSE_TYPES = new Set([
-    'sand',
-    'beach',
-    'dune',
-    'bare_rock',
-    'scree',
-    'mud',
-    'glacier',
-    'grassland',
-    // fell and tundra are vegetation (groundColors.vegetation.fell/tundra = '#a0a070')
-  ]);
-
-  private static readonly AEROWAY_TYPES = new Set([
-    'aerodrome',
-    'runway',
-    'taxiway',
-    'taxilane',
-    'apron',
-    'helipad',
-  ]);
-
   /**
    * Parses OSM JSON response data and groups features by type.
    * Only extracts visual properties; ignores non-rendering attributes.
-   *
-   * @param osmData - Raw Overpass API JSON response
-   * @param bounds - Mercator bounds of the tile
-   * @param zoomLevel - Web Mercator zoom level
-   * @returns Features grouped by type (buildings, roads, railways, waters, airports, vegetation, landuse)
    */
   static parseOSMData(
     osmData: Record<string, unknown>,
-    bounds: MercatorBounds,
-    zoomLevel: number
+    // Retained for future use (bounds-based filtering, zoom-dependent detail)
+    _bounds: MercatorBounds, // eslint-disable-line @typescript-eslint/no-unused-vars
+    _zoomLevel: number // eslint-disable-line @typescript-eslint/no-unused-vars
   ): ContextDataTile['features'] {
     const features: ContextDataTile['features'] = {
       buildings: [],
@@ -101,6 +43,8 @@ export class ContextDataTileParser {
       airports: [],
       vegetation: [],
       landuse: [],
+      structures: [],
+      barriers: [],
     };
 
     if (!Array.isArray(osmData.elements)) {
@@ -142,11 +86,11 @@ export class ContextDataTileParser {
     // Process ways and relations
     for (const element of osm_elements) {
       if (element.type === 'way') {
-        this.processWay(element, nodeMap, bounds, zoomLevel, features);
+        this.processWay(element, nodeMap, features);
       } else if (element.type === 'node' && element.tags) {
-        this.processNode(element, nodeMap, bounds, zoomLevel, features);
+        this.processNode(element, features);
       } else if (element.type === 'relation') {
-        this.processRelation(element, wayMap, bounds, zoomLevel, features);
+        this.processRelation(element, wayMap, features);
       }
     }
 
@@ -154,139 +98,65 @@ export class ContextDataTileParser {
   }
 
   /**
-   * Converts latitude/longitude (decimal degrees) to Mercator meters.
-   * Used when parsing OSM node coordinates.
+   * Dispatches a classified element to the appropriate strategy.
    */
-  private static latLngToMercator(lat: number, lng: number): [number, number] {
-    const x = (lng / 180) * this.MAX_EXTENT;
-    const y =
-      (Math.log(Math.tan((Math.PI * (90 + lat)) / 360)) / Math.PI) *
-      this.MAX_EXTENT;
-    return [x, y];
-  }
-
-  /**
-   * Gets color for a building type
-   */
-  private static getColorForBuilding(buildingType: string): HexColor {
-    const typeNormalized = buildingType.toLowerCase();
-    const colors = colorPalette.buildings as Record<string, HexColor>;
-    return (colors[typeNormalized] || colors.default) as HexColor;
-  }
-
-  /**
-   * Gets real-world width in meters for a road type
-   */
-  private static getRoadWidthMeters(type: string): number {
-    return (
-      roadSpec[type.toLowerCase()]?.widthMeters ??
-      roadSpec['default']?.widthMeters ??
-      7
-    );
-  }
-
-  /**
-   * Gets color for a road type
-   */
-  private static getColorForRoad(roadType: string): HexColor {
-    return (
-      roadSpec[roadType.toLowerCase()]?.color ??
-      roadSpec['default']?.color ??
-      '#c8c0b8'
-    );
-  }
-
-  /**
-   * Gets surface-override color if a known surface tag is present
-   */
-  private static getRoadSurfaceColor(surface?: string): HexColor | undefined {
-    if (!surface) return undefined;
-    return surfaceColors[surface.toLowerCase()];
-  }
-
-  /**
-   * Gets railway rendering spec (widthMeters, dash, color) for a railway type
-   */
-  private static getRailwaySpec(type: string): {
-    widthMeters: number;
-    dash: number[];
-    color: HexColor;
-  } {
-    return (
-      railwaySpec[type.toLowerCase()] ??
-      railwaySpec['default'] ?? {
-        widthMeters: 3,
-        dash: [3, 2],
-        color: '#888878',
-      }
-    );
-  }
-
-  /**
-   * Gets track count from gauge or defaults to 1
-   */
-  private static getTrackCount(gauge?: string): number {
-    if (!gauge) return 1;
-    return 1;
-  }
-
-  /**
-   * Gets color and width for a water feature
-   */
-  private static getWaterColorAndWidth(
-    waterType: string,
-    isArea: boolean
-  ): { color: HexColor; widthMeters: number } {
-    if (waterType === 'wetland') {
-      return { color: groundColors.water.wetland, widthMeters: 0 };
+  private static classifyElement(
+    id: string,
+    tags: Record<string, string>,
+    geometry: ClassifiedGeometry,
+    features: ContextDataTile['features']
+  ): void {
+    if (tags.building || tags['building:part']) {
+      classifyBuilding(id, tags, geometry, features);
+    } else if (tags.highway) {
+      // Roads require line geometry; skip point nodes (highway=crossing, etc.)
+      if (geometry.line) classifyRoad(id, tags, geometry, features);
+    } else if (tags.railway) {
+      // Railways require line geometry; skip point nodes
+      if (geometry.line) classifyRailway(id, tags, geometry, features);
+    } else if (
+      tags.waterway ||
+      tags['natural'] === 'water' ||
+      tags['natural'] === 'wetland' ||
+      tags['natural'] === 'coastline' ||
+      tags.water ||
+      tags.landuse === 'water'
+    ) {
+      // Water requires line or polygon; skip point nodes (waterway=weir, etc.)
+      if (geometry.line || geometry.polygon)
+        classifyWater(id, tags, geometry, features);
+    } else if (tags.aeroway && AEROWAY_TYPES.has(tags.aeroway)) {
+      classifyAeroway(id, tags, geometry, features);
+    } else if (
+      (tags.man_made && STRUCTURE_TYPES.has(tags.man_made)) ||
+      tags.power === 'tower' ||
+      tags.power === 'pole' ||
+      tags.aerialway === 'pylon'
+    ) {
+      classifyStructure(id, tags, geometry, features);
+    } else if (tags.barrier && BARRIER_TYPES.has(tags.barrier)) {
+      // Barriers require line geometry; skip point nodes
+      if (geometry.line) classifyBarrier(id, tags, geometry, features);
+    } else if (tags.landuse === 'forest') {
+      classifyVegetation(id, tags, geometry, features, true);
+    } else if (
+      (tags.landuse && LANDUSE_TYPES.has(tags.landuse)) ||
+      tags.leisure === 'park'
+    ) {
+      classifyLanduse(id, tags, geometry, features, false);
+    } else if (tags.natural && NATURAL_LANDUSE_TYPES.has(tags.natural)) {
+      classifyLanduse(id, tags, geometry, features, true);
+    } else if (tags.natural) {
+      classifyVegetation(id, tags, geometry, features, false);
     }
-    if (isArea) {
-      return { color: groundColors.water.body, widthMeters: 0 };
-    }
-    const widthMeters =
-      waterwayWidthsMeters[waterType.toLowerCase()] ??
-      waterwayWidthsMeters['default'] ??
-      3;
-    // dam and weir use concrete/earth color; all others use water line blue
-    const waterColors = groundColors.water as Record<
-      string,
-      string | undefined
-    >;
-    const color =
-      waterColors[waterType.toLowerCase()] ?? groundColors.water.line;
-    return { color, widthMeters };
   }
 
   /**
-   * Gets height category from numeric height
-   */
-  private static getHeightCategory(
-    height?: number
-  ): 'tall' | 'medium' | 'short' {
-    if (!height) return 'medium';
-    if (height > 20) return 'tall';
-    if (height > 5) return 'medium';
-    return 'short';
-  }
-
-  /**
-   * Gets color for vegetation type
-   */
-  private static getColorForVegetation(vegType: string): HexColor {
-    const typeNormalized = vegType.toLowerCase();
-    const map = groundColors.vegetation as Record<string, string | undefined>;
-    return map[typeNormalized] ?? groundColors.vegetation.default;
-  }
-
-  /**
-   * Processes a way element from OSM data.
-   * Extracts only visual properties, ignores non-rendering attributes.
+   * Processes a way element: prepares geometry, then delegates to classifyElement.
    */
   private static processWay(
     element: Record<string, unknown>,
     nodeMap: Map<number, { lat: number; lng: number }>,
-    _bounds: MercatorBounds,
-    _zoomLevel: number,
     features: ContextDataTile['features']
   ): void {
     const id = String(element.id);
@@ -296,9 +166,7 @@ export class ContextDataTileParser {
       | Array<{ lat: number; lon: number }>
       | undefined;
 
-    if (Object.keys(tags).length === 0) {
-      return;
-    }
+    if (Object.keys(tags).length === 0) return;
 
     // Skip underground/tunnel features
     if (
@@ -309,16 +177,12 @@ export class ContextDataTileParser {
       return;
     }
 
-    // Build geometry from nodes or geometry array
     const coordinates = this.buildLineStringCoordinates(
       nodes,
       geometry,
       nodeMap
     );
-
-    if (coordinates.length === 0) {
-      return;
-    }
+    if (coordinates.length === 0) return;
 
     // Detect closed ring: prefer node-ID equality (authoritative per OSM spec),
     // fall back to coordinate comparison when only geometry array is available.
@@ -333,177 +197,24 @@ export class ContextDataTileParser {
           firstCoord[0] === lastCoord[0] &&
           firstCoord[1] === lastCoord[1];
 
-    const lineGeometry: LineString = {
-      type: 'LineString',
-      coordinates,
-    };
-
-    const polygonGeometry: Polygon | null = isClosed
+    const line: LineString = { type: 'LineString', coordinates };
+    const polygon: Polygon | null = isClosed
       ? { type: 'Polygon', coordinates: [coordinates] }
       : null;
 
-    // Classify feature by tags and extract only visual properties
-    if (tags.building) {
-      // Filter: require height OR levels for visual rendering
-      const height = tags.height ? parseFloat(tags.height) : undefined;
-      const levels = tags['building:levels']
-        ? parseInt(tags['building:levels'], 10)
-        : undefined;
-
-      if (height !== undefined || levels !== undefined) {
-        const buildingType = tags['building:type'] || tags.building || 'other';
-        const building: BuildingVisual = {
-          id,
-          geometry: polygonGeometry ?? lineGeometry,
-          type: buildingType,
-          height,
-          levelCount: levels,
-          color: this.getColorForBuilding(buildingType),
-        };
-        features.buildings.push(building);
-      }
-    } else if (tags.highway) {
-      const highwayType = tags.highway.toLowerCase();
-      const road: RoadVisual = {
-        id,
-        geometry: lineGeometry,
-        type: tags.highway,
-        widthMeters: this.getRoadWidthMeters(highwayType),
-        laneCount: tags.lanes ? parseInt(tags.lanes, 10) : undefined,
-        color: this.getColorForRoad(highwayType),
-        surfaceColor: this.getRoadSurfaceColor(tags.surface),
-      };
-      features.roads.push(road);
-    } else if (tags.railway) {
-      const railwayType = tags.railway.toLowerCase();
-      const spec = this.getRailwaySpec(railwayType);
-      const railway: RailwayVisual = {
-        id,
-        geometry: lineGeometry,
-        type: railwayType,
-        trackCount: this.getTrackCount(tags.gauge),
-        widthMeters: spec.widthMeters,
-        dash: spec.dash,
-        color: spec.color,
-      };
-      features.railways.push(railway);
-    } else if (
-      tags.waterway ||
-      tags['natural'] === 'water' ||
-      tags['natural'] === 'wetland' ||
-      tags['natural'] === 'coastline' ||
-      tags.water ||
-      tags.landuse === 'water'
-    ) {
-      const waterType: string =
-        tags.waterway ||
-        tags.water ||
-        tags['natural'] ||
-        tags.landuse ||
-        'water';
-
-      const isArea = isClosed;
-      const { color, widthMeters } = this.getWaterColorAndWidth(
-        waterType,
-        isArea
-      );
-      const water: WaterVisual = {
-        id,
-        geometry: isArea ? polygonGeometry! : lineGeometry,
-        type: waterType,
-        isArea,
-        widthMeters,
-        color,
-      };
-      features.waters.push(water);
-    } else if (tags.aeroway && this.AEROWAY_TYPES.has(tags.aeroway)) {
-      const aerowayType = tags.aeroway;
-      const aerowayColors = groundColors.aeroways as Record<
-        string,
-        string | undefined
-      >;
-      const aerowayLineWidthsMeters: Record<string, number> = {
-        runway: 45,
-        taxiway: 23,
-        taxilane: 12,
-      };
-      const aeroway: AerowayVisual = {
-        id,
-        geometry: polygonGeometry ?? lineGeometry,
-        type: aerowayType,
-        color: aerowayColors[aerowayType] ?? groundColors.aeroways.aerodrome,
-        widthMeters: aerowayLineWidthsMeters[aerowayType],
-      };
-      features.airports.push(aeroway);
-    } else if (tags.landuse === 'forest') {
-      // §5.4: landuse=forest is vegetation (same color as natural=wood)
-      if (!polygonGeometry) return;
-      const vegetation: VegetationVisual = {
-        id,
-        geometry: polygonGeometry,
-        type: 'forest',
-        height: undefined,
-        heightCategory: 'tall',
-        color: this.getColorForVegetation('forest'),
-      };
-      features.vegetation.push(vegetation);
-    } else if (
-      (tags.landuse && this.LANDUSE_TYPES.has(tags.landuse)) ||
-      tags.leisure === 'park'
-    ) {
-      if (!polygonGeometry) return;
-      const luType =
-        tags.leisure === 'park' ? 'park' : (tags.landuse ?? 'other');
-      const landuseColors = groundColors.landuse as Record<
-        string,
-        string | undefined
-      >;
-      const landuse: LanduseVisual = {
-        id,
-        geometry: polygonGeometry,
-        type: luType,
-        color: landuseColors[luType] ?? groundColors.default,
-      };
-      features.landuse.push(landuse);
-    } else if (tags.natural && this.NATURAL_LANDUSE_TYPES.has(tags.natural)) {
-      // Natural surface types rendered as landuse areas
-      if (!polygonGeometry) return;
-      const naturalType = tags.natural;
-      const landuseColors = groundColors.landuse as Record<
-        string,
-        string | undefined
-      >;
-      const landuse: LanduseVisual = {
-        id,
-        geometry: polygonGeometry,
-        type: naturalType,
-        color: landuseColors[naturalType] ?? groundColors.default,
-      };
-      features.landuse.push(landuse);
-    } else if (tags.natural) {
-      const vegType: string = tags.natural || 'vegetation';
-      const height = tags.height ? parseFloat(tags.height) : undefined;
-      const vegetation: VegetationVisual = {
-        id,
-        geometry: isClosed ? polygonGeometry! : lineGeometry,
-        type: vegType,
-        height,
-        heightCategory: this.getHeightCategory(height),
-        color: this.getColorForVegetation(vegType),
-      };
-      features.vegetation.push(vegetation);
-    }
+    this.classifyElement(
+      id,
+      tags,
+      { line, polygon, point: null, isClosed },
+      features
+    );
   }
 
   /**
-   * Processes a node element from OSM data.
-   * Extracts only visual properties, ignores non-rendering attributes.
+   * Processes a node element: prepares point geometry, then delegates to classifyElement.
    */
   private static processNode(
     element: Record<string, unknown>,
-    _nodeMap: Map<number, { lat: number; lng: number }>,
-    _bounds: MercatorBounds,
-    _zoomLevel: number,
     features: ContextDataTile['features']
   ): void {
     const id = String(element.id);
@@ -511,91 +222,36 @@ export class ContextDataTileParser {
     const lat = element.lat as number;
     const lng = element.lon as number;
 
-    if (Object.keys(tags).length === 0) {
-      return;
-    }
+    if (Object.keys(tags).length === 0) return;
+    if (typeof lat !== 'number' || typeof lng !== 'number') return;
 
-    // Node.md: lat and lon are required fields; guard against malformed elements
-    if (typeof lat !== 'number' || typeof lng !== 'number') {
-      return;
-    }
+    const [x, y] = latLngToMercator(lat, lng);
+    const point: Point = { type: 'Point', coordinates: [x, y] };
 
-    const [x, y] = this.latLngToMercator(lat, lng);
-    const pointGeometry: Point = {
-      type: 'Point',
-      coordinates: [x, y],
-    };
-
-    // Classify node features and extract only visual properties
-    if (tags.aeroway && this.AEROWAY_TYPES.has(tags.aeroway)) {
-      const aerowayColors = groundColors.aeroways as Record<
-        string,
-        string | undefined
-      >;
-      const airport: AerowayVisual = {
-        id,
-        geometry: pointGeometry,
-        type: tags.aeroway,
-        color: aerowayColors[tags.aeroway] ?? groundColors.aeroways.aerodrome,
-      };
-      features.airports.push(airport);
-    } else if (tags['natural'] === 'tree') {
-      const height = tags.height ? parseFloat(tags.height) : undefined;
-      const vegetation: VegetationVisual = {
-        id,
-        geometry: pointGeometry,
-        type: 'tree',
-        height,
-        heightCategory: this.getHeightCategory(height),
-        color: this.getColorForVegetation('tree'),
-      };
-      features.vegetation.push(vegetation);
-    } else if (tags.building) {
-      // Filter: require height OR levels for visual rendering
-      const height = tags.height ? parseFloat(tags.height) : undefined;
-      const levels = tags['building:levels']
-        ? parseInt(tags['building:levels'], 10)
-        : undefined;
-
-      if (height !== undefined || levels !== undefined) {
-        const buildingType = tags['building:type'] || tags.building || 'other';
-        const building: BuildingVisual = {
-          id,
-          geometry: pointGeometry,
-          type: buildingType,
-          height,
-          levelCount: levels,
-          color: this.getColorForBuilding(buildingType),
-        };
-        features.buildings.push(building);
-      }
-    }
+    this.classifyElement(
+      id,
+      tags,
+      { line: null, polygon: null, point, isClosed: false },
+      features
+    );
   }
 
   /**
-   * Processes a relation element from OSM data.
-   * Only handles type=multipolygon relations (the OSM-standard area type).
-   * Assembles outer/inner rings from member ways via wayMap.
+   * Processes a relation element: assembles polygon from member ways,
+   * then delegates to classifyElement.
    */
   private static processRelation(
     element: Record<string, unknown>,
     wayMap: Map<number, [number, number][]>,
-    _bounds: MercatorBounds,
-    _zoomLevel: number,
     features: ContextDataTile['features']
   ): void {
     const id = String(element.id);
     const tags = (element.tags as Record<string, string>) || {};
 
-    if (Object.keys(tags).length === 0) {
-      return;
-    }
+    if (Object.keys(tags).length === 0) return;
 
-    // Relation.md: type=* is required; only multipolygon relations represent areas.
-    // Route, boundary, and other relation types are not area features.
-    if (tags.type !== 'multipolygon') {
-      return;
-    }
+    // Only multipolygon relations represent areas
+    if (tags.type !== 'multipolygon') return;
 
     // Skip underground/tunnel features
     if (
@@ -609,17 +265,13 @@ export class ContextDataTileParser {
     const members = element.members as
       | Array<{ type: string; ref: number; role: string }>
       | undefined;
+    if (!members || members.length === 0) return;
 
-    if (!members || members.length === 0) {
-      return;
-    }
-
-    // Separate way members by role (Relation.md: outer = exterior, inner = hole)
+    // Separate way members by role
     const wayMembers = members.filter((m) => m.type === 'way');
     const outerWayMembers = wayMembers.filter((m) => m.role === 'outer');
     const innerWayMembers = wayMembers.filter((m) => m.role === 'inner');
 
-    // If no explicit outer roles, treat all non-inner ways as outer
     const effectiveOuterRefs =
       outerWayMembers.length > 0
         ? outerWayMembers.map((m) => m.ref)
@@ -627,137 +279,27 @@ export class ContextDataTileParser {
     const innerRefs = innerWayMembers.map((m) => m.ref);
 
     const outerRing = this.assembleRing(effectiveOuterRefs, wayMap);
-    if (!outerRing || outerRing.length < 4) {
-      return;
-    }
+    if (!outerRing || outerRing.length < 4) return;
 
     const innerRings = innerRefs
       .map((ref) => this.assembleRing([ref], wayMap))
       .filter((r): r is [number, number][] => r !== null && r.length >= 4);
 
-    const polygonGeometry: Polygon = {
+    const polygon: Polygon = {
       type: 'Polygon',
       coordinates: [outerRing, ...innerRings],
     };
 
-    // Classify based on tags — mirrors processWay category logic
-    if (tags.building) {
-      // Intentional filter: buildings without dimensional data are not rendered in 3D
-      const height = tags.height ? parseFloat(tags.height) : undefined;
-      const levels = tags['building:levels']
-        ? parseInt(tags['building:levels'], 10)
-        : undefined;
-
-      if (height !== undefined || levels !== undefined) {
-        const buildingType = tags['building:type'] || tags.building || 'other';
-        const building: BuildingVisual = {
-          id,
-          geometry: polygonGeometry,
-          type: buildingType,
-          height,
-          levelCount: levels,
-          color: this.getColorForBuilding(buildingType),
-        };
-        features.buildings.push(building);
-      }
-    } else if (
-      tags.waterway ||
-      tags['natural'] === 'water' ||
-      tags['natural'] === 'wetland' ||
-      tags['natural'] === 'coastline' ||
-      tags.water ||
-      tags.landuse === 'water'
-    ) {
-      const waterType: string =
-        tags.waterway ||
-        tags.water ||
-        tags['natural'] ||
-        tags.landuse ||
-        'water';
-      const { color, widthMeters } = this.getWaterColorAndWidth(
-        waterType,
-        true
-      );
-      const water: WaterVisual = {
-        id,
-        geometry: polygonGeometry,
-        type: waterType,
-        isArea: true,
-        widthMeters,
-        color,
-      };
-      features.waters.push(water);
-    } else if (tags.aeroway && this.AEROWAY_TYPES.has(tags.aeroway)) {
-      const aerowayColors = groundColors.aeroways as Record<
-        string,
-        string | undefined
-      >;
-      const aeroway: AerowayVisual = {
-        id,
-        geometry: polygonGeometry,
-        type: tags.aeroway,
-        color: aerowayColors[tags.aeroway] ?? groundColors.aeroways.aerodrome,
-      };
-      features.airports.push(aeroway);
-    } else if (tags.landuse === 'forest') {
-      const vegetation: VegetationVisual = {
-        id,
-        geometry: polygonGeometry,
-        type: 'forest',
-        height: undefined,
-        heightCategory: 'tall',
-        color: this.getColorForVegetation('forest'),
-      };
-      features.vegetation.push(vegetation);
-    } else if (
-      (tags.landuse && this.LANDUSE_TYPES.has(tags.landuse)) ||
-      tags.leisure === 'park'
-    ) {
-      const luType =
-        tags.leisure === 'park' ? 'park' : (tags.landuse ?? 'other');
-      const landuseColors = groundColors.landuse as Record<
-        string,
-        string | undefined
-      >;
-      const landuse: LanduseVisual = {
-        id,
-        geometry: polygonGeometry,
-        type: luType,
-        color: landuseColors[luType] ?? groundColors.default,
-      };
-      features.landuse.push(landuse);
-    } else if (tags.natural && this.NATURAL_LANDUSE_TYPES.has(tags.natural)) {
-      const naturalType = tags.natural;
-      const landuseColors = groundColors.landuse as Record<
-        string,
-        string | undefined
-      >;
-      const landuse: LanduseVisual = {
-        id,
-        geometry: polygonGeometry,
-        type: naturalType,
-        color: landuseColors[naturalType] ?? groundColors.default,
-      };
-      features.landuse.push(landuse);
-    } else if (tags.natural) {
-      const vegType: string = tags.natural;
-      const height = tags.height ? parseFloat(tags.height) : undefined;
-      const vegetation: VegetationVisual = {
-        id,
-        geometry: polygonGeometry,
-        type: vegType,
-        height,
-        heightCategory: this.getHeightCategory(height),
-        color: this.getColorForVegetation(vegType),
-      };
-      features.vegetation.push(vegetation);
-    }
+    this.classifyElement(
+      id,
+      tags,
+      { line: null, polygon, point: null, isClosed: true },
+      features
+    );
   }
 
   /**
    * Assembles an ordered list of way refs into a single closed coordinate ring.
-   * Single-way case: returns coordinates directly, closing the ring if needed.
-   * Multi-way case: greedily chains ways by matching shared endpoints.
    */
   private static assembleRing(
     wayRefs: number[],
@@ -803,10 +345,8 @@ export class ContextDataTileParser {
       const seg = remaining.splice(idx, 1)[0]!;
       const head = seg[0]!;
       if (head[0] === tail[0] && head[1] === tail[1]) {
-        // Append forward, skipping the duplicate first point
         ring.push(...(seg.slice(1) as [number, number][]));
       } else {
-        // Append reversed, skipping the duplicate last point
         ring.push(...([...seg].reverse().slice(1) as [number, number][]));
       }
     }
@@ -818,7 +358,6 @@ export class ContextDataTileParser {
       ring.push(first);
     }
 
-    // A valid closed polygon needs at least 4 points (3 unique + closing repeat)
     return ring.length >= 4 ? ring : null;
   }
 
@@ -832,17 +371,15 @@ export class ContextDataTileParser {
   ): [number, number][] {
     const coordinates: [number, number][] = [];
 
-    // Prefer geometry array if available (more efficient)
     if (geometry && Array.isArray(geometry)) {
       for (const { lat, lon } of geometry) {
-        coordinates.push(this.latLngToMercator(lat as number, lon as number));
+        coordinates.push(latLngToMercator(lat as number, lon as number));
       }
     } else {
-      // Fall back to node IDs
       for (const nodeId of nodes) {
         const node = nodeMap.get(nodeId);
         if (node) {
-          coordinates.push(this.latLngToMercator(node.lat, node.lng));
+          coordinates.push(latLngToMercator(node.lat, node.lng));
         }
       }
     }

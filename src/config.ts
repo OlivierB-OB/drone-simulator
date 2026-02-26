@@ -84,20 +84,179 @@ export const contextDataConfig = {
 };
 
 /**
- * Building colors (still used by parser for 3D building rendering)
+ * Building wall colors per building type (aerial/oblique view palette)
  */
 export const colorPalette = {
   buildings: {
-    residential: '#c4b8a0',
-    commercial: '#cc99ff',
-    industrial: '#888888',
-    office: '#cc99ff',
-    retail: '#ff99cc',
-    apartments: '#c4b8a0',
-    detached: '#d4c4b0',
-    house: '#d4c4b0',
-    other: '#aaaaaa',
-    default: '#c4b8a0',
+    residential: '#d4cdc0',
+    commercial: '#c8c0b8',
+    industrial: '#a8a898',
+    office: '#b8c4cc',
+    retail: '#c8bdb0',
+    apartments: '#c8c4b8',
+    detached: '#d4c8b8',
+    house: '#d4c8b8',
+    terrace: '#d0cab8',
+    warehouse: '#a8a090',
+    other: '#d0ccbc',
+    default: '#d0ccbc',
+  },
+};
+
+/**
+ * Default building heights in meters per building type (used when no height/levels tag is present)
+ */
+export const buildingHeightDefaults: Record<string, number> = {
+  house: 6,
+  detached: 6,
+  residential: 6,
+  terrace: 6,
+  apartments: 12,
+  office: 15,
+  commercial: 6,
+  retail: 4,
+  industrial: 9,
+  warehouse: 8,
+  school: 6,
+  hospital: 10,
+  church: 12,
+  cathedral: 20,
+  garage: 3,
+  shed: 2.5,
+  other: 6,
+};
+
+/**
+ * Wall color overrides per building:material tag
+ */
+export const buildingMaterialColors: Record<string, string> = {
+  brick: '#c87060',
+  concrete: '#c8c4b8',
+  glass: '#a8c8d8',
+  stone: '#b8b0a0',
+  wood: '#c8a878',
+  metal: '#888888',
+  plaster: '#d8d4cc',
+  render: '#d8d4cc',
+  cement_block: '#b8b4a8',
+};
+
+/**
+ * Roof color overrides per roof:material tag
+ */
+export const roofMaterialColors: Record<string, string> = {
+  roof_tiles: '#b06040',
+  slate: '#708090',
+  metal: '#888880',
+  thatch: '#c8a850',
+  concrete: '#c0bcb0',
+  glass: '#a8c8d8',
+  asphalt: '#707070',
+  eternit: '#909090',
+  tar_paper: '#606060',
+};
+
+/**
+ * Man-made structure shape, radius, height, and color defaults per man_made/power type
+ */
+export const structureDefaults: Record<
+  string,
+  { shape: string; radius: number; height: number; color: string }
+> = {
+  tower: { shape: 'cylinder', radius: 3, height: 20, color: '#a0a098' },
+  chimney: {
+    shape: 'tapered_cylinder',
+    radius: 2,
+    height: 40,
+    color: '#888880',
+  },
+  mast: { shape: 'tapered_cylinder', radius: 1, height: 30, color: '#b0b0b0' },
+  communications_tower: {
+    shape: 'cylinder',
+    radius: 4,
+    height: 50,
+    color: '#a0a098',
+  },
+  water_tower: {
+    shape: 'water_tower',
+    radius: 5,
+    height: 20,
+    color: '#a8a8b0',
+  },
+  silo: { shape: 'cylinder', radius: 4, height: 15, color: '#d0c8b0' },
+  storage_tank: { shape: 'cylinder', radius: 8, height: 10, color: '#c0c0c0' },
+  lighthouse: {
+    shape: 'tapered_cylinder',
+    radius: 3,
+    height: 25,
+    color: '#f0f0e8',
+  },
+  crane: { shape: 'crane', radius: 1, height: 40, color: '#f0b800' },
+  power_tower: { shape: 'box', radius: 1.5, height: 25, color: '#c0c0c8' },
+  power_pole: { shape: 'cylinder', radius: 0.2, height: 10, color: '#a08060' },
+  aerialway_pylon: { shape: 'box', radius: 1, height: 12, color: '#b0b0b8' },
+};
+
+/**
+ * Barrier default width, height, and color per barrier type
+ */
+export const barrierDefaults: Record<
+  string,
+  { width: number; height: number; color: string }
+> = {
+  wall: { width: 0.3, height: 2.0, color: '#c0b8b0' },
+  city_wall: { width: 2.0, height: 6.0, color: '#c8c0b0' },
+  retaining_wall: { width: 0.5, height: 1.5, color: '#a8a098' },
+  hedge: { width: 1.0, height: 1.5, color: '#4a7030' },
+};
+
+/**
+ * Barrier material color overrides (same palette as building materials)
+ */
+export const barrierMaterialColors: Record<string, string> = {
+  ...buildingMaterialColors,
+};
+
+/**
+ * Vegetation mesh generation config per vegetation category
+ */
+export const vegetationMeshConfig = {
+  forest: {
+    densityPer100m2: 1.0,
+    trunkHeightMin: 8,
+    trunkHeightMax: 15,
+    crownRadiusMin: 2,
+    crownRadiusMax: 5,
+  },
+  scrub: {
+    densityPer100m2: 4.0,
+    trunkHeightMin: 0,
+    trunkHeightMax: 0,
+    crownRadiusMin: 1,
+    crownRadiusMax: 2.5,
+  },
+  orchard: {
+    spacingX: 5,
+    spacingY: 4,
+    trunkHeightMin: 3,
+    trunkHeightMax: 6,
+    crownRadiusMin: 1.5,
+    crownRadiusMax: 2.5,
+  },
+  vineyard: {
+    spacingX: 2,
+    spacingY: 1,
+    trunkHeightMin: 0,
+    trunkHeightMax: 0,
+    crownRadiusMin: 0.4,
+    crownRadiusMax: 0.8,
+  },
+  treeRow: {
+    intervalMeters: 8,
+    trunkHeightMin: 6,
+    trunkHeightMax: 12,
+    crownRadiusMin: 1.5,
+    crownRadiusMax: 3,
   },
 };
 

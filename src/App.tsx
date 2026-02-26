@@ -13,6 +13,8 @@ import { TerrainTextureObjectManager } from './visualization/terrain/texture/Ter
 import { TerrainTextureFactory } from './visualization/terrain/texture/TerrainTextureFactory';
 import { TerrainCanvasRenderer } from './visualization/terrain/texture/TerrainCanvasRenderer';
 import { DroneObject } from './visualization/drone/DroneObject';
+import { MeshObjectManager } from './visualization/mesh/MeshObjectManager';
+import { ElevationSampler } from './visualization/mesh/util/ElevationSampler';
 
 export function App() {
   let viewer3D: Viewer3D | null = null;
@@ -25,6 +27,7 @@ export function App() {
   let terrainTextureManager: TerrainTextureObjectManager | null = null;
   let terrainObjectManager: TerrainObjectManager | null = null;
   let droneObject: DroneObject | null = null;
+  let meshObjectManager: MeshObjectManager | null = null;
 
   onMount(async () => {
     const containerRef = document.getElementById(
@@ -59,6 +62,13 @@ export function App() {
       terrainTextureManager
     );
 
+    const elevationSampler = new ElevationSampler(elevationData);
+    meshObjectManager = new MeshObjectManager(
+      viewer3D.getScene(),
+      contextData,
+      elevationSampler
+    );
+
     droneObject = new DroneObject(drone, viewer3D.getScene());
 
     animationLoop = new AnimationLoop(
@@ -78,6 +88,7 @@ export function App() {
       elevationData?.dispose();
       contextData?.dispose();
       terrainObjectManager?.dispose();
+      meshObjectManager?.dispose();
       droneObject?.dispose();
       drone?.dispose();
     };
