@@ -57,14 +57,7 @@ export class MeshObjectManager {
     const meshes: Object3D[] = [];
     const { features } = tile;
 
-    // Collect building parent IDs that have child parts (skip parent outlines)
-    const parentsWithParts = new Set<string>();
-    // Note: building:part relations would need parent tracking in the parser;
-    // for now we render all buildings including parts independently.
-
-    meshes.push(
-      ...this.buildingFactory.create(features.buildings, parentsWithParts)
-    );
+    meshes.push(...this.buildingFactory.create(features.buildings));
     meshes.push(...this.vegetationFactory.create(features.vegetation));
     meshes.push(...this.structureFactory.create(features.structures));
     meshes.push(...this.barrierFactory.create(features.barriers));

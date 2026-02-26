@@ -41,7 +41,9 @@ export interface BuildingVisual {
   roofShape?: string; // flat | gabled | hipped | pyramidal | dome | onion | cone | skillion
   roofHeight?: number; // roof height in meters (roof:height tag)
   roofDirection?: number; // roof ridge direction in degrees
+  roofOrientation?: 'along' | 'across'; // ridge orientation relative to longest wall
   isPart?: boolean; // true when building:part=yes
+  hasParts?: boolean; // true when building:part polygons are spatially contained within this building
 }
 
 /**

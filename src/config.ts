@@ -161,14 +161,28 @@ export const buildingMaterialColors: Record<string, string> = {
  */
 export const roofMaterialColors: Record<string, string> = {
   roof_tiles: '#b06040',
+  tiles: '#b06040',
   slate: '#708090',
-  metal: '#888880',
-  thatch: '#c8a850',
-  concrete: '#c0bcb0',
-  glass: '#a8c8d8',
+  metal: '#9090a0',
+  zinc: '#9090a0',
+  tin: '#9090a0',
+  concrete: '#909090',
+  copper: '#70a888',
+  grass: '#7aaa50',
+  thatch: '#c0a050',
   asphalt: '#707070',
+  solar_panels: '#304060',
   eternit: '#909090',
   tar_paper: '#606060',
+  glass: '#a8c8d8',
+};
+
+/**
+ * Default roof colors when no roof:colour or roof:material is tagged
+ */
+export const roofColorDefaults = {
+  flat: '#a0a090',
+  pitched: '#906050',
 };
 
 /**

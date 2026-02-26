@@ -68,6 +68,12 @@ export function classifyBuilding(
     roofDirection: tags['roof:direction']
       ? parseFloat(tags['roof:direction'])
       : undefined,
+    roofOrientation:
+      tags['roof:orientation'] === 'across'
+        ? 'across'
+        : tags['roof:orientation'] === 'along'
+          ? 'along'
+          : undefined,
     isPart: tags['building:part'] === 'yes',
   };
   features.buildings.push(building);

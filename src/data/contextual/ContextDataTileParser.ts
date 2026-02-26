@@ -1,7 +1,14 @@
-import type { ContextDataTile, Point, LineString, Polygon } from './types';
+import type {
+  ContextDataTile,
+  Point,
+  LineString,
+  Polygon,
+  BuildingVisual,
+} from './types';
 import type { MercatorBounds } from '../elevation/types';
 import { latLngToMercator } from './strategies/parserUtils';
 import type { ClassifiedGeometry } from './strategies/parserUtils';
+import { pointInPolygon, ringCentroid } from './strategies/polygonUtils';
 import { classifyBuilding } from './strategies/buildingStrategy';
 import { classifyRoad } from './strategies/roadStrategy';
 import { classifyRailway } from './strategies/railwayStrategy';
@@ -93,6 +100,8 @@ export class ContextDataTileParser {
         this.processRelation(element, wayMap, features);
       }
     }
+
+    this.markBuildingParents(features.buildings);
 
     return features;
   }
@@ -359,6 +368,35 @@ export class ContextDataTileParser {
     }
 
     return ring.length >= 4 ? ring : null;
+  }
+
+  /**
+   * Detects building:part containment spatially: for each part polygon, finds the
+   * non-part building whose footprint contains it and sets hasParts=true on that parent.
+   * In OSM there is no explicit parent–part link; containment is inferred from geometry.
+   */
+  private static markBuildingParents(buildings: BuildingVisual[]): void {
+    const nonParts = buildings.filter(
+      (b) => !b.isPart && b.geometry.type === 'Polygon'
+    );
+    const parts = buildings.filter(
+      (b) => b.isPart && b.geometry.type === 'Polygon'
+    );
+
+    for (const part of parts) {
+      const ring = (part.geometry as Polygon).coordinates[0];
+      if (!ring || ring.length < 4) continue;
+      const centroid = ringCentroid(ring);
+
+      for (const parent of nonParts) {
+        const parentRing = (parent.geometry as Polygon).coordinates[0];
+        if (!parentRing) continue;
+        if (pointInPolygon(centroid, parentRing)) {
+          parent.hasParts = true;
+          break;
+        }
+      }
+    }
   }
 
   /**
