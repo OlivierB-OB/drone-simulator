@@ -107,9 +107,12 @@ export class ContextDataTileLoader {
   node["aeroway"="aerodrome"](${bbox});
   way["aeroway"="aerodrome"](${bbox});
   relation["aeroway"="aerodrome"](${bbox});
-  way["natural"~"forest|wood|scrub|grass|heath"](${bbox});
+  way["aeroway"~"runway|taxiway|taxilane|apron|helipad"](${bbox});
+  way["natural"~"forest|wood|scrub|heath"](${bbox});
   node["natural"~"tree|trees"](${bbox});
-  way["landuse"~"residential|industrial|agricultural|grass|sand|commercial"](${bbox});
+  way["natural"~"sand|beach|dune|bare_rock|scree|mud|glacier|fell|tundra|grassland"](${bbox});
+  way["landuse"~"farmland|meadow|orchard|vineyard|allotments|cemetery|construction|recreation_ground|residential|commercial|retail|industrial|military|plant_nursery"](${bbox});
+  way["leisure"="park"](${bbox});
 );
 out;>;
 out qt;`;

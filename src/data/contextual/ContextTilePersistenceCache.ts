@@ -9,7 +9,7 @@ export class ContextTilePersistenceCache {
   private static db: IDBDatabase | null = null;
   private static initPromise: Promise<void> | null = null;
   private static readonly DB_NAME = 'drone-simulator-context';
-  private static readonly DB_VERSION = 1;
+  private static readonly DB_VERSION = 2;
   private static readonly STORE_NAME = 'contextTiles';
   private static readonly TTL_HOURS = 24;
   private static readonly TTL_MS =
@@ -208,15 +208,13 @@ export class ContextTilePersistenceCache {
       request.onupgradeneeded = () => {
         const db = request.result;
 
-        // Create store if it doesn't exist
-        if (!db.objectStoreNames.contains(this.STORE_NAME)) {
-          const store = db.createObjectStore(this.STORE_NAME, {
-            keyPath: 'key',
-          });
-
-          // Create index on expiresAt for efficient cleanup queries
-          store.createIndex('expiresAt', 'expiresAt', { unique: false });
+        // Delete existing store to clear stale tiles with old colors/structure
+        if (db.objectStoreNames.contains(this.STORE_NAME)) {
+          db.deleteObjectStore(this.STORE_NAME);
         }
+
+        const store = db.createObjectStore(this.STORE_NAME, { keyPath: 'key' });
+        store.createIndex('expiresAt', 'expiresAt', { unique: false });
       };
 
       request.onsuccess = () => {

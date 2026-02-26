@@ -84,8 +84,7 @@ export const contextDataConfig = {
 };
 
 /**
- * Color palette for visual OSM features
- * Maps feature types to hex colors for rendering
+ * Building colors (still used by parser for 3D building rendering)
  */
 export const colorPalette = {
   buildings: {
@@ -100,52 +99,176 @@ export const colorPalette = {
     other: '#aaaaaa',
     default: '#c4b8a0',
   },
-  roads: {
-    motorway: '#e0a56e',
-    trunk: '#ddb855',
-    primary: '#ddb855',
-    secondary: '#f7e6b8',
-    tertiary: '#f7e6b8',
-    residential: '#ffffff',
-    service: '#ffffff',
-    footway: '#cccccc',
-    path: '#cccccc',
-    other: '#ffffff',
-    default: '#ffffff',
+};
+
+/**
+ * Ground texture colors — spec-accurate aerial palette for canvas rendering
+ */
+export const groundColors = {
+  default: '#d8c8a8',
+  landuse: {
+    grassland: '#90b860',
+    meadow: '#90b860',
+    park: '#90b860',
+    recreation_ground: '#90b860',
+    plant_nursery: '#88b060',
+    farmland: '#c0cc70',
+    orchard: '#98c068',
+    vineyard: '#88a048',
+    allotments: '#88aa50',
+    cemetery: '#b0c8a8',
+    construction: '#c0aa88',
+    residential: '#d8d4cc',
+    commercial: '#d8d4cc',
+    retail: '#d8d4cc',
+    industrial: '#d8d4cc',
+    military: '#d8d4cc',
+    sand: '#e8d89a',
+    beach: '#e8d89a',
+    dune: '#e8d89a',
+    bare_rock: '#b8a888',
+    scree: '#c0b090',
+    mud: '#a89870',
+    glacier: '#e8f0ff',
   },
-  railways: {
-    rail: '#888888',
-    light_rail: '#666666',
-    tram: '#666666',
-    metro: '#ff0000',
-    monorail: '#888888',
-    other: '#888888',
-    default: '#888888',
-  },
-  waters: {
-    river: '#5588dd',
-    stream: '#5588dd',
-    canal: '#5588dd',
-    lake: '#3366cc',
-    pond: '#3366cc',
-    reservoir: '#3366cc',
-    wetland: '#88dd99',
-    water: '#3366cc',
-    other: '#3366cc',
-    default: '#3366cc',
+  water: {
+    body: '#3a6ab0',
+    line: '#4a7ac0',
+    wetland: '#5a9a6a',
+    dam: '#888880',
+    weir: '#888880',
   },
   vegetation: {
-    forest: '#2d8a2d',
-    wood: '#3d9d3d',
-    scrub: '#669966',
-    grass: '#99cc99',
-    grassland: '#99cc99',
-    tree: '#4da64d',
-    hedge: '#669966',
-    other: '#99cc99',
-    default: '#2d8a2d',
+    wood: '#3a7a30',
+    forest: '#3a7a30',
+    scrub: '#5a8a40',
+    heath: '#8a7a50',
+    fell: '#a0a070',
+    tundra: '#a0a070',
+    default: '#3a7a30',
   },
-  airport: '#ffff99',
+  aeroways: {
+    aerodrome: '#d8d4c0',
+    runway: '#888880',
+    taxiway: '#999990',
+    taxilane: '#999990',
+    apron: '#aaaaaa',
+    helipad: '#ccccaa',
+  },
+};
+
+/**
+ * Road rendering spec: pixel width and base color per highway type
+ */
+export const roadSpec: Record<string, { widthPx: number; color: string }> = {
+  // Sealed major roads — asphalt gray (#777060)
+  motorway: { widthPx: 6, color: '#777060' },
+  trunk: { widthPx: 6, color: '#777060' },
+  motorway_link: { widthPx: 4, color: '#777060' },
+  trunk_link: { widthPx: 4, color: '#777060' },
+  primary: { widthPx: 5, color: '#777060' },
+  primary_link: { widthPx: 3, color: '#777060' },
+  secondary: { widthPx: 4, color: '#777060' },
+  secondary_link: { widthPx: 2.5, color: '#777060' },
+  tertiary: { widthPx: 3, color: '#777060' },
+  tertiary_link: { widthPx: 2, color: '#777060' },
+  residential: { widthPx: 2, color: '#777060' },
+  unclassified: { widthPx: 2, color: '#777060' },
+  service: { widthPx: 1.5, color: '#777060' },
+  living_street: { widthPx: 1.5, color: '#777060' },
+  // Light paving / pedestrian (#ccccbb)
+  pedestrian: { widthPx: 2, color: '#ccccbb' },
+  footway: { widthPx: 1, color: '#ccccbb' },
+  path: { widthPx: 1, color: '#ccccbb' },
+  cycleway: { widthPx: 1, color: '#ccccbb' },
+  steps: { widthPx: 1, color: '#ccccbb' },
+  // Unpaved
+  track: { widthPx: 1, color: '#c4a882' },
+  bridleway: { widthPx: 1, color: '#c8b870' },
+  // Default fallback
+  default: { widthPx: 2, color: '#777060' },
+};
+
+/**
+ * Road surface color overrides (takes precedence over highway-type color)
+ */
+export const surfaceColors: Record<string, string> = {
+  // Asphalt
+  asphalt: '#777060',
+  // Light paving
+  concrete: '#ccccbb',
+  'concrete:plates': '#ccccbb',
+  'concrete:lanes': '#ccccbb',
+  paving_stones: '#ccccbb',
+  'paving_stones:lanes': '#ccccbb',
+  clay: '#ccccbb',
+  tartan: '#ccccbb',
+  artificial_turf: '#ccccbb',
+  acrylic: '#ccccbb',
+  rubber: '#ccccbb',
+  carpet: '#ccccbb',
+  plastic: '#ccccbb',
+  // Stone
+  sett: '#b0a090',
+  unhewn_cobblestone: '#b0a090',
+  // Brick
+  bricks: '#c87060',
+  // Metal
+  metal: '#909090',
+  metal_grid: '#909090',
+  // Wood / natural material
+  wood: '#b08860',
+  stepping_stones: '#b08860',
+  woodchips: '#b09870',
+  // Unpaved / gravel
+  compacted: '#c4a882',
+  fine_gravel: '#c4a882',
+  gravel: '#c4a882',
+  pebblestone: '#c4a882',
+  shells: '#c4a882',
+  // Dirt
+  dirt: '#a88060',
+  mud: '#a88060',
+  // Natural surfaces
+  grass: '#90b860',
+  sand: '#e8d89a',
+  rock: '#b8a888',
+  snow: '#e8f0ff',
+  ice: '#e8f0ff',
+};
+
+/**
+ * Railway rendering spec: pixel width, dash pattern, and color per railway type
+ */
+export const railwaySpec: Record<
+  string,
+  { widthPx: number; dash: number[]; color: string }
+> = {
+  rail: { widthPx: 2, dash: [5, 3], color: '#888888' },
+  narrow_gauge: { widthPx: 1.5, dash: [5, 3], color: '#888888' },
+  light_rail: { widthPx: 1.5, dash: [4, 3], color: '#888888' },
+  tram: { widthPx: 1, dash: [4, 3], color: '#888888' },
+  metro: { widthPx: 2, dash: [4, 3], color: '#888888' },
+  monorail: { widthPx: 1.5, dash: [4, 3], color: '#999999' },
+  funicular: { widthPx: 1.5, dash: [4, 3], color: '#888888' },
+  disused: { widthPx: 1, dash: [2, 4], color: '#aaaaaa' },
+  abandoned: { widthPx: 1, dash: [2, 4], color: '#aaaaaa' },
+  default: { widthPx: 1.5, dash: [4, 3], color: '#888888' },
+};
+
+/**
+ * Waterway line widths in pixels per waterway type
+ */
+export const waterwayWidths: Record<string, number> = {
+  river: 4,
+  canal: 3,
+  stream: 2,
+  tidal_channel: 2,
+  dam: 3,
+  weir: 2,
+  ditch: 1,
+  drain: 1,
+  default: 1.5,
 };
 
 export const debugConfig = {

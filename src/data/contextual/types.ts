@@ -44,9 +44,10 @@ export interface RoadVisual {
   id: string;
   geometry: LineString;
   type: string; // Road category: primary, secondary, residential, motorway, etc.
-  widthCategory: 'large' | 'medium' | 'small'; // Derived from road type
+  widthPx: number; // Pixel width derived from road type
   laneCount?: number; // Number of lanes if available
   color: HexColor; // Derived from road type
+  surfaceColor?: HexColor; // Override color from surface tag (asphalt, concrete, etc.)
 }
 
 /**
@@ -57,6 +58,8 @@ export interface RailwayVisual {
   geometry: LineString;
   type: string; // Railway category: rail, light_rail, tram, metro, etc.
   trackCount?: number; // Number of tracks/rails
+  widthPx: number; // Pixel width derived from railway type
+  dash: number[]; // Line dash pattern [dashLen, gapLen]
   color: HexColor; // Derived from railway type
 }
 
@@ -68,6 +71,7 @@ export interface WaterVisual {
   geometry: LineString | Polygon;
   type: string; // Water category: river, lake, canal, stream, wetland, reservoir, etc.
   isArea: boolean; // true for lakes/ponds/wetlands, false for rivers/streams/canals
+  widthPx: number; // Pixel width for waterway lines; 0 for polygon bodies
   color: HexColor; // Blue variants derived from water type
 }
 
@@ -84,14 +88,28 @@ export interface VegetationVisual {
 }
 
 /**
- * Visual properties for airports - focused on rendering: location, type, color
+ * Visual properties for landuse/landcover areas - filled ground surface regions
  */
-export interface AirportVisual {
+export interface LanduseVisual {
+  id: string;
+  geometry: Polygon;
+  type: string; // farmland, meadow, park, residential, commercial, etc.
+  color: HexColor;
+}
+
+/**
+ * Visual properties for aeroways - focused on rendering: location, type, color
+ */
+export interface AerowayVisual {
   id: string;
   geometry: Point | Polygon | LineString; // Point for nodes, Polygon/LineString for ways/relations
-  type: string; // Airport category: aerodrome, heliport, etc.
-  color: HexColor; // Standard airport color
+  type: string; // aerodrome, runway, taxiway, taxilane, apron, helipad
+  color: HexColor;
+  widthPx?: number; // pixel width for LineString aeroways (runway: 3, taxiway: 2, taxilane: 1.5)
 }
+
+/** @deprecated Use AerowayVisual */
+export type AirportVisual = AerowayVisual;
 
 /**
  * Union of all visual feature types
@@ -102,24 +120,15 @@ export type VisualFeature =
   | RailwayVisual
   | WaterVisual
   | VegetationVisual
-  | AirportVisual;
+  | AerowayVisual
+  | LanduseVisual;
 
 /**
  * Color palette mapping for different feature categories
  */
 export interface ColorPalette {
-  // Building colors by type
+  // Building colors by type (roads/waters/vegetation now use groundColors from config)
   buildings: Record<string, HexColor>;
-  // Road colors by type
-  roads: Record<string, HexColor>;
-  // Railway colors by type
-  railways: Record<string, HexColor>;
-  // Water colors by type
-  waters: Record<string, HexColor>;
-  // Vegetation colors by type
-  vegetation: Record<string, HexColor>;
-  // Airport color
-  airport: HexColor;
 }
 
 /**
@@ -143,6 +152,7 @@ export interface ContextDataTile {
     waters: WaterVisual[];
     airports: AirportVisual[];
     vegetation: VegetationVisual[];
+    landuse: LanduseVisual[];
   };
 
   /** Color palette for this tile's features */

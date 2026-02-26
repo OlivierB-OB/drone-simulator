@@ -202,6 +202,7 @@ function createMockContextTile(tileKey: string): ContextDataTile {
       waters: [],
       airports: [],
       vegetation: [],
+      landuse: [],
     },
     colorPalette: {} as any,
   };

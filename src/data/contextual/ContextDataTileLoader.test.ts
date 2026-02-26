@@ -151,7 +151,7 @@ describe('ContextDataTileLoader', () => {
       expect(features.buildings).toHaveLength(0);
     });
 
-    it('extracts roads with visual properties and filters footways', () => {
+    it('extracts roads with correct widthPx (footways also included at 1px)', () => {
       const osmData = {
         elements: [
           {
@@ -161,7 +161,7 @@ describe('ContextDataTileLoader', () => {
               highway: 'primary',
               lanes: '2',
               maxspeed: '50',
-              surface: 'asphalt', // Non-visual, should be ignored
+              surface: 'asphalt',
             },
             nodes: [1, 2],
             geometry: [
@@ -173,7 +173,7 @@ describe('ContextDataTileLoader', () => {
             type: 'way',
             id: 2,
             tags: {
-              highway: 'footway', // Should be filtered
+              highway: 'footway',
             },
             nodes: [3, 4],
             geometry: [
@@ -193,14 +193,20 @@ describe('ContextDataTileLoader', () => {
 
       const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
 
-      expect(features.roads).toHaveLength(1);
+      // Both primary and footway are included (footways render at 1px)
+      expect(features.roads).toHaveLength(2);
       const road = features.roads[0]!;
       expect(road.type).toBe('primary');
       expect(road.laneCount).toBe(2);
-      expect(road.widthCategory).toBe('large'); // primary = large
+      expect(road.widthPx).toBe(5); // primary = 5px
+      expect(road.surfaceColor).toBe('#777060'); // asphalt surface override
       expect(road.color).toBeDefined();
       expect((road as any).tags).toBeUndefined();
       expect((road as any).surface).toBeUndefined();
+
+      const footway = features.roads[1]!;
+      expect(footway.type).toBe('footway');
+      expect(footway.widthPx).toBe(1); // footway = 1px
     });
 
     it('extracts railways with track count and color', () => {
@@ -236,6 +242,8 @@ describe('ContextDataTileLoader', () => {
       const railway = features.railways[0]!;
       expect(railway.type).toBe('light_rail');
       expect(railway.trackCount).toBeDefined();
+      expect(railway.widthPx).toBe(1.5); // light_rail = 1.5px
+      expect(railway.dash).toEqual([4, 3]);
       expect(railway.color).toBeDefined();
       expect((railway as any).tags).toBeUndefined();
       expect((railway as any).operator).toBeUndefined();
@@ -296,6 +304,7 @@ describe('ContextDataTileLoader', () => {
       const river = features.waters[1]!;
       expect(river.type).toBe('river');
       expect(river.isArea).toBe(false); // Open ring
+      expect(river.widthPx).toBe(4); // river = 4px
     });
 
     it('extracts vegetation with height category', () => {

@@ -5,14 +5,22 @@ import type {
   RailwayVisual,
   WaterVisual,
   VegetationVisual,
-  AirportVisual,
+  AerowayVisual,
+  LanduseVisual,
   Point,
   LineString,
   Polygon,
   HexColor,
 } from './types';
 import type { MercatorBounds } from '../elevation/types';
-import { colorPalette } from '../../config';
+import {
+  colorPalette,
+  groundColors,
+  roadSpec,
+  surfaceColors,
+  railwaySpec,
+  waterwayWidths,
+} from '../../config';
 
 /**
  * Parser for OSM (OpenStreetMap) data tiles.
@@ -24,6 +32,53 @@ export class ContextDataTileParser {
   private static readonly MAX_EXTENT =
     ContextDataTileParser.EARTH_RADIUS * Math.PI;
 
+  private static readonly LANDUSE_TYPES = new Set([
+    'grassland',
+    'meadow',
+    'park',
+    'recreation_ground',
+    'plant_nursery',
+    'farmland',
+    'orchard',
+    'vineyard',
+    'allotments',
+    'cemetery',
+    'construction',
+    'residential',
+    'commercial',
+    'retail',
+    'industrial',
+    'military',
+    'sand',
+    'beach',
+    'dune',
+    'bare_rock',
+    'scree',
+    'mud',
+    'glacier',
+  ]);
+
+  private static readonly NATURAL_LANDUSE_TYPES = new Set([
+    'sand',
+    'beach',
+    'dune',
+    'bare_rock',
+    'scree',
+    'mud',
+    'glacier',
+    'grassland',
+    // fell and tundra are vegetation (groundColors.vegetation.fell/tundra = '#a0a070')
+  ]);
+
+  private static readonly AEROWAY_TYPES = new Set([
+    'aerodrome',
+    'runway',
+    'taxiway',
+    'taxilane',
+    'apron',
+    'helipad',
+  ]);
+
   /**
    * Parses OSM JSON response data and groups features by type.
    * Only extracts visual properties; ignores non-rendering attributes.
@@ -31,7 +86,7 @@ export class ContextDataTileParser {
    * @param osmData - Raw Overpass API JSON response
    * @param bounds - Mercator bounds of the tile
    * @param zoomLevel - Web Mercator zoom level
-   * @returns Features grouped by type (buildings, roads, railways, waters, airports, vegetation)
+   * @returns Features grouped by type (buildings, roads, railways, waters, airports, vegetation, landuse)
    */
   static parseOSMData(
     osmData: Record<string, unknown>,
@@ -45,6 +100,7 @@ export class ContextDataTileParser {
       waters: [],
       airports: [],
       vegetation: [],
+      landuse: [],
     };
 
     if (!Array.isArray(osmData.elements)) {
@@ -100,33 +156,45 @@ export class ContextDataTileParser {
   }
 
   /**
-   * Gets width category for a road type
+   * Gets pixel width for a road type
    */
-  private static getRoadWidthCategory(
-    roadType: string
-  ): 'large' | 'medium' | 'small' {
-    const type = roadType.toLowerCase();
-    if (['motorway', 'trunk', 'primary'].includes(type)) return 'large';
-    if (['secondary', 'tertiary'].includes(type)) return 'medium';
-    return 'small';
+  private static getRoadWidthPx(type: string): number {
+    return (
+      roadSpec[type.toLowerCase()]?.widthPx ?? roadSpec['default']?.widthPx ?? 2
+    );
   }
 
   /**
    * Gets color for a road type
    */
   private static getColorForRoad(roadType: string): HexColor {
-    const typeNormalized = roadType.toLowerCase();
-    const colors = colorPalette.roads as Record<string, HexColor>;
-    return (colors[typeNormalized] || colors.default) as HexColor;
+    return (
+      roadSpec[roadType.toLowerCase()]?.color ??
+      roadSpec['default']?.color ??
+      '#c8c0b8'
+    );
   }
 
   /**
-   * Gets color for a railway type
+   * Gets surface-override color if a known surface tag is present
    */
-  private static getColorForRailway(railwayType: string): HexColor {
-    const typeNormalized = railwayType.toLowerCase();
-    const colors = colorPalette.railways as Record<string, HexColor>;
-    return (colors[typeNormalized] || colors.default) as HexColor;
+  private static getRoadSurfaceColor(surface?: string): HexColor | undefined {
+    if (!surface) return undefined;
+    return surfaceColors[surface.toLowerCase()];
+  }
+
+  /**
+   * Gets railway rendering spec (widthPx, dash, color) for a railway type
+   */
+  private static getRailwaySpec(type: string): {
+    widthPx: number;
+    dash: number[];
+    color: HexColor;
+  } {
+    return (
+      railwaySpec[type.toLowerCase()] ??
+      railwaySpec['default'] ?? { widthPx: 1.5, dash: [3, 2], color: '#888878' }
+    );
   }
 
   /**
@@ -134,18 +202,34 @@ export class ContextDataTileParser {
    */
   private static getTrackCount(gauge?: string): number {
     if (!gauge) return 1;
-    // Standard gauge (1435mm) typically has 1-2 tracks per line
-    // Narrow gauge might have different properties, default to 1
     return 1;
   }
 
   /**
-   * Gets color for a water type
+   * Gets color and width for a water feature
    */
-  private static getColorForWater(waterType: string): HexColor {
-    const typeNormalized = waterType.toLowerCase();
-    const colors = colorPalette.waters as Record<string, HexColor>;
-    return (colors[typeNormalized] || colors.default) as HexColor;
+  private static getWaterColorAndWidth(
+    waterType: string,
+    isArea: boolean
+  ): { color: HexColor; widthPx: number } {
+    if (waterType === 'wetland') {
+      return { color: groundColors.water.wetland, widthPx: 0 };
+    }
+    if (isArea) {
+      return { color: groundColors.water.body, widthPx: 0 };
+    }
+    const widthPx =
+      waterwayWidths[waterType.toLowerCase()] ??
+      waterwayWidths['default'] ??
+      1.5;
+    // dam and weir use concrete/earth color; all others use water line blue
+    const waterColors = groundColors.water as Record<
+      string,
+      string | undefined
+    >;
+    const color =
+      waterColors[waterType.toLowerCase()] ?? groundColors.water.line;
+    return { color, widthPx };
   }
 
   /**
@@ -165,8 +249,8 @@ export class ContextDataTileParser {
    */
   private static getColorForVegetation(vegType: string): HexColor {
     const typeNormalized = vegType.toLowerCase();
-    const colors = colorPalette.vegetation as Record<string, HexColor>;
-    return (colors[typeNormalized] || colors.default) as HexColor;
+    const map = groundColors.vegetation as Record<string, string | undefined>;
+    return map[typeNormalized] ?? groundColors.vegetation.default;
   }
 
   /**
@@ -188,6 +272,15 @@ export class ContextDataTileParser {
       | undefined;
 
     if (!tags || Object.keys(tags).length === 0) {
+      return;
+    }
+
+    // Skip underground/tunnel features
+    if (
+      tags.tunnel === 'yes' ||
+      tags.location === 'underground' ||
+      (tags.level !== undefined && parseInt(tags.level, 10) < 0)
+    ) {
       return;
     }
 
@@ -242,28 +335,28 @@ export class ContextDataTileParser {
         features.buildings.push(building);
       }
     } else if (tags.highway) {
-      // Filter: skip footways, paths (no visual distinction)
       const highwayType = tags.highway.toLowerCase();
-      if (!['footway', 'path'].includes(highwayType)) {
-        const lanes = tags.lanes ? parseInt(tags.lanes, 10) : undefined;
-        const road: RoadVisual = {
-          id,
-          geometry: lineGeometry,
-          type: tags.highway,
-          widthCategory: this.getRoadWidthCategory(tags.highway),
-          laneCount: lanes,
-          color: this.getColorForRoad(tags.highway),
-        };
-        features.roads.push(road);
-      }
+      const road: RoadVisual = {
+        id,
+        geometry: lineGeometry,
+        type: tags.highway,
+        widthPx: this.getRoadWidthPx(highwayType),
+        laneCount: tags.lanes ? parseInt(tags.lanes, 10) : undefined,
+        color: this.getColorForRoad(highwayType),
+        surfaceColor: this.getRoadSurfaceColor(tags.surface),
+      };
+      features.roads.push(road);
     } else if (tags.railway) {
-      const railwayType = tags.railway || 'rail';
+      const railwayType = tags.railway.toLowerCase();
+      const spec = this.getRailwaySpec(railwayType);
       const railway: RailwayVisual = {
         id,
         geometry: lineGeometry,
         type: railwayType,
         trackCount: this.getTrackCount(tags.gauge),
-        color: this.getColorForRailway(railwayType),
+        widthPx: spec.widthPx,
+        dash: spec.dash,
+        color: spec.color,
       };
       features.railways.push(railway);
     } else if (
@@ -274,7 +367,6 @@ export class ContextDataTileParser {
       tags.water ||
       tags.landuse === 'water'
     ) {
-      // Determine water type from tags (always has a default)
       const waterType: string =
         tags.waterway ||
         tags.water ||
@@ -282,23 +374,81 @@ export class ContextDataTileParser {
         tags.landuse ||
         'water';
 
+      const isArea = isClosed;
+      const { color, widthPx } = this.getWaterColorAndWidth(waterType, isArea);
       const water: WaterVisual = {
         id,
-        geometry: isClosed ? polygonGeometry! : lineGeometry,
+        geometry: isArea ? polygonGeometry! : lineGeometry,
         type: waterType,
-        isArea: isClosed,
-        color: this.getColorForWater(waterType),
+        isArea,
+        widthPx,
+        color,
       };
       features.waters.push(water);
-    } else if (tags.aeroway === 'aerodrome') {
-      const airportType: string = tags.aeroway || 'aerodrome';
-      const airport: AirportVisual = {
-        id,
-        geometry: isClosed ? polygonGeometry! : lineGeometry,
-        type: airportType,
-        color: colorPalette.airport,
+    } else if (tags.aeroway && this.AEROWAY_TYPES.has(tags.aeroway)) {
+      const aerowayType = tags.aeroway;
+      const aerowayColors = groundColors.aeroways as Record<
+        string,
+        string | undefined
+      >;
+      const aerowayLineWidths: Record<string, number> = {
+        runway: 3,
+        taxiway: 2,
+        taxilane: 1.5,
       };
-      features.airports.push(airport);
+      const aeroway: AerowayVisual = {
+        id,
+        geometry: polygonGeometry ?? lineGeometry,
+        type: aerowayType,
+        color: aerowayColors[aerowayType] ?? groundColors.aeroways.aerodrome,
+        widthPx: aerowayLineWidths[aerowayType],
+      };
+      features.airports.push(aeroway);
+    } else if (tags.landuse === 'forest') {
+      // §5.4: landuse=forest is vegetation (same color as natural=wood)
+      if (!polygonGeometry) return;
+      const vegetation: VegetationVisual = {
+        id,
+        geometry: polygonGeometry,
+        type: 'forest',
+        height: undefined,
+        heightCategory: 'tall',
+        color: this.getColorForVegetation('forest'),
+      };
+      features.vegetation.push(vegetation);
+    } else if (
+      (tags.landuse && this.LANDUSE_TYPES.has(tags.landuse)) ||
+      tags.leisure === 'park'
+    ) {
+      if (!polygonGeometry) return;
+      const luType =
+        tags.leisure === 'park' ? 'park' : (tags.landuse ?? 'other');
+      const landuseColors = groundColors.landuse as Record<
+        string,
+        string | undefined
+      >;
+      const landuse: LanduseVisual = {
+        id,
+        geometry: polygonGeometry,
+        type: luType,
+        color: landuseColors[luType] ?? groundColors.default,
+      };
+      features.landuse.push(landuse);
+    } else if (tags.natural && this.NATURAL_LANDUSE_TYPES.has(tags.natural)) {
+      // Natural surface types rendered as landuse areas
+      if (!polygonGeometry) return;
+      const naturalType = tags.natural;
+      const landuseColors = groundColors.landuse as Record<
+        string,
+        string | undefined
+      >;
+      const landuse: LanduseVisual = {
+        id,
+        geometry: polygonGeometry,
+        type: naturalType,
+        color: landuseColors[naturalType] ?? groundColors.default,
+      };
+      features.landuse.push(landuse);
     } else if (tags.natural) {
       const vegType: string = tags.natural || 'vegetation';
       const height = tags.height ? parseFloat(tags.height) : undefined;
@@ -342,11 +492,11 @@ export class ContextDataTileParser {
 
     // Classify node features and extract only visual properties
     if (tags.aeroway === 'aerodrome') {
-      const airport: AirportVisual = {
+      const airport: AerowayVisual = {
         id,
         geometry: pointGeometry,
-        type: tags.aeroway || 'aerodrome',
-        color: colorPalette.airport,
+        type: 'aerodrome',
+        color: groundColors.aeroways.aerodrome,
       };
       features.airports.push(airport);
     } else if (tags['natural'] === 'tree') {
@@ -453,12 +603,11 @@ export class ContextDataTileParser {
         features.buildings.push(building);
       }
     } else if (tags.aeroway === 'aerodrome') {
-      const airportType: string = tags.aeroway || 'aerodrome';
-      const airport: AirportVisual = {
+      const airport: AerowayVisual = {
         id,
         geometry: polygonGeometry,
-        type: airportType,
-        color: colorPalette.airport,
+        type: 'aerodrome',
+        color: groundColors.aeroways.aerodrome,
       };
       features.airports.push(airport);
     } else if (
@@ -468,12 +617,14 @@ export class ContextDataTileParser {
     ) {
       // Water multipolygons (lakes, ponds, reservoirs, wetlands)
       const waterType: string = tags['natural'] || tags.landuse || 'water';
+      const { color, widthPx } = this.getWaterColorAndWidth(waterType, true);
       const water: WaterVisual = {
         id,
         geometry: polygonGeometry,
         type: waterType,
-        isArea: true, // Relations are always areal
-        color: this.getColorForWater(waterType),
+        isArea: true,
+        widthPx,
+        color,
       };
       features.waters.push(water);
     } else if (tags.natural) {
