@@ -44,7 +44,7 @@ export interface RoadVisual {
   id: string;
   geometry: LineString;
   type: string; // Road category: primary, secondary, residential, motorway, etc.
-  widthPx: number; // Pixel width derived from road type
+  widthMeters: number; // Real-world width in meters derived from road type
   laneCount?: number; // Number of lanes if available
   color: HexColor; // Derived from road type
   surfaceColor?: HexColor; // Override color from surface tag (asphalt, concrete, etc.)
@@ -58,7 +58,7 @@ export interface RailwayVisual {
   geometry: LineString;
   type: string; // Railway category: rail, light_rail, tram, metro, etc.
   trackCount?: number; // Number of tracks/rails
-  widthPx: number; // Pixel width derived from railway type
+  widthMeters: number; // Real-world width in meters derived from railway type
   dash: number[]; // Line dash pattern [dashLen, gapLen]
   color: HexColor; // Derived from railway type
 }
@@ -71,7 +71,7 @@ export interface WaterVisual {
   geometry: LineString | Polygon;
   type: string; // Water category: river, lake, canal, stream, wetland, reservoir, etc.
   isArea: boolean; // true for lakes/ponds/wetlands, false for rivers/streams/canals
-  widthPx: number; // Pixel width for waterway lines; 0 for polygon bodies
+  widthMeters: number; // Real-world width in meters for waterway lines; 0 for polygon bodies
   color: HexColor; // Blue variants derived from water type
 }
 
@@ -105,7 +105,7 @@ export interface AerowayVisual {
   geometry: Point | Polygon | LineString; // Point for nodes, Polygon/LineString for ways/relations
   type: string; // aerodrome, runway, taxiway, taxilane, apron, helipad
   color: HexColor;
-  widthPx?: number; // pixel width for LineString aeroways (runway: 3, taxiway: 2, taxilane: 1.5)
+  widthMeters?: number; // Real-world width in meters for LineString aeroways (runway: 45, taxiway: 23, taxilane: 12)
 }
 
 /** @deprecated Use AerowayVisual */

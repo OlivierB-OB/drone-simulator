@@ -19,7 +19,7 @@ import {
   roadSpec,
   surfaceColors,
   railwaySpec,
-  waterwayWidths,
+  waterwayWidthsMeters,
 } from '../../config';
 
 /**
@@ -175,11 +175,13 @@ export class ContextDataTileParser {
   }
 
   /**
-   * Gets pixel width for a road type
+   * Gets real-world width in meters for a road type
    */
-  private static getRoadWidthPx(type: string): number {
+  private static getRoadWidthMeters(type: string): number {
     return (
-      roadSpec[type.toLowerCase()]?.widthPx ?? roadSpec['default']?.widthPx ?? 2
+      roadSpec[type.toLowerCase()]?.widthMeters ??
+      roadSpec['default']?.widthMeters ??
+      7
     );
   }
 
@@ -203,16 +205,20 @@ export class ContextDataTileParser {
   }
 
   /**
-   * Gets railway rendering spec (widthPx, dash, color) for a railway type
+   * Gets railway rendering spec (widthMeters, dash, color) for a railway type
    */
   private static getRailwaySpec(type: string): {
-    widthPx: number;
+    widthMeters: number;
     dash: number[];
     color: HexColor;
   } {
     return (
       railwaySpec[type.toLowerCase()] ??
-      railwaySpec['default'] ?? { widthPx: 1.5, dash: [3, 2], color: '#888878' }
+      railwaySpec['default'] ?? {
+        widthMeters: 3,
+        dash: [3, 2],
+        color: '#888878',
+      }
     );
   }
 
@@ -230,17 +236,17 @@ export class ContextDataTileParser {
   private static getWaterColorAndWidth(
     waterType: string,
     isArea: boolean
-  ): { color: HexColor; widthPx: number } {
+  ): { color: HexColor; widthMeters: number } {
     if (waterType === 'wetland') {
-      return { color: groundColors.water.wetland, widthPx: 0 };
+      return { color: groundColors.water.wetland, widthMeters: 0 };
     }
     if (isArea) {
-      return { color: groundColors.water.body, widthPx: 0 };
+      return { color: groundColors.water.body, widthMeters: 0 };
     }
-    const widthPx =
-      waterwayWidths[waterType.toLowerCase()] ??
-      waterwayWidths['default'] ??
-      1.5;
+    const widthMeters =
+      waterwayWidthsMeters[waterType.toLowerCase()] ??
+      waterwayWidthsMeters['default'] ??
+      3;
     // dam and weir use concrete/earth color; all others use water line blue
     const waterColors = groundColors.water as Record<
       string,
@@ -248,7 +254,7 @@ export class ContextDataTileParser {
     >;
     const color =
       waterColors[waterType.toLowerCase()] ?? groundColors.water.line;
-    return { color, widthPx };
+    return { color, widthMeters };
   }
 
   /**
@@ -362,7 +368,7 @@ export class ContextDataTileParser {
         id,
         geometry: lineGeometry,
         type: tags.highway,
-        widthPx: this.getRoadWidthPx(highwayType),
+        widthMeters: this.getRoadWidthMeters(highwayType),
         laneCount: tags.lanes ? parseInt(tags.lanes, 10) : undefined,
         color: this.getColorForRoad(highwayType),
         surfaceColor: this.getRoadSurfaceColor(tags.surface),
@@ -376,7 +382,7 @@ export class ContextDataTileParser {
         geometry: lineGeometry,
         type: railwayType,
         trackCount: this.getTrackCount(tags.gauge),
-        widthPx: spec.widthPx,
+        widthMeters: spec.widthMeters,
         dash: spec.dash,
         color: spec.color,
       };
@@ -397,13 +403,16 @@ export class ContextDataTileParser {
         'water';
 
       const isArea = isClosed;
-      const { color, widthPx } = this.getWaterColorAndWidth(waterType, isArea);
+      const { color, widthMeters } = this.getWaterColorAndWidth(
+        waterType,
+        isArea
+      );
       const water: WaterVisual = {
         id,
         geometry: isArea ? polygonGeometry! : lineGeometry,
         type: waterType,
         isArea,
-        widthPx,
+        widthMeters,
         color,
       };
       features.waters.push(water);
@@ -413,17 +422,17 @@ export class ContextDataTileParser {
         string,
         string | undefined
       >;
-      const aerowayLineWidths: Record<string, number> = {
-        runway: 3,
-        taxiway: 2,
-        taxilane: 1.5,
+      const aerowayLineWidthsMeters: Record<string, number> = {
+        runway: 45,
+        taxiway: 23,
+        taxilane: 12,
       };
       const aeroway: AerowayVisual = {
         id,
         geometry: polygonGeometry ?? lineGeometry,
         type: aerowayType,
         color: aerowayColors[aerowayType] ?? groundColors.aeroways.aerodrome,
-        widthPx: aerowayLineWidths[aerowayType],
+        widthMeters: aerowayLineWidthsMeters[aerowayType],
       };
       features.airports.push(aeroway);
     } else if (tags.landuse === 'forest') {
@@ -665,13 +674,16 @@ export class ContextDataTileParser {
         tags['natural'] ||
         tags.landuse ||
         'water';
-      const { color, widthPx } = this.getWaterColorAndWidth(waterType, true);
+      const { color, widthMeters } = this.getWaterColorAndWidth(
+        waterType,
+        true
+      );
       const water: WaterVisual = {
         id,
         geometry: polygonGeometry,
         type: waterType,
         isArea: true,
-        widthPx,
+        widthMeters,
         color,
       };
       features.waters.push(water);

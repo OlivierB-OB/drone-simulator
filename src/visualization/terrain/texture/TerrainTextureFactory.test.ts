@@ -52,14 +52,14 @@ describe('TerrainTextureFactory', () => {
       expect(callArgs[2]).toBe(mockTile.mercatorBounds);
     });
 
-    it('should create canvas with 512x512 dimensions', () => {
+    it('should create canvas with configured groundCanvasSize dimensions', () => {
       const mockTile = createMockContextTile('9:261:168');
 
       factory.createTexture(mockTile, '9:261:168');
 
       const canvas = mockCanvasRenderer.renderTile.mock.calls[0][0];
-      expect(canvas.width).toBe(512);
-      expect(canvas.height).toBe(512);
+      expect(canvas.width).toBe(2048);
+      expect(canvas.height).toBe(2048);
     });
 
     it('should create Three.js texture instance', () => {

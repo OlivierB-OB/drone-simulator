@@ -3,6 +3,7 @@ import type { ContextDataTile } from '../../../data/contextual/types';
 import type { TileKey } from '../geometry/types';
 import { TerrainTextureObject } from './TerrainTextureObject';
 import { TerrainCanvasRenderer } from './TerrainCanvasRenderer';
+import { textureConfig } from '../../../config';
 
 /**
  * Factory for creating terrain textures from context data tiles.
@@ -43,8 +44,8 @@ export class TerrainTextureFactory {
 
     // Create offscreen canvas for rendering
     const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
+    canvas.width = textureConfig.groundCanvasSize;
+    canvas.height = textureConfig.groundCanvasSize;
 
     // Render features onto canvas
     this.canvasRenderer.renderTile(

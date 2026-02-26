@@ -14,12 +14,10 @@ import { groundColors } from '../../../config';
  *   5. Waterway lines
  *   6. Vegetation areas
  *   7. Aeroways
- *   8. Roads (sorted by widthPx ascending)
+ *   8. Roads (sorted by widthMeters ascending)
  *   9. Railways
  */
 export class TerrainCanvasRenderer {
-  constructor(private readonly canvasSize: number = 512) {}
-
   /**
    * Render a context tile's features onto a canvas.
    *
@@ -35,13 +33,14 @@ export class TerrainCanvasRenderer {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.fillStyle = groundColors.default;
-    ctx.fillRect(0, 0, this.canvasSize, this.canvasSize);
+    const { width, height } = canvas;
+
+    this.clear(canvas);
 
     const mercatorWidth = mercatorBounds.maxX - mercatorBounds.minX;
     const mercatorHeight = mercatorBounds.maxY - mercatorBounds.minY;
-    const scaleX = this.canvasSize / mercatorWidth;
-    const scaleY = this.canvasSize / mercatorHeight;
+    const scaleX = width / mercatorWidth;
+    const scaleY = height / mercatorHeight;
 
     this.drawLanduse(ctx, contextTile, mercatorBounds, scaleX, scaleY);
     this.drawWaterBodies(ctx, contextTile, mercatorBounds, scaleX, scaleY);
@@ -60,8 +59,9 @@ export class TerrainCanvasRenderer {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const { width, height } = canvas;
     ctx.fillStyle = groundColors.default;
-    ctx.fillRect(0, 0, this.canvasSize, this.canvasSize);
+    ctx.fillRect(0, 0, width, height);
   }
 
   private drawLanduse(
@@ -146,7 +146,7 @@ export class TerrainCanvasRenderer {
     for (const water of tile.features.waters) {
       if (water.isArea) continue;
       ctx.strokeStyle = water.color;
-      ctx.lineWidth = water.widthPx;
+      ctx.lineWidth = water.widthMeters * scaleX;
       if (water.geometry.type === 'LineString') {
         this.drawLineString(
           ctx,
@@ -227,7 +227,7 @@ export class TerrainCanvasRenderer {
           false
         );
       } else if (aeroway.geometry.type === 'LineString') {
-        ctx.lineWidth = aeroway.widthPx ?? 2; // runway: 3, taxiway: 2, taxilane: 1.5
+        ctx.lineWidth = (aeroway.widthMeters ?? 45) * scaleX; // runway: 45m, taxiway: 23m, taxilane: 12m
         this.drawLineString(
           ctx,
           aeroway.geometry.coordinates,
@@ -253,9 +253,9 @@ export class TerrainCanvasRenderer {
     scaleX: number,
     scaleY: number
   ): void {
-    // Sort ascending by widthPx: narrow roads drawn first, wide roads on top
+    // Sort ascending by widthMeters: narrow roads drawn first, wide roads on top
     const sorted = [...tile.features.roads].sort(
-      (a, b) => a.widthPx - b.widthPx
+      (a, b) => a.widthMeters - b.widthMeters
     );
 
     ctx.lineCap = 'round';
@@ -264,7 +264,7 @@ export class TerrainCanvasRenderer {
     for (const road of sorted) {
       ctx.setLineDash(road.type === 'steps' ? [2, 2] : []); // spec §5.5: steps dash [2,2]
       ctx.strokeStyle = road.surfaceColor ?? road.color;
-      ctx.lineWidth = road.widthPx;
+      ctx.lineWidth = road.widthMeters * scaleX;
       this.drawLineString(
         ctx,
         road.geometry.coordinates,
@@ -288,7 +288,7 @@ export class TerrainCanvasRenderer {
 
     for (const railway of tile.features.railways) {
       ctx.strokeStyle = railway.color;
-      ctx.lineWidth = railway.widthPx;
+      ctx.lineWidth = railway.widthMeters * scaleX;
       ctx.setLineDash(railway.dash);
       this.drawLineString(
         ctx,

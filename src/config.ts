@@ -133,7 +133,7 @@ export const groundColors = {
   },
   water: {
     body: '#3a6ab0',
-    line: '#4a7ac0',
+    line: '#3a6ab0',
     wetland: '#5a9a6a',
     dam: '#888880',
     weir: '#888880',
@@ -158,36 +158,37 @@ export const groundColors = {
 };
 
 /**
- * Road rendering spec: pixel width and base color per highway type
+ * Road rendering spec: real-world width in meters and base color per highway type
  */
-export const roadSpec: Record<string, { widthPx: number; color: string }> = {
-  // Sealed major roads — asphalt gray (#777060)
-  motorway: { widthPx: 6, color: '#777060' },
-  trunk: { widthPx: 6, color: '#777060' },
-  motorway_link: { widthPx: 4, color: '#777060' },
-  trunk_link: { widthPx: 4, color: '#777060' },
-  primary: { widthPx: 5, color: '#777060' },
-  primary_link: { widthPx: 3, color: '#777060' },
-  secondary: { widthPx: 4, color: '#777060' },
-  secondary_link: { widthPx: 2.5, color: '#777060' },
-  tertiary: { widthPx: 3, color: '#777060' },
-  tertiary_link: { widthPx: 2, color: '#777060' },
-  residential: { widthPx: 2, color: '#777060' },
-  unclassified: { widthPx: 2, color: '#777060' },
-  service: { widthPx: 1.5, color: '#777060' },
-  living_street: { widthPx: 1.5, color: '#777060' },
-  // Light paving / pedestrian (#ccccbb)
-  pedestrian: { widthPx: 2, color: '#ccccbb' },
-  footway: { widthPx: 1, color: '#ccccbb' },
-  path: { widthPx: 1, color: '#ccccbb' },
-  cycleway: { widthPx: 1, color: '#ccccbb' },
-  steps: { widthPx: 1, color: '#ccccbb' },
-  // Unpaved
-  track: { widthPx: 1, color: '#c4a882' },
-  bridleway: { widthPx: 1, color: '#c8b870' },
-  // Default fallback
-  default: { widthPx: 2, color: '#777060' },
-};
+export const roadSpec: Record<string, { widthMeters: number; color: string }> =
+  {
+    // Sealed major roads — asphalt gray (#777060)
+    motorway: { widthMeters: 25, color: '#777060' },
+    trunk: { widthMeters: 20, color: '#777060' },
+    motorway_link: { widthMeters: 10, color: '#777060' },
+    trunk_link: { widthMeters: 10, color: '#777060' },
+    primary: { widthMeters: 15, color: '#777060' },
+    primary_link: { widthMeters: 8, color: '#777060' },
+    secondary: { widthMeters: 12, color: '#777060' },
+    secondary_link: { widthMeters: 6, color: '#777060' },
+    tertiary: { widthMeters: 8, color: '#777060' },
+    tertiary_link: { widthMeters: 5, color: '#777060' },
+    residential: { widthMeters: 7, color: '#777060' },
+    unclassified: { widthMeters: 7, color: '#777060' },
+    service: { widthMeters: 4, color: '#777060' },
+    living_street: { widthMeters: 5, color: '#777060' },
+    // Light paving / pedestrian (#ccccbb)
+    pedestrian: { widthMeters: 6, color: '#ccccbb' },
+    footway: { widthMeters: 2, color: '#ccccbb' },
+    path: { widthMeters: 2, color: '#ccccbb' },
+    cycleway: { widthMeters: 2, color: '#ccccbb' },
+    steps: { widthMeters: 2, color: '#ccccbb' },
+    // Unpaved
+    track: { widthMeters: 3, color: '#c4a882' },
+    bridleway: { widthMeters: 3, color: '#c8b870' },
+    // Default fallback
+    default: { widthMeters: 7, color: '#777060' },
+  };
 
 /**
  * Road surface color overrides (takes precedence over highway-type color)
@@ -238,37 +239,43 @@ export const surfaceColors: Record<string, string> = {
 };
 
 /**
- * Railway rendering spec: pixel width, dash pattern, and color per railway type
+ * Railway rendering spec: real-world width in meters, dash pattern, and color per railway type
  */
 export const railwaySpec: Record<
   string,
-  { widthPx: number; dash: number[]; color: string }
+  { widthMeters: number; dash: number[]; color: string }
 > = {
-  rail: { widthPx: 2, dash: [5, 3], color: '#888888' },
-  narrow_gauge: { widthPx: 1.5, dash: [5, 3], color: '#888888' },
-  light_rail: { widthPx: 1.5, dash: [4, 3], color: '#888888' },
-  tram: { widthPx: 1, dash: [4, 3], color: '#888888' },
-  metro: { widthPx: 2, dash: [4, 3], color: '#888888' },
-  monorail: { widthPx: 1.5, dash: [4, 3], color: '#999999' },
-  funicular: { widthPx: 1.5, dash: [4, 3], color: '#888888' },
-  disused: { widthPx: 1, dash: [2, 4], color: '#aaaaaa' },
-  abandoned: { widthPx: 1, dash: [2, 4], color: '#aaaaaa' },
-  default: { widthPx: 1.5, dash: [4, 3], color: '#888888' },
+  rail: { widthMeters: 4, dash: [5, 3], color: '#888888' },
+  narrow_gauge: { widthMeters: 3, dash: [5, 3], color: '#888888' },
+  light_rail: { widthMeters: 3, dash: [4, 3], color: '#888888' },
+  tram: { widthMeters: 2, dash: [4, 3], color: '#888888' },
+  metro: { widthMeters: 4, dash: [4, 3], color: '#888888' },
+  monorail: { widthMeters: 3, dash: [4, 3], color: '#999999' },
+  funicular: { widthMeters: 3, dash: [4, 3], color: '#888888' },
+  disused: { widthMeters: 2, dash: [2, 4], color: '#aaaaaa' },
+  abandoned: { widthMeters: 2, dash: [2, 4], color: '#aaaaaa' },
+  default: { widthMeters: 3, dash: [4, 3], color: '#888888' },
 };
 
 /**
- * Waterway line widths in pixels per waterway type
+ * Waterway line widths in meters per waterway type
  */
-export const waterwayWidths: Record<string, number> = {
-  river: 4,
-  canal: 3,
-  stream: 2,
-  tidal_channel: 2,
-  dam: 3,
-  weir: 2,
-  ditch: 1,
-  drain: 1,
-  default: 1.5,
+export const waterwayWidthsMeters: Record<string, number> = {
+  river: 20,
+  canal: 15,
+  stream: 5,
+  tidal_channel: 10,
+  dam: 10,
+  weir: 5,
+  ditch: 2,
+  drain: 2,
+  default: 3,
+};
+
+export const textureConfig = {
+  // Ground canvas size in pixels for rendering OSM features (roads, water, landuse, etc.)
+  // Higher values provide more detail but increase canvas rendering time
+  groundCanvasSize: 2048,
 };
 
 export const debugConfig = {
