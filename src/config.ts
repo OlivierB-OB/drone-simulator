@@ -16,10 +16,10 @@ export const droneConfig = {
   // (Not realistic m/s; game speed allows faster exploration)
   // Realistic drone: 10-15 m/s. Mercator units at zoom 15: ~300 units/meter
   // So 1200 units/sec ≈ 4 m/s in real world, but appears fast in viewport
-  movementSpeed: 1200,
+  movementSpeed: 300,
 
   // Mouse sensitivity for azimuth control (degrees per pixel of mouse movement)
-  mouseSensitivity: 0.2,
+  mouseSensitivity: 0.1,
 
   // Elevation bounds in meters (0 = ground level)
   elevationMinimum: 0,
@@ -37,8 +37,9 @@ export const cameraConfig = {
   near: 0.1,
 
   // Maximum distance from camera to render (far clipping plane)
-  // Set to 100km to accommodate terrain tiles positioned far from origin in Mercator space
-  far: 100000,
+  // far distance in meters (one tile length at zoom 15 ≈ 2145m)
+  // Calculated: 2 * Math.PI * EARTH_RADIUS / Math.pow(2, zoomLevel)
+  far: 2145,
 
   // Chase camera: distance behind the drone in meters
   chaseDistance: 20,
@@ -48,8 +49,22 @@ export const cameraConfig = {
 };
 
 export const sceneConfig = {
-  // Background color (dark navy)
-  backgroundColor: 0x1a1a2e,
+  sky: {
+    // Sky color (matches fog for seamless blending)
+    color: 0xbfd1e5,
+  },
+
+  fog: {
+    // Fog near distance in meters (starts immediately after camera)
+    near: 1,
+
+    // Fog far distance in meters (one tile length at zoom 15 ≈ 2145m)
+    // Calculated: 2 * Math.PI * EARTH_RADIUS / Math.pow(2, zoomLevel)
+    far: 2145,
+
+    // Fog color (sky blue)
+    color: 0xbfd1e5,
+  },
 };
 
 export const elevationConfig = {

@@ -5,6 +5,7 @@ import {
   AmbientLight,
   DirectionalLight,
   AxesHelper,
+  Fog,
 } from 'three';
 import { sceneConfig, debugConfig, droneConfig } from '../config';
 import { Drone } from '../drone/Drone';
@@ -17,17 +18,27 @@ export class Scene {
 
   constructor(sceneConstructor: typeof ThreeScene = ThreeScene) {
     this.object = new sceneConstructor();
-    this.object.background = new Color(sceneConfig.backgroundColor);
+    this.object.background = new Color(sceneConfig.sky.color);
 
-    this.ambientLight = new AmbientLight(0xffffff, 0.6);
-    this.directionalLight = new DirectionalLight(0xffffff, 0.8);
+    this.ambientLight = new AmbientLight(0xeeeeee, 1);
+    this.directionalLight = new DirectionalLight(0xffffff, 2);
+    this.setupFog();
     this.setupLighting();
+  }
+
+  private setupFog(): void {
+    const fog = new Fog(
+      sceneConfig.fog.color,
+      sceneConfig.fog.near,
+      sceneConfig.fog.far
+    );
+    this.object.fog = fog;
   }
 
   private setupLighting(): void {
     this.object.add(this.ambientLight);
 
-    this.directionalLight.position.set(1, 1, 1).normalize();
+    this.directionalLight.position.set(1, 1, 0.5).normalize();
     this.object.add(this.directionalLight);
 
     // Debug axes helper: red=X, green=Y, blue=Z

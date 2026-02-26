@@ -16,9 +16,9 @@ describe('Scene', () => {
       expect(sceneInstance).toBeInstanceOf(THREE.Scene);
     });
 
-    it('should set background color to dark navy', () => {
+    it('should set background color to sky color', () => {
       const sceneInstance = scene.getObject();
-      const expectedColor = new THREE.Color(sceneConfig.backgroundColor);
+      const expectedColor = new THREE.Color(sceneConfig.sky.color);
 
       if (sceneInstance.background instanceof THREE.Color) {
         expect(sceneInstance.background.getHex()).toBe(expectedColor.getHex());
@@ -194,7 +194,7 @@ describe('Scene', () => {
       expect(sceneInstance).toBeInstanceOf(THREE.Scene);
       if (sceneInstance.background instanceof THREE.Color) {
         expect(sceneInstance.background.getHex()).toBe(
-          new THREE.Color(sceneConfig.backgroundColor).getHex()
+          new THREE.Color(sceneConfig.sky.color).getHex()
         );
       }
     });
@@ -208,7 +208,7 @@ describe('Scene', () => {
 
       if (background instanceof THREE.Color) {
         expect(background.getHex()).toBe(
-          new THREE.Color(sceneConfig.backgroundColor).getHex()
+          new THREE.Color(sceneConfig.sky.color).getHex()
         );
       }
     });
