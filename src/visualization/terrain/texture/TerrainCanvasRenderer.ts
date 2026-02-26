@@ -43,14 +43,14 @@ export class TerrainCanvasRenderer {
     const scaleX = this.canvasSize / mercatorWidth;
     const scaleY = this.canvasSize / mercatorHeight;
 
-    // this.drawLanduse(ctx, contextTile, mercatorBounds, scaleX, scaleY);
+    this.drawLanduse(ctx, contextTile, mercatorBounds, scaleX, scaleY);
     this.drawWaterBodies(ctx, contextTile, mercatorBounds, scaleX, scaleY);
-    // this.drawWetlands(ctx, contextTile, mercatorBounds, scaleX, scaleY);
-    // this.drawWaterwayLines(ctx, contextTile, mercatorBounds, scaleX, scaleY);
-    // this.drawVegetation(ctx, contextTile, mercatorBounds, scaleX, scaleY);
-    // this.drawAeroways(ctx, contextTile, mercatorBounds, scaleX, scaleY);
-    // this.drawRoads(ctx, contextTile, mercatorBounds, scaleX, scaleY);
-    // this.drawRailways(ctx, contextTile, mercatorBounds, scaleX, scaleY);
+    this.drawWetlands(ctx, contextTile, mercatorBounds, scaleX, scaleY);
+    this.drawWaterwayLines(ctx, contextTile, mercatorBounds, scaleX, scaleY);
+    this.drawVegetation(ctx, contextTile, mercatorBounds, scaleX, scaleY);
+    this.drawAeroways(ctx, contextTile, mercatorBounds, scaleX, scaleY);
+    this.drawRoads(ctx, contextTile, mercatorBounds, scaleX, scaleY);
+    this.drawRailways(ctx, contextTile, mercatorBounds, scaleX, scaleY);
   }
 
   /**
@@ -73,10 +73,15 @@ export class TerrainCanvasRenderer {
   ): void {
     for (const lu of tile.features.landuse) {
       ctx.fillStyle = lu.color;
-      const ring = lu.geometry.coordinates[0];
-      if (ring) {
-        this.drawPolygon(ctx, ring, bounds, scaleX, scaleY, true, false);
-      }
+      this.drawPolygon(
+        ctx,
+        lu.geometry.coordinates,
+        bounds,
+        scaleX,
+        scaleY,
+        true,
+        false
+      );
     }
   }
 
@@ -91,10 +96,15 @@ export class TerrainCanvasRenderer {
       if (!water.isArea || water.type === 'wetland') continue;
       ctx.fillStyle = water.color;
       if (water.geometry.type === 'Polygon') {
-        const ring = water.geometry.coordinates[0];
-        if (ring) {
-          this.drawPolygon(ctx, ring, bounds, scaleX, scaleY, true, false);
-        }
+        this.drawPolygon(
+          ctx,
+          water.geometry.coordinates,
+          bounds,
+          scaleX,
+          scaleY,
+          true,
+          false
+        );
       }
     }
   }
@@ -110,10 +120,15 @@ export class TerrainCanvasRenderer {
       if (water.type !== 'wetland') continue;
       ctx.fillStyle = water.color;
       if (water.geometry.type === 'Polygon') {
-        const ring = water.geometry.coordinates[0];
-        if (ring) {
-          this.drawPolygon(ctx, ring, bounds, scaleX, scaleY, true, false);
-        }
+        this.drawPolygon(
+          ctx,
+          water.geometry.coordinates,
+          bounds,
+          scaleX,
+          scaleY,
+          true,
+          false
+        );
       }
     }
   }
@@ -158,10 +173,15 @@ export class TerrainCanvasRenderer {
       ctx.fillStyle = veg.color;
 
       if (veg.geometry.type === 'Polygon') {
-        const ring = veg.geometry.coordinates[0];
-        if (ring) {
-          this.drawPolygon(ctx, ring, bounds, scaleX, scaleY, true, false);
-        }
+        this.drawPolygon(
+          ctx,
+          veg.geometry.coordinates,
+          bounds,
+          scaleX,
+          scaleY,
+          true,
+          false
+        );
       } else if (veg.geometry.type === 'LineString') {
         ctx.strokeStyle = veg.color;
         ctx.lineWidth = 0.5;
@@ -197,10 +217,15 @@ export class TerrainCanvasRenderer {
       ctx.strokeStyle = aeroway.color;
 
       if (aeroway.geometry.type === 'Polygon') {
-        const ring = aeroway.geometry.coordinates[0];
-        if (ring) {
-          this.drawPolygon(ctx, ring, bounds, scaleX, scaleY, true, false);
-        }
+        this.drawPolygon(
+          ctx,
+          aeroway.geometry.coordinates,
+          bounds,
+          scaleX,
+          scaleY,
+          true,
+          false
+        );
       } else if (aeroway.geometry.type === 'LineString') {
         ctx.lineWidth = aeroway.widthPx ?? 2; // runway: 3, taxiway: 2, taxilane: 1.5
         this.drawLineString(
@@ -279,32 +304,33 @@ export class TerrainCanvasRenderer {
 
   private drawPolygon(
     ctx: CanvasRenderingContext2D,
-    coordinates: Array<[number, number]>,
+    rings: Array<Array<[number, number]>>,
     bounds: MercatorBounds,
     scaleX: number,
     scaleY: number,
     fill: boolean,
     stroke: boolean
   ): void {
-    if (coordinates.length === 0) return;
+    if (rings.length === 0 || (rings[0]?.length ?? 0) === 0) return;
 
     ctx.beginPath();
-    let firstPoint = true;
-
-    for (const [x, y] of coordinates) {
-      const canvasX = (x - bounds.minX) * scaleX;
-      const canvasY = (bounds.maxY - y) * scaleY;
-
-      if (firstPoint) {
-        ctx.moveTo(canvasX, canvasY);
-        firstPoint = false;
-      } else {
-        ctx.lineTo(canvasX, canvasY);
+    for (const ring of rings) {
+      if (ring.length === 0) continue;
+      let first = true;
+      for (const [x, y] of ring) {
+        const canvasX = (x - bounds.minX) * scaleX;
+        const canvasY = (bounds.maxY - y) * scaleY;
+        if (first) {
+          ctx.moveTo(canvasX, canvasY);
+          first = false;
+        } else {
+          ctx.lineTo(canvasX, canvasY);
+        }
       }
+      ctx.closePath();
     }
 
-    ctx.closePath();
-    if (fill) ctx.fill();
+    if (fill) ctx.fill('evenodd');
     if (stroke) ctx.stroke();
   }
 

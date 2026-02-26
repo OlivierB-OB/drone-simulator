@@ -120,6 +120,25 @@ export class ContextDataTileParser {
       }
     }
 
+    // Build way map for relation member coordinate lookup
+    const wayMap = new Map<number, [number, number][]>();
+    for (const element of osm_elements) {
+      if (element.type === 'way' && typeof element.id === 'number') {
+        const nodes = (element.nodes as number[]) || [];
+        const geometry = element.geometry as
+          | Array<{ lat: number; lon: number }>
+          | undefined;
+        const coords = this.buildLineStringCoordinates(
+          nodes,
+          geometry,
+          nodeMap
+        );
+        if (coords.length > 0) {
+          wayMap.set(element.id, coords);
+        }
+      }
+    }
+
     // Process ways and relations
     for (const element of osm_elements) {
       if (element.type === 'way') {
@@ -127,7 +146,7 @@ export class ContextDataTileParser {
       } else if (element.type === 'node' && element.tags) {
         this.processNode(element, nodeMap, bounds, zoomLevel, features);
       } else if (element.type === 'relation') {
-        this.processRelation(element, nodeMap, bounds, zoomLevel, features);
+        this.processRelation(element, wayMap, bounds, zoomLevel, features);
       }
     }
 
@@ -271,7 +290,7 @@ export class ContextDataTileParser {
       | Array<{ lat: number; lon: number }>
       | undefined;
 
-    if (!tags || Object.keys(tags).length === 0) {
+    if (Object.keys(tags).length === 0) {
       return;
     }
 
@@ -295,15 +314,18 @@ export class ContextDataTileParser {
       return;
     }
 
-    // Detect closed ring (first coord == last coord) for polygon features
+    // Detect closed ring: prefer node-ID equality (authoritative per OSM spec),
+    // fall back to coordinate comparison when only geometry array is available.
     const firstCoord = coordinates[0];
     const lastCoord = coordinates[coordinates.length - 1];
     const isClosed: boolean =
-      coordinates.length >= 3 &&
-      !!firstCoord &&
-      !!lastCoord &&
-      firstCoord[0] === lastCoord[0] &&
-      firstCoord[1] === lastCoord[1];
+      nodes.length >= 2
+        ? nodes[0] === nodes[nodes.length - 1] && coordinates.length >= 3
+        : coordinates.length >= 3 &&
+          !!firstCoord &&
+          !!lastCoord &&
+          firstCoord[0] === lastCoord[0] &&
+          firstCoord[1] === lastCoord[1];
 
     const lineGeometry: LineString = {
       type: 'LineString',
@@ -480,7 +502,12 @@ export class ContextDataTileParser {
     const lat = element.lat as number;
     const lng = element.lon as number;
 
-    if (!tags || Object.keys(tags).length === 0) {
+    if (Object.keys(tags).length === 0) {
+      return;
+    }
+
+    // Node.md: lat and lon are required fields; guard against malformed elements
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
       return;
     }
 
@@ -491,12 +518,16 @@ export class ContextDataTileParser {
     };
 
     // Classify node features and extract only visual properties
-    if (tags.aeroway === 'aerodrome') {
+    if (tags.aeroway && this.AEROWAY_TYPES.has(tags.aeroway)) {
+      const aerowayColors = groundColors.aeroways as Record<
+        string,
+        string | undefined
+      >;
       const airport: AerowayVisual = {
         id,
         geometry: pointGeometry,
-        type: 'aerodrome',
-        color: groundColors.aeroways.aerodrome,
+        type: tags.aeroway,
+        color: aerowayColors[tags.aeroway] ?? groundColors.aeroways.aerodrome,
       };
       features.airports.push(airport);
     } else if (tags['natural'] === 'tree') {
@@ -534,57 +565,75 @@ export class ContextDataTileParser {
 
   /**
    * Processes a relation element from OSM data.
-   * Extracts only visual properties, ignores non-rendering attributes.
+   * Only handles type=multipolygon relations (the OSM-standard area type).
+   * Assembles outer/inner rings from member ways via wayMap.
    */
   private static processRelation(
     element: Record<string, unknown>,
-    _nodeMap: Map<number, { lat: number; lng: number }>,
+    wayMap: Map<number, [number, number][]>,
     _bounds: MercatorBounds,
     _zoomLevel: number,
     features: ContextDataTile['features']
   ): void {
     const id = String(element.id);
     const tags = (element.tags as Record<string, string>) || {};
-    const geometry = element.geometry as
-      | Array<{ lat: number; lon: number }>
+
+    if (Object.keys(tags).length === 0) {
+      return;
+    }
+
+    // Relation.md: type=* is required; only multipolygon relations represent areas.
+    // Route, boundary, and other relation types are not area features.
+    if (tags.type !== 'multipolygon') {
+      return;
+    }
+
+    // Skip underground/tunnel features
+    if (
+      tags.tunnel === 'yes' ||
+      tags.location === 'underground' ||
+      (tags.level !== undefined && parseInt(tags.level, 10) < 0)
+    ) {
+      return;
+    }
+
+    const members = element.members as
+      | Array<{ type: string; ref: number; role: string }>
       | undefined;
 
-    if (!tags || Object.keys(tags).length === 0) {
+    if (!members || members.length === 0) {
       return;
     }
 
-    // Build geometry from geometry array or members
-    let coordinates: [number, number][] = [];
+    // Separate way members by role (Relation.md: outer = exterior, inner = hole)
+    const wayMembers = members.filter((m) => m.type === 'way');
+    const outerWayMembers = wayMembers.filter((m) => m.role === 'outer');
+    const innerWayMembers = wayMembers.filter((m) => m.role === 'inner');
 
-    if (geometry && Array.isArray(geometry)) {
-      coordinates = geometry.map(({ lat, lon }) =>
-        this.latLngToMercator(lat as number, lon as number)
-      );
-    }
+    // If no explicit outer roles, treat all non-inner ways as outer
+    const effectiveOuterRefs =
+      outerWayMembers.length > 0
+        ? outerWayMembers.map((m) => m.ref)
+        : wayMembers.filter((m) => m.role !== 'inner').map((m) => m.ref);
+    const innerRefs = innerWayMembers.map((m) => m.ref);
 
-    if (coordinates.length === 0) {
+    const outerRing = this.assembleRing(effectiveOuterRefs, wayMap);
+    if (!outerRing || outerRing.length < 4) {
       return;
     }
 
-    // For polygons, close the ring if needed
-    const firstCoord = coordinates[0];
-    const lastCoord = coordinates[coordinates.length - 1];
-    if (
-      firstCoord &&
-      lastCoord &&
-      (firstCoord[0] !== lastCoord[0] || firstCoord[1] !== lastCoord[1])
-    ) {
-      coordinates.push(firstCoord);
-    }
+    const innerRings = innerRefs
+      .map((ref) => this.assembleRing([ref], wayMap))
+      .filter((r): r is [number, number][] => r !== null && r.length >= 4);
 
     const polygonGeometry: Polygon = {
       type: 'Polygon',
-      coordinates: [coordinates],
+      coordinates: [outerRing, ...innerRings],
     };
 
-    // Classify based on tags and extract only visual properties
+    // Classify based on tags — mirrors processWay category logic
     if (tags.building) {
-      // Filter: require height OR levels for visual rendering
+      // Intentional filter: buildings without dimensional data are not rendered in 3D
       const height = tags.height ? parseFloat(tags.height) : undefined;
       const levels = tags['building:levels']
         ? parseInt(tags['building:levels'], 10)
@@ -602,21 +651,20 @@ export class ContextDataTileParser {
         };
         features.buildings.push(building);
       }
-    } else if (tags.aeroway === 'aerodrome') {
-      const airport: AerowayVisual = {
-        id,
-        geometry: polygonGeometry,
-        type: 'aerodrome',
-        color: groundColors.aeroways.aerodrome,
-      };
-      features.airports.push(airport);
     } else if (
+      tags.waterway ||
       tags['natural'] === 'water' ||
       tags['natural'] === 'wetland' ||
+      tags['natural'] === 'coastline' ||
+      tags.water ||
       tags.landuse === 'water'
     ) {
-      // Water multipolygons (lakes, ponds, reservoirs, wetlands)
-      const waterType: string = tags['natural'] || tags.landuse || 'water';
+      const waterType: string =
+        tags.waterway ||
+        tags.water ||
+        tags['natural'] ||
+        tags.landuse ||
+        'water';
       const { color, widthPx } = this.getWaterColorAndWidth(waterType, true);
       const water: WaterVisual = {
         id,
@@ -627,8 +675,60 @@ export class ContextDataTileParser {
         color,
       };
       features.waters.push(water);
+    } else if (tags.aeroway && this.AEROWAY_TYPES.has(tags.aeroway)) {
+      const aerowayColors = groundColors.aeroways as Record<
+        string,
+        string | undefined
+      >;
+      const aeroway: AerowayVisual = {
+        id,
+        geometry: polygonGeometry,
+        type: tags.aeroway,
+        color: aerowayColors[tags.aeroway] ?? groundColors.aeroways.aerodrome,
+      };
+      features.airports.push(aeroway);
+    } else if (tags.landuse === 'forest') {
+      const vegetation: VegetationVisual = {
+        id,
+        geometry: polygonGeometry,
+        type: 'forest',
+        height: undefined,
+        heightCategory: 'tall',
+        color: this.getColorForVegetation('forest'),
+      };
+      features.vegetation.push(vegetation);
+    } else if (
+      (tags.landuse && this.LANDUSE_TYPES.has(tags.landuse)) ||
+      tags.leisure === 'park'
+    ) {
+      const luType =
+        tags.leisure === 'park' ? 'park' : (tags.landuse ?? 'other');
+      const landuseColors = groundColors.landuse as Record<
+        string,
+        string | undefined
+      >;
+      const landuse: LanduseVisual = {
+        id,
+        geometry: polygonGeometry,
+        type: luType,
+        color: landuseColors[luType] ?? groundColors.default,
+      };
+      features.landuse.push(landuse);
+    } else if (tags.natural && this.NATURAL_LANDUSE_TYPES.has(tags.natural)) {
+      const naturalType = tags.natural;
+      const landuseColors = groundColors.landuse as Record<
+        string,
+        string | undefined
+      >;
+      const landuse: LanduseVisual = {
+        id,
+        geometry: polygonGeometry,
+        type: naturalType,
+        color: landuseColors[naturalType] ?? groundColors.default,
+      };
+      features.landuse.push(landuse);
     } else if (tags.natural) {
-      const vegType: string = tags.natural || 'vegetation';
+      const vegType: string = tags.natural;
       const height = tags.height ? parseFloat(tags.height) : undefined;
       const vegetation: VegetationVisual = {
         id,
@@ -640,6 +740,74 @@ export class ContextDataTileParser {
       };
       features.vegetation.push(vegetation);
     }
+  }
+
+  /**
+   * Assembles an ordered list of way refs into a single closed coordinate ring.
+   * Single-way case: returns coordinates directly, closing the ring if needed.
+   * Multi-way case: greedily chains ways by matching shared endpoints.
+   */
+  private static assembleRing(
+    wayRefs: number[],
+    wayMap: Map<number, [number, number][]>
+  ): [number, number][] | null {
+    if (wayRefs.length === 0) return null;
+
+    if (wayRefs.length === 1) {
+      const coords = wayMap.get(wayRefs[0]!);
+      if (!coords || coords.length < 2) return null;
+      const ring = coords.slice() as [number, number][];
+      const first = ring[0]!;
+      const last = ring[ring.length - 1]!;
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        ring.push(first);
+      }
+      return ring;
+    }
+
+    // Multi-way: greedy chaining by matching endpoints
+    const segments = wayRefs
+      .map((ref) => wayMap.get(ref))
+      .filter((s): s is [number, number][] => s !== undefined && s.length >= 2);
+
+    if (segments.length === 0) return null;
+
+    const ring: [number, number][] = segments[0]!.slice() as [number, number][];
+    const remaining = segments.slice(1);
+
+    while (remaining.length > 0) {
+      const tail = ring[ring.length - 1]!;
+      const idx = remaining.findIndex((seg) => {
+        const head = seg[0]!;
+        const end = seg[seg.length - 1]!;
+        return (
+          (head[0] === tail[0] && head[1] === tail[1]) ||
+          (end[0] === tail[0] && end[1] === tail[1])
+        );
+      });
+
+      if (idx === -1) break;
+
+      const seg = remaining.splice(idx, 1)[0]!;
+      const head = seg[0]!;
+      if (head[0] === tail[0] && head[1] === tail[1]) {
+        // Append forward, skipping the duplicate first point
+        ring.push(...(seg.slice(1) as [number, number][]));
+      } else {
+        // Append reversed, skipping the duplicate last point
+        ring.push(...([...seg].reverse().slice(1) as [number, number][]));
+      }
+    }
+
+    // Close the ring
+    const first = ring[0]!;
+    const last = ring[ring.length - 1]!;
+    if (first[0] !== last[0] || first[1] !== last[1]) {
+      ring.push(first);
+    }
+
+    // A valid closed polygon needs at least 4 points (3 unique + closing repeat)
+    return ring.length >= 4 ? ring : null;
   }
 
   /**
