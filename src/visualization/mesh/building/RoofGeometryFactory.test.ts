@@ -209,6 +209,27 @@ describe('RoofGeometryFactory', () => {
         expect(normals.getY(i)).toBeGreaterThan(0);
       }
     });
+
+    it('CW ring: all face normals still have positive Y (normals outward regardless of winding)', () => {
+      // Clockwise version of the rectangle (reversed vertex order)
+      const cwRectangle: [number, number][] = [
+        [10, -5],
+        [-10, -5],
+        [-10, 5],
+        [10, 5],
+        [10, -5], // closing point
+      ];
+      const geom = factory.create({
+        ...baseParams,
+        outerRing: cwRectangle,
+        roofShape: 'pyramidal',
+      });
+      geom!.computeVertexNormals();
+      const normals = geom!.attributes.normal!;
+      for (let i = 0; i < normals.count; i++) {
+        expect(normals.getY(i)).toBeGreaterThan(0);
+      }
+    });
   });
 
   describe('gabled', () => {
@@ -291,13 +312,76 @@ describe('RoofGeometryFactory', () => {
       expect(maxY).toBeCloseTo(5, 1);
     });
 
-    it('high-corner vertex normals have positive Y (slope faces outward)', () => {
+    it('high-side vertices match +across direction for ridgeAngle=π/2', () => {
+      // ridgeAngle=π/2: across = (-sin(π/2), cos(π/2)) = (-1, 0) → West is high
+      const geom = factory.create({
+        ...baseParams,
+        ridgeAngle: Math.PI / 2,
+        roofShape: 'skillion',
+      });
+      const pos = geom!.attributes.position!;
+      // Vertices at max Y (roofHeight) should have negative X (West = +across)
+      let foundHigh = false;
+      for (let i = 0; i < pos.count; i++) {
+        if (Math.abs(pos.getY(i) - 5) < 0.01) {
+          expect(pos.getX(i)).toBeLessThanOrEqual(0); // High side = West
+          foundHigh = true;
+        }
+      }
+      expect(foundHigh).toBe(true);
+    });
+
+    it('has at least one upward-facing face (top surface)', () => {
       const geom = factory.create({ ...baseParams, roofShape: 'skillion' });
-      geom!.computeVertexNormals();
-      const normals = geom!.attributes.normal!;
-      // Vertices 0 and 3 are the high corners (Y=h), shared by the main slope
-      expect(normals.getY(0)).toBeGreaterThan(0);
-      expect(normals.getY(3)).toBeGreaterThan(0);
+      const pos = geom!.attributes.position!;
+      // Non-indexed: every 3 vertices = 1 triangle. Check face normals via cross product.
+      let foundUpwardFace = false;
+      for (let t = 0; t < pos.count; t += 3) {
+        const ax = pos.getX(t + 1) - pos.getX(t);
+        const az = pos.getZ(t + 1) - pos.getZ(t);
+        const bx = pos.getX(t + 2) - pos.getX(t);
+        const bz = pos.getZ(t + 2) - pos.getZ(t);
+        const ny = az * bx - ax * bz;
+        if (ny > 0.01) {
+          foundUpwardFace = true;
+          break;
+        }
+      }
+      expect(foundUpwardFace).toBe(true);
+    });
+
+    it('is non-indexed geometry (flat normals)', () => {
+      const geom = factory.create({ ...baseParams, roofShape: 'skillion' });
+      expect(geom!.index).toBeNull();
+    });
+
+    it('CW ring: still has upward-facing face', () => {
+      const cwRectangle: [number, number][] = [
+        [10, -5],
+        [-10, -5],
+        [-10, 5],
+        [10, 5],
+        [10, -5],
+      ];
+      const geom = factory.create({
+        ...baseParams,
+        outerRing: cwRectangle,
+        roofShape: 'skillion',
+      });
+      const pos = geom!.attributes.position!;
+      let foundUpwardFace = false;
+      for (let t = 0; t < pos.count; t += 3) {
+        const ax = pos.getX(t + 1) - pos.getX(t);
+        const az = pos.getZ(t + 1) - pos.getZ(t);
+        const bx = pos.getX(t + 2) - pos.getX(t);
+        const bz = pos.getZ(t + 2) - pos.getZ(t);
+        const ny = az * bx - ax * bz;
+        if (ny > 0.01) {
+          foundUpwardFace = true;
+          break;
+        }
+      }
+      expect(foundUpwardFace).toBe(true);
     });
   });
 

@@ -153,11 +153,16 @@ export class BuildingMeshFactory {
       // For pitched roofs, add roof geometry
       if (isPitched && roofHeight > 0) {
         const obb = computeOBB(localRing);
-        const ridgeAngle = resolveRidgeAngle(
+        let ridgeAngle = resolveRidgeAngle(
           obb.angle,
           building.roofDirection,
           building.roofOrientation
         );
+        // Skillion roof:direction is the downslope direction (OSM convention),
+        // not the ridge direction. Adjust by +π/2 to align the slope correctly.
+        if (roofShape === 'skillion' && building.roofDirection !== undefined) {
+          ridgeAngle += Math.PI / 2;
+        }
         const roofGeom = this.roofFactory.create({
           outerRing: localRing,
           roofShape,
