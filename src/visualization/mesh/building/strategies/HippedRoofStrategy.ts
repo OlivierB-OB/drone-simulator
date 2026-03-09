@@ -51,16 +51,15 @@ export class HippedRoofStrategy implements IRoofGeometryStrategy {
       r1z, // 5: R1
     ]);
 
-    // Faces (CCW winding):
     const indices = [
-      // Long slope +across
-      3, 0, 4, 3, 4, 5,
-      // Long slope -across
-      1, 2, 5, 1, 5, 4,
-      // Hip end +along
-      0, 1, 4,
-      // Hip end -along
-      2, 3, 5,
+      // Long slope +across (outward normals)
+      4, 0, 3, 5, 4, 3,
+      // Long slope -across (outward normals)
+      5, 2, 1, 4, 5, 1,
+      // Hip end +along (outward normal)
+      4, 1, 0,
+      // Hip end -along (outward normal)
+      5, 3, 2,
     ];
 
     const geom = new BufferGeometry();

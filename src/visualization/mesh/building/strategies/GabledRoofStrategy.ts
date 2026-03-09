@@ -42,16 +42,15 @@ export class GabledRoofStrategy implements IRoofGeometryStrategy {
       r1z, // 5: R1 (-along end of ridge)
     ]);
 
-    // Faces (CCW winding):
     const indices = [
-      // Left slope (C3-C0-R0 and C3-R0-R1)
-      3, 0, 4, 3, 4, 5,
-      // Right slope (C1-C2-R1 and C1-R1-R0)
-      1, 2, 5, 1, 5, 4,
-      // Gable end +along (C0-C1-R0)
-      0, 1, 4,
-      // Gable end -along (C3-C2-R1) — reversed for outward normal
-      2, 3, 5,
+      // Left slope (outward normals)
+      4, 0, 3, 5, 4, 3,
+      // Right slope (outward normals)
+      5, 2, 1, 4, 5, 1,
+      // Gable end +along (outward normal)
+      4, 1, 0,
+      // Gable end -along (outward normal)
+      5, 3, 2,
     ];
 
     const geom = new BufferGeometry();

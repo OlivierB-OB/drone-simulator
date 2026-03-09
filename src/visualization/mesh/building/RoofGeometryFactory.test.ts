@@ -128,11 +128,11 @@ describe('RoofGeometryFactory', () => {
   });
 
   describe('pyramidal', () => {
-    it('creates geometry with correct vertex count', () => {
+    it('creates geometry with correct vertex count for rectangle (4 edges → 12 vertices)', () => {
       const geom = factory.create({ ...baseParams, roofShape: 'pyramidal' });
       expect(geom).not.toBeNull();
-      // 5 vertices: 4 base + 1 apex
-      expect(geom!.attributes.position!.count).toBe(5);
+      // 3 vertices per face × 4 edges = 12 (non-indexed, flat normals)
+      expect(geom!.attributes.position!.count).toBe(12);
     });
 
     it('has apex at roofHeight', () => {
@@ -153,6 +153,61 @@ describe('RoofGeometryFactory', () => {
         minY = Math.min(minY, pos.getY(i));
       }
       expect(minY).toBeCloseTo(0, 5);
+    });
+
+    it('triangle footprint → 3 faces (9 vertices)', () => {
+      const triangle: [number, number][] = [
+        [0, 5],
+        [-5, -5],
+        [5, -5],
+        [0, 5], // closing point
+      ];
+      const geom = factory.create({
+        ...baseParams,
+        outerRing: triangle,
+        roofShape: 'pyramidal',
+      });
+      expect(geom!.attributes.position!.count).toBe(9);
+    });
+
+    it('pentagon footprint → 5 faces (15 vertices)', () => {
+      const pentagon: [number, number][] = Array.from({ length: 6 }, (_, i) => {
+        const angle = (i * 2 * Math.PI) / 5;
+        return [Math.cos(angle) * 5, Math.sin(angle) * 5] as [number, number];
+      });
+      pentagon[5] = pentagon[0]!; // close the ring
+      const geom = factory.create({
+        ...baseParams,
+        outerRing: pentagon,
+        roofShape: 'pyramidal',
+      });
+      expect(geom!.attributes.position!.count).toBe(15);
+    });
+
+    it('is non-indexed geometry (flat normals)', () => {
+      const geom = factory.create({ ...baseParams, roofShape: 'pyramidal' });
+      expect(geom!.index).toBeNull();
+    });
+
+    it('apex vertex per face at Y=roofHeight and XZ≈0', () => {
+      const geom = factory.create({ ...baseParams, roofShape: 'pyramidal' });
+      const pos = geom!.attributes.position!;
+      // Every 3rd vertex (index 2, 5, 8, 11) is the apex
+      for (let face = 0; face < 4; face++) {
+        const apexIdx = face * 3 + 2;
+        expect(pos.getY(apexIdx)).toBeCloseTo(5, 5);
+        expect(pos.getX(apexIdx)).toBeCloseTo(0, 5);
+        expect(pos.getZ(apexIdx)).toBeCloseTo(0, 5);
+      }
+    });
+
+    it('all face normals have positive Y component (slope upward outward)', () => {
+      const geom = factory.create({ ...baseParams, roofShape: 'pyramidal' });
+      geom!.computeVertexNormals();
+      const normals = geom!.attributes.normal!;
+      for (let i = 0; i < normals.count; i++) {
+        expect(normals.getY(i)).toBeGreaterThan(0);
+      }
     });
   });
 
@@ -178,6 +233,15 @@ describe('RoofGeometryFactory', () => {
       // 8 triangles = 24 index values / 3
       expect(geom!.index!.count).toBe(18); // 6 triangles × 3
     });
+
+    it('ridge vertex normals have positive Y (slopes face outward)', () => {
+      const geom = factory.create({ ...baseParams, roofShape: 'gabled' });
+      geom!.computeVertexNormals();
+      const normals = geom!.attributes.normal!;
+      // Vertices 4 and 5 are ridge points shared only by slope faces → Y must be > 0
+      expect(normals.getY(4)).toBeGreaterThan(0);
+      expect(normals.getY(5)).toBeGreaterThan(0);
+    });
   });
 
   describe('hipped', () => {
@@ -194,8 +258,17 @@ describe('RoofGeometryFactory', () => {
         roofShape: 'hipped',
       });
       expect(geom).not.toBeNull();
-      // Pyramidal: 5 vertices
-      expect(geom!.attributes.position!.count).toBe(5);
+      // Pyramidal: 4 edges × 3 vertices = 12 (non-indexed, flat normals)
+      expect(geom!.attributes.position!.count).toBe(12);
+    });
+
+    it('ridge vertex normals have positive Y (slopes face outward)', () => {
+      const geom = factory.create({ ...baseParams, roofShape: 'hipped' });
+      geom!.computeVertexNormals();
+      const normals = geom!.attributes.normal!;
+      // Vertices 4 and 5 are ridge points → Y must be > 0
+      expect(normals.getY(4)).toBeGreaterThan(0);
+      expect(normals.getY(5)).toBeGreaterThan(0);
     });
   });
 
@@ -216,6 +289,15 @@ describe('RoofGeometryFactory', () => {
       }
       expect(minY).toBeCloseTo(0, 5);
       expect(maxY).toBeCloseTo(5, 1);
+    });
+
+    it('high-corner vertex normals have positive Y (slope faces outward)', () => {
+      const geom = factory.create({ ...baseParams, roofShape: 'skillion' });
+      geom!.computeVertexNormals();
+      const normals = geom!.attributes.normal!;
+      // Vertices 0 and 3 are the high corners (Y=h), shared by the main slope
+      expect(normals.getY(0)).toBeGreaterThan(0);
+      expect(normals.getY(3)).toBeGreaterThan(0);
     });
   });
 

@@ -37,8 +37,8 @@ export class SkillionRoofStrategy implements IRoofGeometryStrategy {
     ]);
 
     const indices = [
-      // Top sloped face
-      0, 1, 2, 0, 2, 3,
+      // Top sloped face (outward normals)
+      2, 1, 0, 3, 2, 0,
       // Side wall +along end: triangle from low eave to high edge
       4, 0, 1,
       // Side wall -along end: triangle from low eave to high edge
