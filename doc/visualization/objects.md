@@ -535,7 +535,7 @@ Examples:
 
 Objects are organized by tile and loaded in a ring around the drone:
 
-- **Tile Grid**: Web Mercator zoom 15 divides world into 2^15 × 2^15 tiles (~327m × ~327m each at equator)
+- **Tile Grid**: Web Mercator zoom 15 divides world into 2^15 × 2^15 tiles (~327 m × ~327 m each at equator)
 - **Tile Key**: `"z:x:y"` uniquely identifies a tile (e.g., `"15:16807:11239"`)
 - **Ring Radius**: Config parameter `contextDataConfig.ringRadius = 1` loads a 3×3 grid (center ±1 tile in each direction)
 
@@ -556,28 +556,17 @@ When drone crosses tile boundary, ring shifts:
 
 ### Mercator to Three.js Coordinate Transformation
 
-**Conversion Formula** (see `doc/coordinate-system.md` for full details):
+Objects use the standard **Mercator-to-Three.js transformation**:
 
 ```
-Three.js Position from Mercator:
-  x = mercator.x       (East = +X, direct)
-  y = elevation_m      (Up = +Y, direct)
-  z = -mercator.y      (North = -Z, negated)
+x = mercator.x       (East = +X)
+y = elevation_m      (Up = +Y)
+z = -mercator.y      (North = -Z, negated)
 ```
 
-**Why Z Negation?**
-- Mercator Y increases northward (standard geographic convention)
-- Three.js default camera looks along -Z axis
-- By mapping Z = -Mercator Y, north (increasing Y) becomes -Z (camera default forward)
-- This makes azimuth 0 (North) align with camera default orientation
+The Z negation aligns Mercator (Y increasing northward) with Three.js camera (looking along -Z). See [Coordinate System & Rendering Strategy](../coordinate-system.md) for full explanation.
 
-**Verification:**
-```
-Paris (48.853°N, 2.350°E) = Mercator (261700, 6250000)
-  Three.js: (261700, elevation, -6250000)
-North movement: mercator.y increases → z becomes more negative → -Z direction ✓
-East movement: mercator.x increases → x becomes more positive → +X direction ✓
-```
+Verification: All drone/camera/object positioning uses this formula consistently.
 
 ### Elevation Sampling & Bilinear Interpolation
 
@@ -698,7 +687,7 @@ Configuration values are centralized in `src/config.ts`. Key visualization param
 | `vegetationMeshConfig.forest.crownRadiusMax` | 5m | 2.5m | 2.5m |
 
 **Tuning Density for Performance:**
-- Forest 1.0 trees/100m² = ~40 trees per 200m×200m tile at zoom 15
+- Forest 1.0 trees/100 m² = ~40 trees per 200 m × 200 m tile at zoom 15
 - Can increase to 2.0 for denser forests; decrease to 0.5 for sparser
 - Max 2,000 points per polygon prevents memory explosion
 
@@ -738,7 +727,7 @@ vegetationMeshConfig.forest.trunkHeightMax = 20  // was 15m
 
 **Example: Make buildings higher**
 ```typescript
-buildingHeightDefaults['residential'] = 8  // was 6m
+buildingHeightDefaults['residential'] = 8  // was 6 m
 ```
 
 **Example: Change barrier color**
@@ -790,7 +779,7 @@ See `doc/coordinate-system.md` for:
 | **Bilinear Interpolation** | Smoothing technique using 4 nearest values |
 | **Bounding Box (OBB)** | Oriented bounding box; minimal rectangle aligned with polygon axes |
 | **Centroid** | Geometric center of a polygon |
-| **Elevation Tile** | 256×256 pixel PNG in Terrarium format covering ~327m×327m area at zoom 15 |
+| **Elevation Tile** | 256×256 pixel PNG in Terrarium format covering ~327 m × 327 m area at zoom 15 |
 | **ExtrudeGeometry** | Three.js geometry that extrudes a 2D shape along the Z axis |
 | **InstancedMesh** | Three.js optimization drawing single geometry multiple times with different transforms |
 | **Mercator Projection** | Web standard map projection (EPSG:3857); distorts poles, preserves local angles |

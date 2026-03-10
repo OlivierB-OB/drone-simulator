@@ -75,7 +75,7 @@ This document records the key technology decisions made for the drone simulator 
 
 **Rationale:**
 - Single tool combines package manager (npm), JavaScript runtime, and bundler
-- Binary implementation (~25x faster than npm) critical for rapid iteration in CI/CD
+- Binary implementation (~25× faster than npm) critical for rapid iteration in CI/CD
 - Drop-in npm-compatible interface; no migration friction
 - Native TypeScript support eliminates transpilation step for scripting
 
@@ -106,7 +106,7 @@ This document records the key technology decisions made for the drone simulator 
 ### Decision: happy-dom 20.6
 
 **Rationale:**
-- Lightweight implementation (~20x faster than jsdom) enables rapid test execution
+- Lightweight implementation (~20× faster than jsdom) enables rapid test execution
 - Sufficient coverage of DOM APIs for component logic testing
 - Lower memory footprint supports running full test suites locally
 
@@ -202,7 +202,7 @@ This document records the key technology decisions made for the drone simulator 
 | **3D Graphics** | Three.js 0.160 | Industry-standard WebGL abstraction, scene graph, extensible |
 | **Language** | TypeScript 5.9 | Static typing, strict mode, IDE support, type safety |
 | **Build** | Vite 7.3 | ESM-native, instant HMR, zero-config, optimized production output |
-| **Runtime & PM** | Bun | All-in-one tool, 25x faster, npm-compatible, native TS support |
+| **Runtime & PM** | Bun | All-in-one tool, 25× faster, npm-compatible, native TS support |
 | **Testing** | Vitest 4.0 | Vite-native, Jest-compatible, shared config, fast execution |
 | **Test DOM** | happy-dom | Lightweight, fast, sufficient for logic testing |
 | **Linting** | ESLint 10.0 | TypeScript-aware, rule-based, auto-fix, flat config |

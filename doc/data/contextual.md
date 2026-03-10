@@ -61,17 +61,9 @@ Overpass API is a read-only service allowing complex spatial queries of OpenStre
 
 ### Ring-Based Loading
 
-The system maintains a **ring of tiles** around the drone's current position:
+The system maintains a **ring of tiles** around the drone's current position. Tiles load as the drone approaches ring edges and unload when it leaves, keeping memory usage constant and network requests minimal.
 
-```
-Drone at center of ring:
-
-        [ ][ ][ ]
-        [ ][D][ ]    ← Ring radius = 1 means 3×3 grid (9 tiles)
-        [ ][ ][ ]
-
-Tiles load as drone approaches edges, unload as it leaves the ring.
-```
+For detailed ring patterns, lifecycle, lifecycle phases, and spatial organization, see [`doc/tile-ring-system.md`](../tile-ring-system.md).
 
 **Configuration** (in `src/config.ts`):
 
@@ -89,7 +81,7 @@ contextDataConfig = {
 
 | Setting | Purpose |
 |---------|---------|
-| **zoomLevel: 15** | Balances detail vs. performance; ~2km × 2km per tile at zoom 15 |
+| **zoomLevel: 15** | Balances detail vs. performance; ~1.22 km × 1.22 km per tile (Web Mercator); often rounded to ~2 km |
 | **ringRadius: 1** | 3×3 grid = 9 tiles total; expands to 5×5 (25 tiles) if set to 2 |
 | **maxConcurrentLoads: 3** | Respects Overpass API rate limits; prevents network saturation |
 | **queryTimeout: 30000** | 30-second timeout per query (Overpass can be slow for large tiles) |
@@ -293,8 +285,8 @@ height tag → building:levels × 3.5m → type default → 6 meters (residentia
 
 | Type | Density | Trunk Height | Crown Radius |
 |------|---------|--------------|--------------|
-| forest | 1.0/100m² | 8-15m | 2-5m |
-| scrub | 4.0/100m² | 0m | 1-2.5m |
+| forest | 1.0/100 m² | 8-15m | 2-5m |
+| scrub | 4.0/100 m² | 0m | 1-2.5m |
 | orchard | spacing 5×4m | 3-6m | 1.5-2.5m |
 | vineyard | spacing 2×1m | 0m | 0.4-0.8m |
 | treeRow | 8m interval | 6-12m | 1.5-3m |
@@ -469,7 +461,7 @@ All coordinates are in **Mercator meters**, matching the elevation system:
 ### Tile Dimensions
 
 - **Size:** 256×256 pixels per tile in Web Mercator grid
-- **Coverage at zoom 15:** Approximately 2.1km × 2.1km per tile
+- **Coverage at zoom 15:** Approximately 2.1 km × 2.1 km per tile
 - **Precision:** Sub-meter accuracy (coordinate precision matches elevation system)
 
 ### Feature Classification
@@ -514,7 +506,7 @@ The system uses the same **Web Mercator projection** as the elevation system:
 Tile Grid at Zoom 15:
 ├─ X ranges 0 to 2^15 - 1 = 32,767 (west to east)
 ├─ Y ranges 0 to 2^15 - 1 = 32,767 (north to south)
-└─ Each tile covers ~2.1km × 2.1km
+└─ Each tile covers ~2.1 km × 2.1 km
 
 Mercator Bounds Calculation:
 ├─ TileX 16384 at zoom 15 covers:
@@ -530,22 +522,13 @@ Mercator Bounds Calculation:
 
 ### Ring-Based Tile Loading
 
-**Ring Pattern** (radius = 1):
+The context data system uses the same ring-based loading pattern as elevation data:
 
-```
-Tile Grid around drone at center tile (tx, ty):
-
-       (tx-1,ty-1) (tx,ty-1) (tx+1,ty-1)
-           ┌─────────┬─────────┬─────────┐
-       (tx-1,ty)   [DRONE]            (tx+1,ty)
-           ├─────────┼─────────┼─────────┤
-       (tx-1,ty+1) (tx,ty+1) (tx+1,ty+1)
-           └─────────┴─────────┴─────────┘
-
-Total: 3×3 = 9 tiles
-Radius = 2 → 5×5 = 25 tiles
-Radius = 3 → 7×7 = 49 tiles
-```
+- **Ring radius** determines grid size (1 = 3×3 grid, 2 = 5×5 grid, etc.)
+- **Tile key format:** `z:x:y` — e.g., `15:16384:10741`
+  - `z` = zoom level (15)
+  - `x` = column index (west to east; 0 = far west)
+  - `y` = row index (north to south; 0 = far north)
 
 **Tile Update Events:**
 ```
@@ -561,6 +544,8 @@ Unload tiles outside ring
       ↓
 emit tileAdded / tileRemoved events
 ```
+
+For detailed ring patterns, lifecycle phases, and spatial organization, see [`doc/tile-ring-system.md`](../tile-ring-system.md).
 
 ### Tile Boundary Handling
 

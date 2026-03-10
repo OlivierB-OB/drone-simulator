@@ -55,11 +55,28 @@ This two-stage asynchronous pipeline ensures responsive rendering: elevation geo
 |----------|-------|---------|
 | **Zoom Level** | 15 (Web Mercator) | Tile resolution (tighter zoom = more detail tiles) |
 | **Tile Size** | 256×256 pixels | Elevation grid dimension |
-| **Canvas Size** | 2048×2048 pixels | OSM feature texture detail |
+| **Canvas Size** | 2048×2048 pixels | OSM feature texture detail (see `TerrainTextureFactory.ts:47-48`) |
 | **Ring Radius** | 1-3 (configurable) | Tile loading radius around drone (1=3×3 grid) |
 | **Max Concurrent Loads** | 3 | Network concurrency limit |
-| **Elevation Range** | -430m to ~9000m | Dead Sea to Everest |
+| **Elevation Range** | -430 m to ~9000 m | Dead Sea to Everest |
 | **Elevation Precision** | ±0.1m (sub-meter) | Terrarium RGB format accuracy |
+
+### Texture Configuration
+
+The canvas size parameter is defined in `src/config.ts` (lines 465-469):
+
+```typescript
+export const textureConfig = {
+  // Ground canvas size in pixels for rendering OSM features (roads, water, landuse, etc.)
+  // Higher values provide more detail but increase canvas rendering time
+  groundCanvasSize: 2048,
+};
+```
+
+This configuration is used by:
+- **`TerrainTextureFactory.ts:47-48`** — Creates offscreen canvas with dimensions `groundCanvasSize × groundCanvasSize` for rendering OSM features
+
+The **2048×2048 pixel canvas** provides sufficient detail for OSM feature rendering at zoom level 15 while keeping canvas rendering time reasonable. Higher values (e.g., 4096) would provide finer texture detail but increase CPU rendering time; lower values (e.g., 1024) would reduce rendering time but lose detail.
 
 ---
 
@@ -123,10 +140,10 @@ Elevation (meters) = (R × 256 + G + B/256) - 32768
 ```
 
 Example values:
-- RGB(128, 0, 0) = 0m (sea level)
-- RGB(129, 0, 0) = 256m
-- RGB(162, 144, 0) ≈ 8848m (Mount Everest)
-- RGB(127, 255, 255) ≈ -430m (Dead Sea)
+- RGB(128, 0, 0) = 0 m (sea level)
+- RGB(129, 0, 0) = 256 m
+- RGB(162, 144, 0) ≈ 8848 m (Mount Everest)
+- RGB(127, 255, 255) ≈ -430 m (Dead Sea)
 
 See `doc/data/elevations.md` for detailed elevation specifications.
 
@@ -219,7 +236,7 @@ Ground surface tiles are organized using the **Web Mercator projection** at zoom
 - **Tile key**: `z:x:y` (zoom:column:row)
   - z = 15 (fixed)
   - x, y derived from drone's Mercator coordinates
-  - Each tile covers ~2 km × ~2 km at equator (resolution varies by latitude)
+  - Each tile covers ~1.22 km × ~1.22 km at equator (rounded to ~2 km for readability; varies by latitude)
 
 - **Tile size**: 256×256 pixels
   - Maps to (tileWidthMeters × tileHeightMeters) in real-world coordinates
@@ -229,28 +246,16 @@ See `doc/coordinate-system.md` for projection details.
 
 ### Ring-Based Loading
 
-Tiles are loaded in concentric rings around the drone's current position:
+Tiles are loaded in concentric rings around the drone's current position. As the drone moves:
+1. **Drone approaches ring edge** → New tiles queue for loading
+2. **Tile finishes loading** → `tileAdded` event triggers mesh creation
+3. **Drone leaves ring** → `tileRemoved` event triggers mesh cleanup
 
-```
-Ring 1 (3×3 grid):
-  [◯◯◯]
-  [◯🚁◯]
-  [◯◯◯]
-
-Ring 2 (5×5 grid):
-  [◯◯◯◯◯]
-  [◯◯◯◯◯]
-  [◯◯🚁◯◯]
-  [◯◯◯◯◯]
-  [◯◯◯◯◯]
-```
-
-**Advantages**:
-- Predictable loading pattern (tiles near drone load first)
-- Easy to configure via `ringRadius` parameter
-- Prevents excessive memory use (old tiles evicted when outside ring)
+This ensures **seamless terrain** without gaps or memory bloat.
 
 **Configuration**: `src/config.ts` → `elevationConfig.ringRadius` (default: 1)
+
+For ring patterns, tile fetch sequencing, lifecycle phases, and coordinate details, see [`doc/tile-ring-system.md`](../tile-ring-system.md).
 
 ### Mesh Positioning
 
@@ -268,19 +273,7 @@ meshPosition.z = -tileCenter_mercatorY  // Z-negated (critical for Three.js)
 
 ## Coordinate System & Z-Negation
 
-### Critical Transformation
-
-**Mercator Y increases northward** (geographic north), but **Three.js camera looks along -Z** (by default). To align them, we negate Z:
-
-```
-Mercator Coordinates         Three.js Coordinates
-─────────────────────────    ─────────────────────
-X (east)         → +X        (east)        ✓
-Y (north)        → -Z        (north = -Z)  ✓
-Elevation        → +Y        (up)          ✓
-```
-
-### Mesh Positioning Formula
+Terrain meshes are positioned using the standard **Mercator-to-Three.js transformation**:
 
 ```
 position.x = tileCenter.mercatorX
@@ -288,22 +281,14 @@ position.y = 0
 position.z = -tileCenter.mercatorY
 ```
 
-This ensures:
-- North (increasing Mercator Y) = decreasing Z = camera's forward direction
-- East (increasing Mercator X) = increasing X = camera's right direction
-- Vertical = elevation (Y)
+The Z negation is critical: Mercator Y increases northward, but Three.js camera looks along -Z. By negating Z, north aligns with the camera's default forward direction.
 
-### Why This Matters
+For complete explanation and rationale, see [Coordinate System & Rendering Strategy](../coordinate-system.md).
 
-If Z **weren't** negated:
-- Mercator Y (northward) would map to +Z
-- Camera looks along -Z, so north would appear *behind* camera
-- Everything would appear rotated 180°
-
-All ground surface code uses this negation consistently. Verify it in:
-- `TerrainObjectFactory.ts:52` (mesh positioning)
-- `TerrainGeometryFactory.ts` (vertex Z = -mercatorY)
-- `TerrainCanvasRenderer.ts` (texture UV calculation)
+All ground surface code uses this formula consistently. Implementation details:
+- `TerrainObjectFactory.ts:52` — mesh center positioning
+- `TerrainGeometryFactory.ts` — vertex Z calculation
+- `TerrainCanvasRenderer.ts` — texture UV mapping
 
 ---
 
@@ -311,18 +296,9 @@ All ground surface code uses this negation consistently. Verify it in:
 
 ### Lifecycle
 
-Ground surface rendering is tightly integrated with the drone's **animation loop**:
+Ground surface rendering is tightly integrated with the drone's **animation loop** and is driven by the standard animation frame sequence. See [Animation Loop Architecture](../animation-loop.md) for the complete frame timing and detailed step-by-step breakdown.
 
-**Frame-Rate-Independent Animation Order**:
-1. `drone.applyMove(deltaTime)` — Update drone position
-2. `elevationData.setLocation(drone.location)` — Update tile ring
-3. `contextData.setLocation(drone.location)` — Update texture tiles
-4. `terrainObjectManager.refresh()` — Add/remove meshes from scene
-5. `droneObject.update()` — Position drone cone
-6. `camera.updateChaseCamera()` — Position camera
-7. `viewer3D.render()` — Render Three.js scene
-
-Terrain tiles are added/removed as the drone moves. The system maintains a configurable ring of tiles around the drone and evicts tiles outside the ring.
+Terrain tiles are added/removed as the drone moves (steps 2-4 handle elevation loading, mesh creation, and removal). The system maintains a configurable ring of tiles around the drone and evicts tiles outside the ring.
 
 ### Elevation Sampling
 

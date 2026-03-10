@@ -45,23 +45,15 @@ Terrarium is maintained by Mapbox and provides global elevation coverage at mult
 
 ### Ring-Based Loading
 
-The system maintains a **ring of tiles** around the drone's current position:
+The system maintains a **ring of tiles** around the drone's current position. Tiles load as the drone approaches the ring edge and unload when it leaves the ring, keeping memory usage constant and network requests minimal.
 
-```
-Drone at center of ring:
-
-        [ ][ ][ ]
-        [ ][D][ ]    ← Ring radius = 1 means 3×3 grid (9 tiles)
-        [ ][ ][ ]
-
-Tiles load as drone approaches edges, unload as it leaves the ring.
-```
+For detailed information on ring patterns, lifecycle, and spatial organization, see [`doc/tile-ring-system.md`](../tile-ring-system.md).
 
 **Configuration** (in `src/config.ts`):
 
 ```typescript
 elevationConfig = {
-  zoomLevel: 15,              // Detail level: 15 = ~4.77m per pixel
+  zoomLevel: 15,              // Zoom 15: ~4.77 m per-pixel resolution; tiles ~1.22 km × 1.22 km
   ringRadius: 1,              // Number of tiles in each direction
   maxConcurrentLoads: 3,      // Max simultaneous downloads
   elevationEndpoint: '...',   // AWS S3 endpoint
@@ -124,11 +116,11 @@ elevation = (R × 256 + G + B/256) - 32768
   - Combines with R for larger ranges
 
 - **B channel** (0-255): Sub-meter precision via fractional part
-  - B/256 provides 0 to 0.996 meter precision (0.004m = ~4mm steps)
+  - B/256 provides 0 to 0.996 meter precision (0.004 m = ~4 mm steps)
   - Enables sub-meter accuracy
 
 - **-32768 offset**: Shifts range to include negative elevations
-  - Allows representation of **below sea level** (Dead Sea: ~-430m)
+  - Allows representation of **below sea level** (Dead Sea: ~-430 m)
 
 **Examples:**
 
@@ -144,9 +136,9 @@ elevation = (R × 256 + G + B/256) - 32768
 
 | Aspect | Value | Notes |
 |--------|-------|-------|
-| **Vertical precision** | ~0.004m (4mm) | Blue channel contributes fractional meter |
-| **Horizontal resolution** | ~4.77m per pixel | At zoom 15; finer at higher zoom levels |
-| **Elevation range** | -32,768 to +32,767.996m | Sufficient for Earth's topography |
+| **Vertical precision** | ~0.004 m (4 mm) | Blue channel contributes fractional meter |
+| **Horizontal resolution** | ~4.77 m per pixel | At zoom 15 (per 256×256 grid); per-tile ~1.22 km |
+| **Elevation range** | -32,768 to +32,767.996 m | Sufficient for Earth's topography |
 | **Tile size** | 256×256 pixels | Standard Web Mercator tile |
 | **Data format** | RGBA PNG | Alpha channel present but unused |
 
@@ -196,7 +188,7 @@ y = row index         (0 to 2^z - 1, top to bottom)
 
 **Example: Zoom 15**
 - Total tiles: 2^15 × 2^15 = 32,768 × 32,768
-- Each tile covers ~4.77km × ~4.77km at equator
+- Each tile covers ~1.22 km × ~1.22 km at equator (varies by latitude)
 - Grid wraps east-west; y=0 is northernmost
 
 ### Converting GPS to Tile Coordinates
@@ -236,6 +228,17 @@ South Pole (approximately)
 
 Each tile = 256×256 pixels of elevation data
 ```
+
+### Understanding Tile Resolution at Zoom 15
+
+Web Mercator divides Earth equally at each zoom level:
+
+- **Global extent**: ~40,075 km (Earth circumference in Web Mercator)
+- **Zoom 15 grid**: 2^15 = 32,768 tiles per dimension
+- **Per-tile size**: 40,075 km ÷ 32,768 = **~1.22 km**
+- **Per-pixel size**: 1.22 km ÷ 256 pixels = **~4.77 m/pixel**
+
+When documentation refers to "~2 km × 2 km", this is a convenient **rounded estimate** (1.22 × 1.64 ≈ 2) used in contexts where exact precision is less critical. For accuracy, use the exact figures above.
 
 ## Decoding & Interpretation
 
@@ -278,12 +281,12 @@ This provides smooth elevation transitions between the discrete pixel samples.
 
 ### Sub-Meter Precision in Practice
 
-The blue channel allows elevation differences as small as **~4mm**:
+The blue channel allows elevation differences as small as **~4 mm**:
 
 ```
-Sea level:        RGB(128, 0, 0)   → 0m
-With 1cm offset:  RGB(128, 0, 2.56) → 0.01m (not possible - integer only)
-Nearest step:     RGB(128, 0, 3)    → 0.012m ≈ 1.2cm
+Sea level:        RGB(128, 0, 0)   → 0 m
+With 1cm offset:  RGB(128, 0, 2.56) → 0.01 m (not possible - integer only)
+Nearest step:     RGB(128, 0, 3)    → 0.012 m ≈ 1.2 cm
 ```
 
 **Why it matters:**
@@ -355,23 +358,17 @@ Elevation loading integrates into the standard animation frame sequence. See [An
 
 The drone simulation uses Mercator coordinates internally but renders in Three.js space. Elevation data respects this mapping:
 
-```
-Mercator (world coordinates):
-  location.x = eastward
-  location.y = northward (increases northward)
-  elevation = upward
+Elevation data uses the standard **Mercator-to-Three.js transformation**:
 
-Three.js (rendering coordinates):
-  position.x = +X eastward (same as Mercator X)
-  position.y = +Y upward (same as elevation)
-  position.z = -Y northward! (Mercator Y negated)
+```
+position.x = +X (Mercator X, eastward)
+position.y = +Y (elevation, upward)
+position.z = -Y (Mercator Y negated, northward)
 ```
 
-**Why negate Z?**
+The Z negation is critical: it aligns geographic north (Mercator Y increasing) with Three.js camera's forward direction (-Z). See [Coordinate System & Rendering Strategy](../coordinate-system.md) for complete rationale.
 
-Three.js default camera looks along **-Z**. By mapping `z = -mercator.y`, north (increasing Mercator Y) becomes the camera's forward direction. This is the **single most important coordinate transform** in the system.
-
-**Verification:** All elevation consumers (terrain meshes, camera, drone object) use the same formula.
+All elevation consumers (terrain meshes, camera, drone object) use this formula consistently.
 
 ## Performance & Caching
 
@@ -465,4 +462,4 @@ If tile loading fails:
 - **Bilinear interpolation** - Smooth elevation between tile pixels
 - **Conformal projection** - Preserves angles; Mercator property
 - **Tile size** - 256×256 pixels per tile (standard Web Mercator)
-- **Sub-meter precision** - Blue channel enables ~4mm accuracy
+- **Sub-meter precision** - Blue channel enables ~4 mm accuracy
