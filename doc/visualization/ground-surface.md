@@ -408,22 +408,7 @@ Useful for:
 - **`doc/data/elevations.md`** — Elevation data source, Terrarium format, precision
 - **`CLAUDE.md`** — System architecture, animation frame order
 
----
+## See Also
 
-## Glossary
+- **[Glossary](../glossary.md)** - Definitions of all technical terms
 
-| Term | Definition |
-|------|-----------|
-| **Web Mercator** | Cylindrical map projection used for web maps (Google, OSM, etc.). Distorts polar regions but preserves local shapes. |
-| **Tile (z:x:y)** | Grid cell in Web Mercator. z=zoom level, x=column, y=row. Each tile covers ~1.22 km × 1.22 km (≈1.49 km²) at equator (zoom 15). |
-| **Terrarium Format** | PNG encoding scheme: (R × 256 + G + B/256) - 32768 = elevation in meters. Used by Amazon's elevation service. |
-| **Ring-Based Loading** | Concentric grid pattern around drone. Ring 1 = 3×3, Ring 2 = 5×5, etc. Optimizes network I/O. |
-| **Canvas Texture** | 2D image rendered to HTML Canvas, then converted to Three.js Texture. OSM features rasterized here. |
-| **Painter's Algorithm** | Drawing objects back-to-front to achieve correct layering without explicit depth testing. |
-| **Z-Negation** | Mercator Y (northward) maps to -Z (Three.js camera forward). Critical for coordinate alignment. |
-| **MeshPhongMaterial** | Three.js material supporting Phong reflection (combines ambient, diffuse, specular lighting). |
-| **Mipmapping** | Pre-computed texture pyramids for efficient filtering at different scales/distances. |
-| **Vertex Normal** | Direction perpendicular to mesh surface, computed per-vertex. Essential for realistic lighting. |
-| **OSM (OpenStreetMap)** | Collaborative global map database. Features include roads, water, landuse, vegetation, railways, etc. |
-| **Index Buffer** | Array of vertex indices defining triangle faces. Avoids vertex duplication. |
-| **UV Coordinates** | 2D texture coordinates (u, v) mapped to 3D vertices. Range [0,1] for each tile. |

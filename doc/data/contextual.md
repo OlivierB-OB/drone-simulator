@@ -859,42 +859,6 @@ On tileRemoved:
 - `src/data/contextual/ContextDataTileParser.test.ts` - OSM parsing and feature classification
 - `src/data/contextual/ContextTilePersistenceCache.test.ts` - IndexedDB cache behavior
 
-## Glossary
+## See Also
 
-**Aeroway** - OSM feature for airport infrastructure (runways, taxiways, helipads)
-
-**Bounding Box (bbox)** - Rectangle defined by min/max latitude and longitude; used to scope Overpass queries to tile area
-
-**Feature Classification** - Process of examining OSM tags and determining which visual type (BuildingVisual, RoadVisual, etc.) to create
-
-**Graceful Degradation** - System remains functional when cache/network fails; terrain renders without feature overlays
-
-**IndexedDB** - Browser's persistent key-value storage (survives page reload); used for 24-hour tile cache
-
-**Landuse** - OSM classification of ground area (farmland, park, residential, industrial, etc.)
-
-**Mercator Projection** - Web mapping standard used for tile coordinates and spatial queries (EPSG:3857)
-
-**Natural** - OSM tag for natural features (forests, water, grassland); combines with landuse
-
-**Overpass API** - Free, open-source query service for OpenStreetMap data; returns OverpassJSON
-
-**OverpassJSON** - JSON format for Overpass API responses; contains nodes, ways, relations with tags and geometry
-
-**OverpassQL** - Query language for Overpass API; supports complex spatial and tag-based queries
-
-**Ring** - Circular pattern of tiles loaded around drone (3×3 grid at radius=1)
-
-**Strategy Pattern** - Design pattern using separate functions (classifyBuilding, classifyRoad, etc.) for feature classification
-
-**Tag** - OSM key-value pair describing feature properties (building=residential, height=10, etc.)
-
-**Terrarium** - AWS elevation tile service used for elevation data (distinct from this contextual data system)
-
-**Tile** - Rectangular region in Web Mercator grid (256×256 pixels); identified by z:x:y coordinates
-
-**TTL (Time-To-Live)** - Expiry duration for cached data (24 hours for context tiles)
-
-**Way** - OSM feature representing linestring or polygon (roads, buildings, water, etc.)
-
-**Zoom Level** - Web Mercator scale (15 = ~1.22 km/tile); higher = more detail, more requests
+- **[Glossary](../glossary.md)** - Definitions of all technical terms

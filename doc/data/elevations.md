@@ -456,13 +456,7 @@ This dedicated section covers:
 | `doc/coordinate-system.md` | Detailed coordinate mapping strategy |
 | `doc/data/elevation-sampler.md` | ElevationSampler API and algorithm |
 
-## Glossary
+## See Also
 
-- **Terrarium** - Mapbox's PNG-based elevation tile service
-- **Web Mercator** (EPSG:3857) - GPS-aligned projection; X=east, Y=north
-- **z/x/y** - Tile coordinate system (zoom level, column, row)
-- **Ring** - Set of tiles around drone center; updates as drone moves
-- **Bilinear interpolation** - Smooth elevation between tile pixels (see [Elevation Sampling & Interpolation](./elevation-sampler.md))
-- **Conformal projection** - Preserves angles; Mercator property
-- **Tile size** - 256×256 pixels per tile (standard Web Mercator)
-- **Sub-meter precision** - Blue channel enables ~4 mm accuracy
+- **[Glossary](../glossary.md)** - Definitions of all technical terms
+- **[Elevation Sampling & Interpolation](./elevation-sampler.md)** - Bilinear interpolation algorithm details

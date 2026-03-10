@@ -751,29 +751,9 @@ See `doc/coordinate-system.md` for:
 - Chase camera positioning
 - Complete examples with Paris coordinates
 
----
+## See Also
 
-## Glossary
-
-| Term | Definition |
-|---|---|
-| **Azimuth** | Compass bearing in degrees (0°=North, clockwise positive) |
-| **Bilinear Interpolation** | Smoothing technique using 4 nearest values |
-| **Bounding Box (OBB)** | Oriented bounding box; minimal rectangle aligned with polygon axes |
-| **Centroid** | Geometric center of a polygon |
-| **Elevation Tile** | 256×256 pixel PNG in Terrarium format covering ~327 m × 327 m area at zoom 15 |
-| **ExtrudeGeometry** | Three.js geometry that extrudes a 2D shape along the Z axis |
-| **InstancedMesh** | Three.js optimization drawing single geometry multiple times with different transforms |
-| **Mercator Projection** | Web standard map projection (EPSG:3857); distorts poles, preserves local angles |
-| **Ring System** | 3×3 grid of tiles loaded around drone position |
-| **Strategy Pattern** | Design pattern using interchangeable algorithms; used for roof shapes and vegetation types |
-| **Tapered Cylinder** | Cylinder with different top and bottom radii (e.g., chimney) |
-| **Terrarium Format** | AWS elevation PNG format; RGB channels encode elevation via formula: (R×256 + G + B/256) − 32768 |
-| **Tile Key** | Unique identifier for a tile: `"z:x:y"` (e.g., `"15:16807:11239"`) |
-| **Winding Order** | Polygon vertex order (clockwise vs. counterclockwise); affects face normals |
-| **Zoom Level** | Web Mercator parameter (15 ≈ 327m per tile at equator) |
-
----
+- **[Glossary](../glossary.md)** - Definitions of all technical terms
 
 ## Related Documentation
 

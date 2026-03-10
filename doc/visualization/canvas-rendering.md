@@ -756,25 +756,6 @@ For OSM feature specifications, data fetching, and tag extraction strategies, se
 
 - `src/visualization/terrain/texture/TerrainCanvasRenderer.test.ts` (if exists) - Unit tests for rendering
 
----
+## See Also
 
-## Glossary
-
-| Term | Definition |
-|------|-----------|
-| **Canvas Texture** | HTML5 Canvas rendered to an image, then converted to a WebGL texture. Used for rasterized OSM features. |
-| **Painter's Algorithm** | Drawing technique rendering back-to-front (furthest to nearest) to achieve correct layering without explicit Z-buffering. |
-| **Even-Odd Fill Rule** | Polygon fill rule: a point is filled if a ray crosses an odd number of boundaries. Correctly handles holes in polygons. |
-| **Mercator Bounds** | Rectangular region in Web Mercator projection: `{minX, maxX, minY, maxY}` in meters. |
-| **Rasterization** | Converting vector features (lines, polygons) to raster (pixel) format on a canvas. |
-| **Coordinate Transformation** | Mapping geographic Mercator coordinates to canvas pixel coordinates for rendering. |
-| **Z-Negation** | Critical transformation: Mercator Y (northward) maps to -Z (Three.js camera forward direction). Applied everywhere. |
-| **Mipmapping** | Pre-computed texture pyramids for efficient filtering at different distances. Three.js applies automatically. |
-| **CanvasRenderingContext2D** | HTML5 2D drawing API providing methods like `fillRect()`, `stroke()`, `fill()`, `arc()`, etc. |
-| **LineWidth** | Stroke width in pixels; calculated from feature width in Mercator meters × scale factor. |
-| **LineCap** | How line endpoints render: 'round', 'butt', or 'square'. Affects road/railway appearance. |
-| **LineJoin** | How line segments join: 'round', 'bevel', or 'miter'. Affects corner sharpness. |
-| **LineDash** | Dash pattern array: `[2, 2]` = 2 pixels on, 2 pixels off. Used for steps roads and all railways. |
-| **OSM (OpenStreetMap)** | Free, collaborative global map database. Features include roads, buildings, water, vegetation, etc. |
-| **Tile (z:x:y)** | Web Mercator grid cell: z=zoom level (15), x=column (0-32767), y=row (0-32767). |
-| **ContextDataTile** | Parsed OSM data for a tile: buildings, roads, water, vegetation, landuse, aeroways, structures, barriers. |
+- **[Glossary](../glossary.md)** - Definitions of all technical terms

@@ -247,26 +247,6 @@ For full details, see [`doc/coordinate-system.md`](coordinate-system.md).
   - 3D objects: [`doc/visualization/objects.md`](visualization/objects.md)
   - Ground surface: [`doc/visualization/ground-surface.md`](visualization/ground-surface.md)
 
-## Glossary
+## See Also
 
-**Manager**: Component that controls data loading, caching, and lifecycle. Typically maintains a ring of tiles and emits events when tiles are added/removed.
-
-**Parser**: Component that decodes raw data (PNG pixels, GeoJSON features) into structured data (elevation grids, feature objects).
-
-**Factory**: Component that converts parsed data into Three.js objects (BufferGeometry, Mesh, Material, Texture).
-
-**Ring-based loading**: Strategy where tiles load in a ring around the camera/drone. Only tiles within the ring are maintained in memory.
-
-**Tile ring**: Set of adjacent tiles forming a square grid around the drone. Typically 3×3 (ring radius 1), 5×5 (ring radius 2), or 7×7 (ring radius 3) tiles.
-
-**Mercator projection**: Web mapping standard used by OSM, Google Maps, etc. Maps latitude/longitude to rectangular coordinates. Maintains angles but distorts area near poles.
-
-**Z/X/Y coordinates**: Standard tile addressing scheme. Z = zoom level (higher = more tiles, finer detail), X/Y = position in grid at that zoom.
-
-**Terrarium**: AWS elevation data service. Provides global elevation as PNG tiles with Terrarium RGB encoding.
-
-**Overpass API**: OpenStreetMap data query service. Returns GeoJSON features matching geographic queries.
-
-**Canvas texture**: 2D raster image rendered to offscreen canvas, then uploaded as Three.js texture. Used for road/water/landuse detail on terrain.
-
-**Instanced mesh**: Three.js optimization for rendering many copies of the same geometry with different transforms. Reduces draw calls and memory.
+- **[Glossary](./glossary.md)** - Definitions of all technical terms

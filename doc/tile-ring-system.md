@@ -546,17 +546,6 @@ ContextDataManager → emit tileAdded
 | `doc/coordinate-system.md` | Mercator to Three.js mapping | Explains Z-negation for spatial alignment |
 | `doc/animation-loop.md` | Frame-by-frame sequence | Steps 1-2: Ring updates, Steps 4-9: Mesh creation |
 
----
+## See Also
 
-## Glossary
-
-- **Ring** - Set of tiles in (2r+1)² pattern around drone center
-- **Ring radius** - Distance in tiles from center (1 = 3×3, 2 = 5×5, etc.)
-- **Center tile** - Tile containing drone's current position
-- **Tile key** - `z:x:y` format uniquely identifying a tile
-- **Tile boundary** - Edge between adjacent tiles
-- **Web Mercator** - Standard projection for web maps; X=east, Y=north
-- **Zoom level** - z component of z:x:y; 15 = fine detail, 13 = coarse
-- **Bilinear interpolation** - Smooth sampling between tile pixels
-- **Concurrent loads** - Maximum simultaneous network requests
-- **TTL** - Time-To-Live; cache expiration duration (24 hours)
+- **[Glossary](./glossary.md)** - Definitions of all technical terms
