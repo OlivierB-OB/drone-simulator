@@ -10,32 +10,29 @@ The drone simulator uses **OpenStreetMap (OSM)** data fetched via the **Overpass
 - **Dual rendering** - 2D canvas textures on terrain + 3D meshes in the scene
 - **Graceful degradation** when cache or API is unavailable
 
-Contextual data flows through the system like this:
+The contextual (OpenStreetMap) system follows the standard **Data Pipeline Pattern**
+(see [`doc/data-pipeline.md`](../data-pipeline.md) for detailed explanation).
+
+### Contextual Data Pipeline
 
 ```
-OpenStreetMap (via Overpass API)
+OpenStreetMap Data (via Overpass API)
        ↓
-ContextDataManager (loads/caches tiles around drone)
+ContextDataManager (Ring-based loading, caching)
        ↓
-ContextDataTileParser (parses OverpassJSON, classifies features)
+ContextDataTileParser (GeoJSON parsing, feature classification)
        ↓
-Feature categories:
-  - Buildings (3D extrusion to canvas + mesh)
-  - Roads (canvas texture)
-  - Railways (canvas texture with dashes)
-  - Water (canvas texture)
-  - Vegetation (3D meshes for dense areas)
-  - Landuse (canvas background color)
-  - Aeroways (runways, taxiways, helipads)
-  - Structures (towers, chimneys, poles)
-  - Barriers (walls, hedges)
+Feature Categories:
+  - Buildings, Roads, Waterways, Vegetation, Aeroway, Railways
        ↓
-TerrainTextureObjectManager (renders to canvas for terrain)
+MeshObjectManager (3D buildings, trees, structures)
+TerrainTextureObjectManager (Canvas rendering for texture)
        ↓
-MeshObjectManager (creates 3D meshes for buildings, trees, structures)
-       ↓
-3D Visualization (textured terrain + 3D objects in scene)
+Textured Terrain + 3D Objects in Scene
 ```
+
+For the general Manager → Parser → Factory pattern and how it applies across
+the system, see the Data Pipeline Pattern documentation.
 
 ## Data Source & Fetching
 
@@ -613,13 +610,13 @@ export function classifyBuilding(
 }
 ```
 
+## Visualization Pipelines
+
+OSM features are rendered through two separate pipelines—canvas textures for 2D features and 3D meshes for 3D geometry:
+
 ### Canvas Rendering
 
-2D features (roads, water, vegetation, landuse) are rasterized to a **2048×2048 canvas** texture per tile for efficient rendering:
-
-```
-OSM Features → TerrainCanvasRenderer → Canvas → Three.js Texture → Terrain Mesh
-```
+2D features (roads, water, vegetation, landuse) are rasterized to a **2048×2048 canvas** texture per tile for efficient rendering. For complete architecture, layer ordering, and drawing algorithms, see **[Canvas Rendering: OSM Feature Rasterization](../visualization/canvas-rendering.md)**.
 
 **Benefits:**
 - Single textured mesh per tile (minimal memory)
@@ -627,60 +624,37 @@ OSM Features → TerrainCanvasRenderer → Canvas → Three.js Texture → Terra
 - Canvas rendering is CPU-efficient (once per tile load)
 - Graceful degradation if generation fails
 
-**See [`doc/visualization/canvas-rendering.md`](../visualization/canvas-rendering.md) for complete documentation:**
-- Rendering pipeline and 9-layer drawing order
-- Feature drawing algorithms (polygons, lines, points)
-- Coordinate transformation and seamless tile boundaries
-- All supported OSM feature types, colors, and rendering settings
-- Performance characteristics and edge case handling
-
 ### 3D Mesh Generation
 
-3D features (buildings, vegetation, structures, barriers) create geometric mesh objects:
+3D features (buildings, vegetation, structures, barriers) create geometric mesh objects. For factory implementations, elevation sampling integration, and complete geometry specifications, see **[3D Object Visualization](../visualization/objects.md)**.
 
-**Buildings:**
-```
-Polygon ↓ → Extrude to height ↓ → Generate roof ↓ → Create mesh with wall + roof colors
-```
+**Feature types:**
+- **Buildings** - Polygon extrusion with roof generation and material colors
+- **Vegetation** - Dense tree/crown/shrub generation for forests and vegetation patches
+- **Structures** - Parametric 3D shapes (cylinders, boxes, tapered cylinders)
+- **Barriers** - Line extrusion along paths to create walls and hedges
 
-**Vegetation:**
-```
-Polygon ↓ → Calculate tree density ↓ → Generate random trunk + crown positions
-           → Create cone/sphere meshes for each tree/bush
-```
+### Height & Material Properties from OSM Tags
 
-**Structures:**
-```
-Point ↓ → Look up shape (cylinder, box, tapered) ↓ → Generate 3D geometry
-        → Apply color and height
-```
+OSM tags provide explicit or default values for object heights and appearance:
 
-**Barriers:**
+**Buildings - Height estimation chain:**
 ```
-LineString ↓ → Extrude along path ↓ → Create rectangular wall mesh
-              → Apply width and height
+height tag (explicit)
+  ↓ building:levels × 3.5m (estimated)
+  ↓ building type defaults (6m residential, 15m office, etc.)
+  ↓ 6 meters (fallback)
 ```
 
-All meshes are added to the Three.js scene via `MeshObjectManager`.
-
-### Height Estimation
-
-**Buildings:** Tag → Default
-```typescript
-// Extract height in this order of precedence:
-const height = tags.height // Exact height in meters
-           || (tags['building:levels'] * 3.5) // Levels → height estimate
-           || buildingHeightDefaults[buildingType] // Type default (6m residential, 15m office)
-           || 6; // Fallback: 6 meters
-```
-
-**Vegetation:** Config-based
+**Vegetation - Config-based dimensions:**
 ```
 Forest: trunk 8-15m, crown radius 2-5m
 Scrub: trunk 0m, crown radius 1-2.5m
 Orchard: trunk 3-6m, crown radius 1.5-2.5m (grid-based spacing)
 Tree: explicit diameter_crown tag in meters
 ```
+
+These properties are extracted during parsing and applied during mesh creation in the visualization factories.
 
 ### Graceful Degradation
 

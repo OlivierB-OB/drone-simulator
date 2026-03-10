@@ -748,6 +748,10 @@ See [`doc/animation-loop.md`](../animation-loop.md) for detailed timing and depe
 | `src/data/contextual/types.ts` | ContextDataTile, feature types |
 | `src/gis/types.ts` | MercatorBounds definition |
 
+### Related Documentation
+
+For OSM feature specifications, data fetching, and tag extraction strategies, see **[Contextual Data System](../data/contextual.md)**. This document covers the data interpretation side; canvas-rendering.md handles the visualization rendering.
+
 ### Testing
 
 - `src/visualization/terrain/texture/TerrainCanvasRenderer.test.ts` (if exists) - Unit tests for rendering

@@ -9,45 +9,33 @@ The ground surface rendering system displays realistic terrain by combining two 
 
 This two-stage asynchronous pipeline ensures responsive rendering: elevation geometry loads first (basic terrain shape), then texture details appear as canvas rendering completes. Both pipelines work independently and converge in the 3D scene.
 
-### High-Level Data Flow
+Both the elevation and contextual data systems follow the standard **Data Pipeline Pattern**
+(see [`doc/data-pipeline.md`](../data-pipeline.md) for detailed explanation).
+
+### Integrated Rendering Pipeline
+
+The terrain rendering system orchestrates two parallel pipelines:
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                    Terrain Rendering System                   │
-├──────────────────────────────────────────────────────────────┤
-│                                                                │
-│  Elevation Pipeline              Texture Pipeline             │
-│  ───────────────────────────     ─────────────────────────    │
-│                                                                │
-│  ElevationData                   ContextData (OSM)            │
-│        │                              │                       │
-│        ├─ Ring-based loading          ├─ Ring-based loading   │
-│        ├─ Tile caching (3 concurrent) ├─ Tile caching         │
-│        │                              │                       │
-│        ↓                              ↓                       │
-│  TerrainGeometryFactory          TerrainCanvasRenderer        │
-│        │                              │                       │
-│        ├─ 256×256 vertices           ├─ 2048×2048 canvas      │
-│        ├─ Elevation sampling          ├─ OSM feature drawing   │
-│        ├─ Normal computation          ├─ Painter's algorithm   │
-│        │                              │                       │
-│        ↓                              ↓                       │
-│  Three.js Geometry + Normals     Canvas Texture              │
-│        │                              │                       │
-│        └──────────┬───────────────────┘                       │
-│                   │                                           │
-│                   ↓                                           │
-│         TerrainObjectFactory                                 │
-│                   │                                           │
-│                   ├─ Create mesh (geometry + texture)        │
-│                   ├─ Position at tile center                 │
-│                   ├─ Add material (MeshPhongMaterial)        │
-│                   │                                           │
-│                   ↓                                           │
-│         Three.js Mesh in Scene                               │
-│                                                               │
-└──────────────────────────────────────────────────────────────┘
+Elevation Pipeline              Contextual Pipeline
+─────────────────────────────  ─────────────────────────
+ElevationDataManager           ContextDataManager
+         ↓                             ↓
+ElevationDataTileParser        ContextDataTileParser
+         ↓                             ↓
+TerrainGeometryFactory         TerrainTextureObjectManager
+     (256×256 vertices)        (Canvas 2048×2048 raster)
+         ↓                             ↓
+    Three.js Geometry           Canvas Texture
+         ├─────────────────────────────┤
+                    ↓
+         TerrainObjectFactory
+                    ↓
+         Three.js Mesh in Scene
 ```
+
+For the general pipeline stages (Manager → Parser → Factory) and how they apply
+across the system, see the Data Pipeline Pattern documentation.
 
 ### Key Properties
 
@@ -85,56 +73,63 @@ The **2048×2048 pixel canvas** provides sufficient detail for OSM feature rende
 The terrain rendering system consists of three main components working in concert:
 
 ### 1. Elevation Pipeline
-Converts elevation data tiles into Three.js geometry:
+
+Converts elevation data tiles into Three.js geometry. See Stage 1 (Manager) and Stage 3 (Factory) in [`doc/data-pipeline.md`](../data-pipeline.md).
 
 ```
-Web Mercator Tiles (z:x:y)
+AWS Terrarium PNG Tiles
         ↓
-ElevationDataManager (tile caching, ring-based loading)
+ElevationDataManager (caching, ring-based loading)
         ↓
-TerrainGeometryFactory (vertex/index generation, normal computation)
+ElevationDataTileParser (decode Terrarium RGB)
         ↓
-Three.js BufferGeometry (positions, normals, UVs, indices)
+TerrainGeometryFactory (vertex/index/normal generation)
+        ↓
+Three.js BufferGeometry
 ```
 
 ### 2. Texture Pipeline
-Renders OSM features onto a canvas texture:
+
+Renders OSM features onto a canvas texture. See Stage 1 (Manager), Stage 2 (Parser), and Stage 3 (Factory) in [`doc/data-pipeline.md`](../data-pipeline.md).
 
 ```
-OSM Features (roads, water, landuse, etc.)
+OpenStreetMap Features (roads, water, landuse, etc.)
         ↓
-ContextDataManager (tile caching, feature extraction)
+ContextDataManager (caching, ring-based loading)
         ↓
-TerrainCanvasRenderer (painter's algorithm, feature-specific drawing)
+ContextDataTileParser (feature extraction)
+TerrainCanvasRenderer (painter's algorithm, feature drawing)
         ↓
 Canvas Texture (2048×2048, applied to geometry UVs)
 ```
 
 ### 3. Mesh Integration
-Orchestrates both pipelines and creates final 3D meshes:
+
+Orchestrates both pipelines and creates final 3D meshes. This pattern matches Stage 4 (Visualization) in [`doc/data-pipeline.md`](../data-pipeline.md).
 
 ```
 Drone Position Update
         ↓
 ElevationDataManager              ContextDataManager
         ↓                                 ↓
-TerrainGeometryObjectManager      TerrainTextureObjectManager
-        ↓                                 ↓
-TerrainGeometryFactory            TerrainCanvasRenderer
-        ↓                                 ↓
-        └─────→ TerrainObjectManager ←────┘
+[Emit geometryAdded event]        [Emit textureAdded event]
+        │                                │
+        └─────→ TerrainObjectManager ←───┘
+                        ↓
+                [Both available?]
                         ↓
                 TerrainObjectFactory
                         ↓
-                  Three.js Mesh
-                   in Scene
+        Create mesh (geometry + texture)
+                        ↓
+        Add to Three.js Scene
 ```
 
-**TerrainObjectManager** is the main orchestrator. It:
-- Subscribes to both **TerrainGeometryObjectManager** and **TerrainTextureObjectManager**
+**Coordination Logic**:
+- **TerrainObjectManager** subscribes to both managers
 - Listens for `geometryAdded`/`geometryRemoved` and `textureAdded`/`textureRemoved` events
-- Coordinates mesh creation via **TerrainObjectFactory** when both geometry and texture are available
-- Manages mesh lifecycle (add/remove from scene)
+- Creates mesh only when BOTH geometry and texture are ready
+- Removes mesh when either geometry or texture unloads
 
 ---
 

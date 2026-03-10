@@ -12,20 +12,26 @@ The simulator visualizes five categories of real-world objects extracted from Op
 4. **Barriers**: Linear features like walls, hedges, and fences extruded along their paths
 5. **Bridges**: Elevated deck segments for roads and railways with layer-based height control
 
-**Data Flow:**
+**Data Pipeline:**
+
+The 3D objects system follows the standard **Data Pipeline Pattern**
+(see [`doc/data-pipeline.md`](../data-pipeline.md) for detailed explanation).
 
 ```
-OpenStreetMap Tile Data (GeoJSON)
-            ↓
-    Feature Parser (types extraction)
-            ↓
-    Mesh Factory (geometry creation)
-            ↓
-    ElevationSampler (terrain integration)
-            ↓
-    Three.js Scene (positioned at Mercator coordinates)
-            ↓
-    MeshObjectManager (lifecycle: add/remove per tile ring)
+OSM Feature Data (GeoJSON)
+        ↓
+ContextDataTileParser (Feature extraction & classification)
+        ↓
+Feature-Specific Factories:
+  - BuildingMeshFactory (Buildings, structures)
+  - TreeMeshFactory (Vegetation)
+  - RailwayMeshFactory (Railways)
+        ↓
+ElevationSampler (Position adjustment)
+        ↓
+MeshObjectManager (Lifecycle management)
+        ↓
+Three.js Scene
 ```
 
 ---

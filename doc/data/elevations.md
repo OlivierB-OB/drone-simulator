@@ -9,21 +9,27 @@ The drone simulator uses global elevation data from **AWS Terrarium**, a tile-ba
 - **Ring-based caching** around the drone to minimize network requests
 - **Seamless integration** with the 3D visualization pipeline
 
-Elevation data flows through the system like this:
+The elevation system follows the standard **Data Pipeline Pattern**
+(see [`doc/data-pipeline.md`](../data-pipeline.md) for detailed explanation).
+
+### Elevation-Specific Pipeline
 
 ```
-AWS Terrarium (PNG)
+AWS Terrarium (PNG Tiles)
        ↓
-ElevationDataManager (loads/caches tiles around drone)
+ElevationDataManager (Ring-based loading, caching)
        ↓
-ElevationDataTileParser (decodes Terrarium PNG format)
+ElevationDataTileParser (Terrarium RGB decode)
        ↓
-Elevation grid [256×256] (elevation values in meters)
+Elevation Grid [256×256 values]
        ↓
-TerrainGeometryFactory (creates Three.js mesh)
+TerrainGeometryFactory (Three.js Geometry + Normals)
        ↓
-3D Visualization (terrain surface in scene)
+3D Terrain Mesh in Scene
 ```
+
+For the general Manager → Parser → Factory pattern and how it applies across
+the system, see the Data Pipeline Pattern documentation.
 
 ## Data Source & Fetching
 
@@ -325,26 +331,11 @@ tileAdded: { key: "15/16383/10904", tile: ElevationDataTile }
 tileRemoved: { key: "15/16383/10904" }
 ```
 
-### Visualization: From Tile to 3D Mesh
+### 3D Mesh Creation
 
-The elevation grid becomes a visible terrain surface:
+Elevation data is used to create the visible terrain mesh in the 3D scene. For detailed information on how elevation tiles are converted to Three.js geometry, normals, and textures, see **[Ground Surface Rendering](../visualization/ground-surface.md#elevation-data-to-geometry)**.
 
-```
-ElevationDataTile (256×256 grid of elevation values)
-    ↓
-TerrainGeometryFactory
-    ├─ Creates vertex positions from elevation grid
-    ├─ Calculates surface normals for lighting
-    └─ Generates face indices (triangles)
-    ↓
-Three.js BufferGeometry
-    ↓
-Mesh (with PhongMaterial for realistic shading)
-    ↓
-Scene (rendered each frame)
-```
-
-Each tile becomes a **mesh with~131,000 vertices** (256×256 grid, 2 triangles per square).
+Briefly: TerrainGeometryFactory reads the elevation grid, creates 256×256 vertices with proper coordinate transformation, computes normals for lighting, and generates triangle indices. The resulting mesh combines with OSM feature textures to form the final terrain surface (approximately 131,000 vertices per tile).
 
 ### Animation Frame Order
 
@@ -441,6 +432,16 @@ If tile loading fails:
 3. **Missing tile in grid** → Terrain geometry fills with default elevation (0m)
 4. **Offline mode** → Uses IndexedDB cache; shows "last known" elevation
 
+## Elevation Sampling & Interpolation
+
+For detailed documentation on how the system samples elevation at arbitrary coordinates and implements bilinear interpolation, see **[Elevation Sampling & Interpolation](./elevation-sampler.md)**.
+
+This dedicated section covers:
+- The ElevationSampler API (method signatures, parameters)
+- Complete bilinear interpolation algorithm with step-by-step examples
+- Precision characteristics and edge case handling
+- Integration patterns with mesh factories
+
 ## Key Files & References
 
 | File | Purpose |
@@ -450,8 +451,10 @@ If tile loading fails:
 | `src/data/elevation/ElevationDataTileParser.ts` | Terrarium RGB formula + PNG decoding |
 | `src/data/elevation/ElevationDataManager.ts` | Ring management, load orchestration |
 | `src/data/elevation/ElevationDataTileLoader.ts` | Network requests, caching, retries |
+| `src/visualization/mesh/util/ElevationSampler.ts` | Bilinear interpolation algorithm |
 | `src/gis/types.ts` | Mercator/Three.js coordinate conversion |
 | `doc/coordinate-system.md` | Detailed coordinate mapping strategy |
+| `doc/data/elevation-sampler.md` | ElevationSampler API and algorithm |
 
 ## Glossary
 
@@ -459,7 +462,7 @@ If tile loading fails:
 - **Web Mercator** (EPSG:3857) - GPS-aligned projection; X=east, Y=north
 - **z/x/y** - Tile coordinate system (zoom level, column, row)
 - **Ring** - Set of tiles around drone center; updates as drone moves
-- **Bilinear interpolation** - Smooth elevation between tile pixels
+- **Bilinear interpolation** - Smooth elevation between tile pixels (see [Elevation Sampling & Interpolation](./elevation-sampler.md))
 - **Conformal projection** - Preserves angles; Mercator property
 - **Tile size** - 256×256 pixels per tile (standard Web Mercator)
 - **Sub-meter precision** - Blue channel enables ~4 mm accuracy
