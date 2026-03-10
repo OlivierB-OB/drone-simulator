@@ -69,7 +69,7 @@ bun run format:check   # Check without modifying
 
 ## Coordinate System: World → Three.js Conversion
 
-**Critical:** See `COORDINATE_SYSTEM.md` for the full strategy document.
+**Critical:** See `doc/coordinate-system.md` for the full strategy document.
 
 ### World Coordinates (Mercator)
 ```
