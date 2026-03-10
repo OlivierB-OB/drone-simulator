@@ -44,7 +44,7 @@ Frame N:
 
 ### Step 1: Drone Movement (`drone.applyMove(deltaTime)`)
 
-**File:** `src/drone/Drone.ts:110-118`
+**File:** `src/drone/Drone.ts: applyMove() method (lines 137–180)`
 
 Updates the drone's position and heading based on keyboard input accumulated during this frame. Calculates displacement using delta time (frame-rate independent) and current movement vector.
 
@@ -312,7 +312,7 @@ droneConfig: {
 // Elevation tile loading
 elevationConfig: {
   zoom: 15,
-  tileRing: 2,        // Load tiles in 2-tile radius
+  ringRadius: 2,        // Load tiles in 2-tile radius
   maxConcurrentLoads: 3,  // Limit concurrent fetches
 }
 

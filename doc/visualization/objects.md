@@ -539,20 +539,11 @@ Objects are organized by tile and loaded in a ring around the drone:
 - **Tile Key**: `"z:x:y"` uniquely identifies a tile (e.g., `"15:16807:11239"`)
 - **Ring Radius**: Config parameter `contextDataConfig.ringRadius = 1` loads a 3×3 grid (center ±1 tile in each direction)
 
-**Ring Layout Example (top-down view):**
-```
-Mercator Y (North ↑)
-      ↑
-  [8] [9] [10]
-  [5] [D] [6]     D = drone position
-  [2] [3] [4]
-
-Tiles numbered by fetch order; D is center tile (drone tile)
-When drone crosses tile boundary, ring shifts:
-- New tiles fetched and added
-- Old tiles removed and disposed
-- Seamless transition
-```
+For detailed tile ring visualization and fetch order patterns, see
+[Tile Ring System](../tile-ring-system.md). The numbered fetch order shown there
+([2]–[10] pattern) indicates which tiles load first as the drone moves. Understanding
+this pattern is key to optimizing object data loading and ensuring seamless mesh
+transitions when crossing tile boundaries.
 
 ### Mercator to Three.js Coordinate Transformation
 
@@ -570,40 +561,25 @@ Verification: All drone/camera/object positioning uses this formula consistently
 
 ### Elevation Sampling & Bilinear Interpolation
 
-**Process** (see `ElevationSampler.sampleAt()`):
+For a complete explanation of the bilinear interpolation algorithm, API documentation, precision details, and edge case handling, see **[Elevation Sampling & Interpolation](../data/elevation-sampler.md)**.
 
-1. Find covering elevation tile from `ElevationDataManager`
-2. Compute fractional position within 256×256 tile:
-   ```
-   fracX = (mercatorX - tileMinX) / (tileMaxX - tileMinX)  // [0, 1]
-   fracY = 1 - (mercatorY - tileMinY) / (tileMaxY - tileMinY)  // inverted for row indexing
-   ```
-3. Map to pixel coordinates:
-   ```
-   px = fracX × 255, py = fracY × 255  // clamped to [0, 255]
-   ```
-4. Bilinear interpolation from 4 nearest pixels:
-   ```
-   v = v00(1-tx)(1-ty) + v01(tx)(1-ty) + v10(1-tx)(ty) + v11(tx)(ty)
-   ```
-   where tx, ty are sub-pixel fractional offsets
+**Briefly:** Each mesh factory calls `elevationSampler.sampleAt(mercatorX, mercatorY)` to determine terrain height at an object's location. The sampler uses bilinear interpolation to blend values from 4 neighboring elevation pixels, producing smooth terrain without visible pixelation.
 
-**Why Bilinear?**
-- PNG elevations are discrete pixel values (meter integers)
-- Bilinear smooths transitions, preventing visible step discontinuities
-- Sub-meter precision from Terrarium format's blue channel (1/256m resolution) preserved
-
-**Return Value**: Elevation in meters; 0 if tile not loaded
+The algorithm accounts for critical details:
+- **Mercator Y inversion** (row 0 = north edge, increases southward)
+- **Sub-pixel fractional offsets** (tx, ty) to blend between pixels
+- **Boundary clamping** (prevents out-of-bounds access at tile edges)
+- **Unloaded tiles** (returns 0 for missing data, geometry fills with default elevation)
 
 ### Why Objects Align Correctly
 
 **Coordinate Consistency Across All Components:**
 
-1. **Buildings**: `position.set(centroidX, terrainY, -centroidY)` in BuildingMeshFactory:186
-2. **Vegetation**: `matrix.setPosition(x, terrainY + offset, -y)` in vegetationUtils:150
-3. **Structures**: `obj.position.set(mx, terrainY + offset, -my)` in StructureMeshFactory:53
-4. **Barriers**: `mesh.position.set(midX, terrainY + offset, -midY)` in BarrierMeshFactory:49
-5. **Bridges**: `mesh.position.set(midX, terrainY + offset, -midY)` in BridgeMeshFactory:79
+1. **Buildings**: `position.set(centroidX, terrainY, -centroidY)` in BuildingMeshFactory.ts: createBuildingMesh() method (line 186)
+2. **Vegetation**: `matrix.setPosition(x, terrainY + offset, -y)` in VegetationMeshFactory.ts: strategy create() methods
+3. **Structures**: `obj.position.set(mx, terrainY + offset, -my)` in StructureMeshFactory.ts: createStructureMesh() method (line 53)
+4. **Barriers**: `mesh.position.set(midX, terrainY + offset, -midY)` in BarrierMeshFactory.ts: createBarrierMeshes() method (line 49)
+5. **Bridges**: `mesh.position.set(midX, terrainY + offset, -midY)` in BridgeMeshFactory.ts: createDeckSegments() method (line 79)
 
 All use the same formula: `(mercatorX, elevation, -mercatorY)`, ensuring spatial alignment.
 

@@ -55,7 +55,7 @@ This two-stage asynchronous pipeline ensures responsive rendering: elevation geo
 |----------|-------|---------|
 | **Zoom Level** | 15 (Web Mercator) | Tile resolution (tighter zoom = more detail tiles) |
 | **Tile Size** | 256×256 pixels | Elevation grid dimension |
-| **Canvas Size** | 2048×2048 pixels | OSM feature texture detail (see `TerrainTextureFactory.ts:47-48`) |
+| **Canvas Size** | 2048×2048 pixels | OSM feature texture detail (see `TerrainTextureFactory.ts: createTexture() method`) |
 | **Ring Radius** | 1-3 (configurable) | Tile loading radius around drone (1=3×3 grid) |
 | **Max Concurrent Loads** | 3 | Network concurrency limit |
 | **Elevation Range** | -430 m to ~9000 m | Dead Sea to Everest |
@@ -74,7 +74,7 @@ export const textureConfig = {
 ```
 
 This configuration is used by:
-- **`TerrainTextureFactory.ts:47-48`** — Creates offscreen canvas with dimensions `groundCanvasSize × groundCanvasSize` for rendering OSM features
+- **`TerrainTextureFactory.ts: createTexture() method`** — Creates offscreen canvas with dimensions `groundCanvasSize × groundCanvasSize` for rendering OSM features (lines 46–48)
 
 The **2048×2048 pixel canvas** provides sufficient detail for OSM feature rendering at zoom level 15 while keeping canvas rendering time reasonable. Higher values (e.g., 4096) would provide finer texture detail but increase CPU rendering time; lower values (e.g., 1024) would reduce rendering time but lose detail.
 
@@ -295,7 +295,7 @@ The Z negation is critical: Mercator Y increases northward, but Three.js camera 
 For complete explanation and rationale, see [Coordinate System & Rendering Strategy](../coordinate-system.md).
 
 All ground surface code uses this formula consistently. Implementation details:
-- `TerrainObjectFactory.ts:52` — mesh center positioning
+- `TerrainObjectFactory.ts: createTerrainObject() method` — mesh center positioning (line 52)
 - `TerrainGeometryFactory.ts` — vertex Z calculation
 - `TerrainCanvasRenderer.ts` — texture UV mapping
 
@@ -446,7 +446,7 @@ Useful for:
 | Term | Definition |
 |------|-----------|
 | **Web Mercator** | Cylindrical map projection used for web maps (Google, OSM, etc.). Distorts polar regions but preserves local shapes. |
-| **Tile (z:x:y)** | Grid cell in Web Mercator. z=zoom level, x=column, y=row. Each tile covers ~2 km² at equator (zoom 15). |
+| **Tile (z:x:y)** | Grid cell in Web Mercator. z=zoom level, x=column, y=row. Each tile covers ~1.22 km × 1.22 km (≈1.49 km²) at equator (zoom 15). |
 | **Terrarium Format** | PNG encoding scheme: (R × 256 + G + B/256) - 32768 = elevation in meters. Used by Amazon's elevation service. |
 | **Ring-Based Loading** | Concentric grid pattern around drone. Ring 1 = 3×3, Ring 2 = 5×5, etc. Optimizes network I/O. |
 | **Canvas Texture** | 2D image rendered to HTML Canvas, then converted to Three.js Texture. OSM features rasterized here. |
