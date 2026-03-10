@@ -128,7 +128,8 @@ The system implements **three-tier caching**:
 
 2. **IndexedDB persistent cache** (browser storage)
    - Survives page reloads and application restarts
-   - 24-hour TTL prevents stale data
+   - 24-hour TTL prevents stale data (consistent with elevation cache;
+     see [Elevation System](./elevations.md) for comparison)
    - Automatic expiry cleanup on app startup
    - Gracefully falls back to network if expired
 
@@ -739,17 +740,9 @@ MeshObjectManager listens → creates 3D meshes
 
 ### Animation Frame Order
 
-The system integrates into the standard frame loop:
+Context data loading integrates into the standard animation frame sequence. See [Animation Loop Architecture](../animation-loop.md) for the complete frame timing and detailed step-by-step breakdown.
 
-1. `drone.applyMove(deltaTime)` - Update location/heading
-2. `elevationData.setLocation()` - Load/unload elevation tiles
-3. **contextData.setLocation()** - Load/unload context tiles (**this system**)
-4. `terrainObjectManager.refresh()` - Create/remove terrain meshes
-5. `textureObjectManager.refresh()` (implicit) - Create textures on tileAdded
-6. `meshObjectManager.refresh()` - Create 3D feature meshes
-7. `droneObject.update()` - Position drone cone
-8. `camera.updateChaseCamera()` - Follow drone
-9. `viewer3D.render()` - Render scene
+In the full sequence, context data is loaded in **step 3**, which must complete before terrain mesh creation (step 4) and feature mesh creation (step 6) so that contextual features have data available for rendering.
 
 ### Coordinate Consistency
 

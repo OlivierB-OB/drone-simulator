@@ -88,7 +88,9 @@ The system implements **two caching strategies**:
 
 2. **Persistent cache** (IndexedDB)
    - Survives page reloads
-   - 30-day TTL prevents stale data
+   - 24-hour TTL prevents stale data
+     (See [Context Data System](./contextual.md) — both systems use the same TTL
+     for consistency and simplified cache management)
    - Gracefully falls back to network if expired
 
 ## Technical Specification
@@ -178,7 +180,7 @@ The elevation tiles use **Web Mercator coordinates** to align with GPS/mapping s
 **Axes:**
 - **X** increases **eastward** (positive direction = toward 180°)
 - **Y** increases **northward** (positive direction = toward North Pole)
-- **Bounds** at zoom 15: X from 0 to ~2^15, Y from 0 to ~2^15
+- **Bounds** at zoom 15: X from 0 to 2^15 - 1, Y from 0 to 2^15 - 1
 
 **Key property:** Mercator is conformal, preserving angles but distorting area toward poles.
 
@@ -343,20 +345,9 @@ Each tile becomes a **mesh with~131,000 vertices** (256×256 grid, 2 triangles p
 
 ### Animation Frame Order
 
-Where elevation fits in the update loop:
+Elevation loading integrates into the standard animation frame sequence. See [Animation Loop Architecture](../animation-loop.md) for the complete frame timing and detailed step-by-step breakdown.
 
-```
-AnimationLoop.tick(deltaTime):
-  1. drone.applyMove(deltaTime)           ← Update drone position/heading
-  2. elevationData.setLocation(...)       ← Load/unload tiles based on drone
-  3. contextData.setLocation(...)         ← Update map data
-  4. terrainObjectManager.refresh()       ← Create meshes from tiles
-  5. droneObject.update()                 ← Position drone cone
-  6. camera.updateChaseCamera()           ← Position camera behind drone
-  7. viewer3D.render()                    ← Draw frame
-```
-
-Elevation data must update **before** terrain mesh creation (step 2 before 4).
+**Key constraint:** Elevation data must update **before** terrain mesh creation (step 2 before step 4) so that meshes have height data available when they are created.
 
 ### Coordinate Consistency: Mercator to Three.js
 
