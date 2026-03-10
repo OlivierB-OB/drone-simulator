@@ -191,48 +191,22 @@ Normals are **computed automatically** from the triangle mesh using Three.js's `
 
 ### Purpose
 
-While elevation geometry provides the 3D shape, OSM feature textures add visual detail: roads, water bodies, landuse areas, vegetation, railways, etc. Drawing these as individual meshes would be prohibitively expensive (millions of geometry objects); instead, they're rasterized to a **2048×2048 canvas texture**.
+While elevation geometry provides the 3D shape, OSM feature textures add visual detail: roads, water bodies, landuse areas, vegetation, railways, etc. Instead of drawing these as individual meshes (which would create millions of geometry objects), they're **rasterized to a 2048×2048 canvas texture** for efficient rendering.
 
-### Drawing Order (Painter's Algorithm)
+**See [`doc/visualization/canvas-rendering.md`](./canvas-rendering.md) for comprehensive documentation of:**
+- Canvas rendering pipeline and architecture
+- 9-layer painter's algorithm drawing order
+- Coordinate transformation mathematics
+- Feature types, colors, and canvas drawing settings
+- Edge cases (polygon holes, tile boundaries, seamless alignment)
+- Integration with TerrainTextureFactory and terrain meshes
 
-**TerrainCanvasRenderer** draws features in **back-to-front** order to handle transparency and layering correctly:
+### Quick Reference
 
-```
-1. Base ground fill     → groundColor (e.g., #d8c8a8)
-2. Landuse/landcover   → feature-specific colors
-3. Water (polygons)    → waterColor (#7db8dc)
-4. Wetlands            → wetlandColor (#9dd9d9)
-5. Waterway lines      → waterwayColor (#7db8dc)
-6. Vegetation          → vegetationColor (#a8d4a8)
-7. Aeroways            → aerowayColor (#ddd8c4)
-8. Roads (sorted by width ascending) → roadColor variants
-9. Railways            → railwayColor (#707070)
-```
+**Drawing order (back-to-front):**
+1. Ground fill → 2. Landuse → 3. Water bodies → 4. Wetlands → 5. Waterway lines → 6. Vegetation → 7. Aeroways → 8. Roads (sorted by width) → 9. Railways
 
-Wider features (larger z-index in OSM) are drawn later to appear on top. This order ensures water flows under roads, landuse under water, etc.
-
-### Feature Types & Colors
-
-| Feature Type | OSM Key | Color | Example |
-|--------------|---------|-------|---------|
-| **Roads** | `highway` | Multiple widths (minor: gray, major: white) | Streets, motorways |
-| **Water** | `water`, `natural=water` | #7db8dc | Lakes, rivers (polygon areas) |
-| **Waterways** | `waterway` | #7db8dc | Stream/river lines |
-| **Landuse** | `landuse` | Varies (#a8d4a8 for forest, #ddd8c4 for residential) | Parks, forests, residential areas |
-| **Vegetation** | `natural=wood`, `natural=grassland` | #a8d4a8 | Natural areas |
-| **Aeroways** | `aeroway` | #ddd8c4 | Airports, runways |
-| **Railways** | `railway` | #707070 | Train tracks, rail lines |
-
-### Coordinate Transformation
-
-OSM features are in geographic coordinates (latitude/longitude). **TerrainCanvasRenderer** transforms them to canvas pixel coordinates:
-
-```
-canvasPixelX = ((osmLon - tileLeft) / tileWidth) × canvasWidth
-canvasPixelY = ((osmLat - tileTop) / tileHeight) × canvasHeight
-```
-
-Where `tileLeft/Top` and `tileWidth/Height` are derived from the Web Mercator tile bounds at zoom 15.
+**Key file:** `src/visualization/terrain/texture/TerrainCanvasRenderer.ts` — Main rendering engine with 9 layer methods
 
 ---
 

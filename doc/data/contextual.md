@@ -461,7 +461,7 @@ All coordinates are in **Mercator meters**, matching the elevation system:
 ### Tile Dimensions
 
 - **Size:** 256×256 pixels per tile in Web Mercator grid
-- **Coverage at zoom 15:** Approximately 2.1 km × 2.1 km per tile
+- **Coverage at zoom 15:** Approximately 1.22 km × 1.22 km per tile
 - **Precision:** Sub-meter accuracy (coordinate precision matches elevation system)
 
 ### Feature Classification
@@ -506,7 +506,7 @@ The system uses the same **Web Mercator projection** as the elevation system:
 Tile Grid at Zoom 15:
 ├─ X ranges 0 to 2^15 - 1 = 32,767 (west to east)
 ├─ Y ranges 0 to 2^15 - 1 = 32,767 (north to south)
-└─ Each tile covers ~2.1 km × 2.1 km
+└─ Each tile covers ~1.22 km × 1.22 km
 
 Mercator Bounds Calculation:
 ├─ TileX 16384 at zoom 15 covers:
@@ -615,23 +615,24 @@ export function classifyBuilding(
 
 ### Canvas Rendering
 
-2D features (roads, water, vegetation, landuse) are rendered to an **OffscreenCanvas** for performance:
+2D features (roads, water, vegetation, landuse) are rasterized to a **2048×2048 canvas** texture per tile for efficient rendering:
 
 ```
-Feature → Canvas Draw Call
-├─ Roads: strokeStyle, lineWidth, quadraticCurveTo()
-├─ Water: fillStyle, fill()
-├─ Vegetation: fillStyle, fill()
-├─ Landuse: fillStyle, fill()
-└─ Railways: strokeStyle, setLineDash(), stroke()
-
-Canvas → Three.js Texture → Applied to terrain mesh
+OSM Features → TerrainCanvasRenderer → Canvas → Three.js Texture → Terrain Mesh
 ```
 
 **Benefits:**
-- Single textured mesh per tile (fast rendering)
-- Decouples feature rendering from 3D geometry
+- Single textured mesh per tile (minimal memory)
+- Decouples vector feature rendering from 3D geometry
+- Canvas rendering is CPU-efficient (once per tile load)
 - Graceful degradation if generation fails
+
+**See [`doc/visualization/canvas-rendering.md`](../visualization/canvas-rendering.md) for complete documentation:**
+- Rendering pipeline and 9-layer drawing order
+- Feature drawing algorithms (polygons, lines, points)
+- Coordinate transformation and seamless tile boundaries
+- All supported OSM feature types, colors, and rendering settings
+- Performance characteristics and edge case handling
 
 ### 3D Mesh Generation
 
@@ -922,4 +923,4 @@ On tileRemoved:
 
 **Way** - OSM feature representing linestring or polygon (roads, buildings, water, etc.)
 
-**Zoom Level** - Web Mercator scale (15 = ~2.1 km/tile); higher = more detail, more requests
+**Zoom Level** - Web Mercator scale (15 = ~1.22 km/tile); higher = more detail, more requests
