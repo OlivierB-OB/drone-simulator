@@ -16,22 +16,27 @@ Both the elevation and contextual data systems follow the standard **Data Pipeli
 
 The terrain rendering system orchestrates two parallel pipelines:
 
-```
-Elevation Pipeline              Contextual Pipeline
-─────────────────────────────  ─────────────────────────
-ElevationDataManager           ContextDataManager
-         ↓                             ↓
-ElevationDataTileParser        ContextDataTileParser
-         ↓                             ↓
-TerrainGeometryFactory         TerrainTextureObjectManager
-     (256×256 vertices)        (Canvas 2048×2048 raster)
-         ↓                             ↓
-    Three.js Geometry           Canvas Texture
-         ├─────────────────────────────┤
-                    ↓
-         TerrainObjectFactory
-                    ↓
-         Three.js Mesh in Scene
+```mermaid
+flowchart TD
+    ElevPipe["Elevation Pipeline<br/>(elevation.md)"]
+    ContextPipe["Contextual Pipeline<br/>(canvas-rendering.md)"]
+
+    ElevPipe --> EDM["ElevationDataManager"]
+    ContextPipe --> CDM["ContextDataManager"]
+
+    EDM --> EDTP["ElevationDataTileParser"]
+    CDM --> CDTP["ContextDataTileParser"]
+
+    EDTP --> TGF["TerrainGeometryFactory<br/>(256×256 vertices)"]
+    CDTP --> TTF["TerrainTextureObjectManager<br/>+ TerrainCanvasRenderer"]
+
+    TGF --> Geom["Three.js BufferGeometry"]
+    TTF --> Canvas["Canvas<br/>(2048×2048 raster)"]
+
+    Geom --> TOF["TerrainObjectFactory"]
+    Canvas --> TOF
+
+    TOF --> Mesh["Three.js Mesh<br/>in Scene"]
 ```
 
 For the general pipeline stages (Manager → Parser → Factory) and how they apply
@@ -70,7 +75,7 @@ The **2048×2048 pixel canvas** provides sufficient detail for OSM feature rende
 
 ## Core Architecture
 
-The three tile-event-driven managers (`TerrainGeometryObjectManager`, `TerrainTextureObjectManager`, `MeshObjectManager`) all extend the shared abstract base `TileObjectManager`, which handles event subscription, object storage, and disposal lifecycle. Each manager only implements `createObject` and `disposeObject` for its specific output type.
+The four tile-event-driven managers (`TerrainGeometryObjectManager`, `TerrainTextureObjectManager`, `TerrainObjectManager`, `MeshObjectManager`) all extend the shared abstract base `TileObjectManager`, which handles event subscription, object storage, and disposal lifecycle. Each manager only implements `createObject` and `disposeObject` for its specific output type.
 
 The terrain rendering system consists of three main components working in concert:
 
@@ -78,60 +83,56 @@ The terrain rendering system consists of three main components working in concer
 
 Converts elevation data tiles into Three.js geometry. See Stage 1 (Manager) and Stage 3 (Factory) in [`doc/data-pipeline.md`](../data-pipeline.md).
 
-```
-AWS Terrarium PNG Tiles
-        ↓
-ElevationDataManager (caching, ring-based loading)
-        ↓
-ElevationDataTileParser (decode Terrarium RGB)
-        ↓
-TerrainGeometryFactory (vertex/index/normal generation)
-        ↓
-Three.js BufferGeometry
+```mermaid
+flowchart TD
+    AWS["AWS Terrarium PNG Tiles"]
+    AWS --> EDM["ElevationDataManager<br/>(caching,<br/>ring-based loading)"]
+    EDM --> EDTP["ElevationDataTileParser<br/>(decode Terrarium RGB)"]
+    EDTP --> TGF["TerrainGeometryFactory<br/>(vertex/index/<br/>normal generation)"]
+    TGF --> BG["Three.js<br/>BufferGeometry"]
 ```
 
 ### 2. Texture Pipeline
 
 Renders OSM features onto a canvas texture. See Stage 1 (Manager), Stage 2 (Parser), and Stage 3 (Factory) in [`doc/data-pipeline.md`](../data-pipeline.md).
 
-```
-OpenStreetMap Features (roads, water, landuse, etc.)
-        ↓
-ContextDataManager (caching, ring-based loading)
-        ↓
-ContextDataTileParser (feature extraction)
-TerrainCanvasRenderer (painter's algorithm, feature drawing)
-        ↓
-Canvas Texture (2048×2048, applied to geometry UVs)
+```mermaid
+flowchart TD
+    OSM["OpenStreetMap Features<br/>(roads, water, landuse, etc.)"]
+    OSM --> CDM["ContextDataManager<br/>(caching,<br/>ring-based loading)"]
+    CDM --> CDTP["ContextDataTileParser<br/>(feature extraction)"]
+    CDTP --> TCR["TerrainCanvasRenderer<br/>(painter's algorithm,<br/>feature drawing)"]
+    TCR --> Canvas["Canvas Texture<br/>(2048×2048,<br/>applied to<br/>geometry UVs)"]
 ```
 
 ### 3. Mesh Integration
 
 Orchestrates both pipelines and creates final 3D meshes. This pattern matches Stage 4 (Visualization) in [`doc/data-pipeline.md`](../data-pipeline.md).
 
-```
-Drone Position Update
-        ↓
-ElevationDataManager              ContextDataManager
-        ↓                                 ↓
-[Emit geometryAdded event]        [Emit textureAdded event]
-        │                                │
-        └─────→ TerrainObjectManager ←───┘
-                        ↓
-                [Both available?]
-                        ↓
-                TerrainObjectFactory
-                        ↓
-        Create mesh (geometry + texture)
-                        ↓
-        Add to Three.js Scene
+```mermaid
+flowchart TD
+    Drone["Drone Position<br/>Update"]
+
+    Drone --> EDM["ElevationDataManager"]
+    Drone --> CDM["ContextDataManager"]
+
+    EDM --> TGOM["TerrainGeometryObjectManager"]
+    CDM --> TTOM["TerrainTextureObjectManager"]
+
+    TGOM -->|Emit tileAdded<br/>primary| TOM["TerrainObjectManager<br/>(extends TileObjectManager)"]
+    TTOM -->|Emit tileAdded<br/>secondary rebuild| TOM
+
+    TOM --> TOF["TerrainObjectFactory"]
+    TOF --> Mesh["Create mesh<br/>(geometry + texture<br/>if available)"]
+    Mesh --> Scene["Add to<br/>Three.js Scene"]
 ```
 
 **Coordination Logic**:
-- **TerrainObjectManager** subscribes to both managers
-- Listens for `geometryAdded`/`geometryRemoved` and `textureAdded`/`textureRemoved` events
-- Creates mesh only when BOTH geometry and texture are ready
-- Removes mesh when either geometry or texture unloads
+- **TerrainObjectManager** extends `TileObjectManager` (inheritance, not manual subscription)
+- Geometry is the **primary source**: mesh is created as soon as geometry arrives
+- Texture is a **secondary rebuild trigger**: if texture arrives after geometry, mesh is rebuilt with it applied
+- Null textures (context unavailable) do not trigger rebuilds — graceful degradation to flat color
+- Meshes are removed when geometry unloads
 
 ---
 
@@ -414,4 +415,3 @@ Useful for:
 ## See Also
 
 - **[Glossary](../glossary.md)** - Definitions of all technical terms
-

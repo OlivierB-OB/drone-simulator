@@ -2,6 +2,7 @@ import type { Object3D } from 'three';
 import { Scene } from '../../3Dviewer/Scene';
 import type { ContextDataManager } from '../../data/contextual/ContextDataManager';
 import type { ContextDataTile } from '../../data/contextual/types';
+import type { ElevationDataManager } from '../../data/elevation/ElevationDataManager';
 import type { ElevationSampler } from './util/ElevationSampler';
 import { BuildingMeshFactory } from './building/BuildingMeshFactory';
 import { VegetationMeshFactory } from './vegetation/VegetationMeshFactory';
@@ -30,9 +31,10 @@ export class MeshObjectManager extends TileObjectManager<
   constructor(
     private readonly scene: Scene,
     contextData: ContextDataManager,
-    elevationSampler: ElevationSampler
+    elevationSampler: ElevationSampler,
+    elevationData: ElevationDataManager
   ) {
-    super(contextData);
+    super(contextData, [elevationData]);
     this.buildingFactory = new BuildingMeshFactory(elevationSampler);
     this.vegetationFactory = new VegetationMeshFactory(elevationSampler);
     this.structureFactory = new StructureMeshFactory(elevationSampler);

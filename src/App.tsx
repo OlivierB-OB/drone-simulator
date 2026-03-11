@@ -66,7 +66,8 @@ export function App() {
     meshObjectManager = new MeshObjectManager(
       viewer3D.getScene(),
       contextData,
-      elevationSampler
+      elevationSampler,
+      elevationData
     );
 
     droneObject = new DroneObject(drone, viewer3D);

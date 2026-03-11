@@ -147,6 +147,44 @@ describe('TerrainTextureObjectManager', () => {
     });
   });
 
+  describe('tileAdded event', () => {
+    function getRegisteredTileAddedHandler() {
+      const calls = (mockContextData.on as ReturnType<typeof vi.fn>).mock.calls;
+      const call = calls.find((c: unknown[]) => c[0] === 'tileAdded');
+      return call?.[1] as
+        | ((data: { key: string; tile: unknown }) => void)
+        | undefined;
+    }
+
+    it('should emit tileAdded when data source produces a non-null texture', () => {
+      const events: { key: string }[] = [];
+      manager.on('tileAdded', (e) => events.push(e));
+
+      const contextTile = createMockContextTile('9:261:168');
+      getRegisteredTileAddedHandler()?.({
+        key: '9:261:168',
+        tile: contextTile,
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0]?.key).toBe('9:261:168');
+    });
+
+    it('should NOT emit tileAdded when data source produces a null texture', () => {
+      mockFactory.createTexture = vi.fn(() => null);
+      const events: unknown[] = [];
+      manager.on('tileAdded', (e) => events.push(e));
+
+      const contextTile = createMockContextTile('9:261:168');
+      getRegisteredTileAddedHandler()?.({
+        key: '9:261:168',
+        tile: contextTile,
+      });
+
+      expect(events).toHaveLength(0);
+    });
+  });
+
   describe('dispose', () => {
     it('should dispose all texture resources', () => {
       const tile1 = createMockContextTile('9:261:168');

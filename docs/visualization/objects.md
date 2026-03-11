@@ -17,21 +17,27 @@ The simulator visualizes five categories of real-world objects extracted from Op
 The 3D objects system follows the standard **Data Pipeline Pattern**
 (see [`doc/data-pipeline.md`](../data-pipeline.md) for detailed explanation).
 
-```
-OSM Feature Data (GeoJSON)
-        ↓
-ContextDataTileParser (Feature extraction & classification)
-        ↓
-Feature-Specific Factories:
-  - BuildingMeshFactory (Buildings, structures)
-  - TreeMeshFactory (Vegetation)
-  - RailwayMeshFactory (Railways)
-        ↓
-ElevationSampler (Position adjustment)
-        ↓
-MeshObjectManager (Lifecycle management)
-        ↓
-Three.js Scene
+```mermaid
+flowchart TD
+    OSM["OSM Feature Data<br/>(GeoJSON)"]
+    OSM --> Parser["ContextDataTileParser<br/>(Feature extraction &<br/>classification)"]
+
+    Parser --> Factories["Feature-Specific Factories"]
+
+    Factories --> BMF["BuildingMeshFactory<br/>(Buildings, structures)"]
+    Factories --> VMF["VegetationMeshFactory<br/>(Vegetation)"]
+    Factories --> SMF["StructureMeshFactory<br/>(Structures)"]
+    Factories --> BarMF["BarrierMeshFactory<br/>(Barriers)"]
+    Factories --> BrMF["BridgeMeshFactory<br/>(Bridges)"]
+
+    BMF --> ES["ElevationSampler<br/>(Position adjustment)"]
+    VMF --> ES
+    SMF --> ES
+    BarMF --> ES
+    BrMF --> ES
+
+    ES --> MOM["MeshObjectManager<br/>(Lifecycle management)"]
+    MOM --> Scene["Three.js Scene"]
 ```
 
 ---
@@ -436,66 +442,19 @@ Examples:
 
 ### Data Flow
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                 OSM Tile Data (GeoJSON)                 │
-│            z/x/y tile from Overpass API                 │
-└──────────────────────┬──────────────────────────────────┘
-                       ↓
-      ┌────────────────────────────────────────┐
-      │  STAGE 1: Feature Extraction (Parser)  │
-      │  • Identify feature types from tags    │
-      │  • Extract geometry (Polygon/Point)    │
-      │  • Parse properties (height, color)    │
-      └────────────────┬───────────────────────┘
-                       ↓
-         ┌─────────────────────────────────┐
-         │  STAGE 2: Mesh Creation         │
-         │  (Factories with Strategies)    │
-         │                                 │
-         │  BuildingMeshFactory            │
-         │    → ExtrudeGeometry            │
-         │    → RoofGeometryFactory        │
-         │                                 │
-         │  VegetationMeshFactory          │
-         │    → ForestStrategy             │
-         │    → InstancedMesh (trunk+can)  │
-         │                                 │
-         │  StructureMeshFactory           │
-         │    → CylinderStrategy, etc.     │
-         │                                 │
-         │  BarrierMeshFactory             │
-         │    → BoxGeometry per segment    │
-         │                                 │
-         │  BridgeMeshFactory              │
-         │    → BoxGeometry (deck)         │
-         └────────┬────────────────────────┘
-                  ↓
-       ┌──────────────────────────┐
-       │  Elevation Integration   │
-       │  ElevationSampler        │
-       │                          │
-       │  • Sample terrain at     │
-       │    key positions         │
-       │  • Bilinear interpolate  │
-       │  • Return elevation (m)  │
-       └────────┬─────────────────┘
-                ↓
-      ┌──────────────────────────────┐
-      │  Position in Three.js Scene  │
-      │                              │
-      │  position.x = mercator.x     │
-      │  position.y = elevation (m)  │
-      │  position.z = -mercator.y    │
-      └────────┬─────────────────────┘
-               ↓
-      ┌───────────────────────────────┐
-      │  MeshObjectManager            │
-      │  • Add meshes to scene        │
-      │  • Track by tile              │
-      │  • Remove old tiles in ring   │
-      │  • Dispose resources          │
-      └───────────────────────────────┘
+```mermaid
+flowchart TD
+    OSM["OSM Tile Data<br/>(GeoJSON)"]
+
+    OSM --> Parse["STAGE 1:<br/>Feature Extraction<br/>(Parser)<br/>• Identify types from tags<br/>• Extract geometry<br/>• Parse properties"]
+
+    Parse --> Meshes["STAGE 2:<br/>Mesh Creation<br/>(Factories with Strategies)<br/>BuildingMeshFactory<br/>VegetationMeshFactory<br/>StructureMeshFactory<br/>BarrierMeshFactory<br/>BridgeMeshFactory"]
+
+    Meshes --> Elev["Elevation Integration<br/>(ElevationSampler)<br/>• Sample at key positions<br/>• Bilinear interpolate<br/>• Return elevation"]
+
+    Elev --> Pos["Position in<br/>Three.js Scene<br/>position.x = mercator.x<br/>position.y = elevation<br/>position.z = -mercator.y"]
+
+    Pos --> MOM["MeshObjectManager<br/>• Add meshes to scene<br/>• Track by tile<br/>• Remove old tiles<br/>• Dispose resources"]
 ```
 
 ### Stage 1: Data Parsing
@@ -522,6 +481,7 @@ Examples:
   - Tracks meshes by tile key (z:x:y)
   - When tile ring updates, removes meshes for old tiles
   - Disposes geometries and materials
+  - Subscribes to `ElevationDataManager.tileAdded` (via `TileObjectManager` secondary sources): if an elevation tile arrives *after* the matching context tile, all meshes for that tile are disposed and recreated so they sample the correct terrain elevation
 - **Output**: Animated scene with meshes added/removed as drone moves
 
 ### Performance Implications
@@ -733,4 +693,3 @@ Changes apply to all newly-loaded tiles; existing tiles retain old values until 
 - **`src/config.ts`**: Configuration values for all appearance parameters
 - **`src/visualization/mesh/`**: Factory implementations (source code)
 - **`src/visualization/MeshObjectManager.ts`**: Lifecycle coordination (source code)
-

@@ -11,8 +11,8 @@
 - Drone: emits `locationChanged`, `azimuthChanged`, `elevationChanged`, `movingChanged`
 - ElevationDataManager: emits `tileAdded`, `tileRemoved`
 - ContextDataManager: emits `tileAdded`, `tileRemoved`
-- TerrainGeometryObjectManager: emits `geometryAdded`, `geometryRemoved`
-- TerrainTextureObjectManager: emits `textureAdded`, `textureRemoved`
+- TerrainGeometryObjectManager: emits `tileAdded`, `tileRemoved`
+- TerrainTextureObjectManager: emits `tileAdded` (non-null textures only), `tileRemoved`
 
 ### Factory Pattern
 **Problem**: Encapsulates object creation, separates creation from usage
@@ -40,7 +40,7 @@
 ### Manager/Coordinator Pattern
 **Problem**: Orchestrate multiple components with event-driven communication
 **Files**: TerrainObjectManager, MeshObjectManager, ElevationDataManager, ContextDataManager
-**Pattern**: Subscribe to events from child components and coordinate their output
+**Pattern**: `TerrainObjectManager` extends `TileObjectManager` (inheritance), using `TerrainGeometryObjectManager` as primary source and `TerrainTextureObjectManager` as secondary rebuild trigger. Other managers subscribe to events from child components and coordinate their output.
 
 ---
 

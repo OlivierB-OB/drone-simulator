@@ -48,6 +48,20 @@ function makeDataSource() {
   };
 }
 
+function makeSecondarySource() {
+  let addedHandler:
+    | ((data: { key: string; tile: unknown }) => void)
+    | undefined;
+
+  return {
+    on: vi.fn((event: string, handler: unknown) => {
+      if (event === 'tileAdded') addedHandler = handler as typeof addedHandler;
+    }),
+    off: vi.fn(),
+    fireAdded: (key: string) => addedHandler!({ key, tile: null }),
+  };
+}
+
 describe('TileObjectManager', () => {
   let dataSource: ReturnType<typeof makeDataSource>;
   let manager: TestManager;
@@ -55,6 +69,91 @@ describe('TileObjectManager', () => {
   beforeEach(() => {
     dataSource = makeDataSource();
     manager = new TestManager(dataSource);
+  });
+
+  describe('secondary sources', () => {
+    it('subscribes to tileAdded on each secondary source in constructor', () => {
+      const sec1 = makeSecondarySource();
+      const sec2 = makeSecondarySource();
+      new TestManager(dataSource, [sec1, sec2]);
+      expect(sec1.on).toHaveBeenCalledWith('tileAdded', expect.any(Function));
+      expect(sec2.on).toHaveBeenCalledWith('tileAdded', expect.any(Function));
+    });
+
+    it('unsubscribes from each secondary source on dispose', () => {
+      const sec = makeSecondarySource();
+      const mgr = new TestManager(dataSource, [sec]);
+      mgr.dispose();
+      expect(sec.off).toHaveBeenCalledWith('tileAdded', expect.any(Function));
+    });
+
+    it('no-ops when secondary tileAdded key has no primary-source object', () => {
+      const sec = makeSecondarySource();
+      const mgr = new TestManager(dataSource, [sec]);
+      // No primary tile added — secondary event must not throw or create anything
+      expect(() => sec.fireAdded('tile:1:2')).not.toThrow();
+      expect(mgr.createdObjects).toHaveLength(0);
+    });
+
+    it('rebuilds: disposes old object and creates new one when key exists', () => {
+      const sec = makeSecondarySource();
+      const mgr = new TestManager(dataSource, [sec]);
+
+      dataSource.fireAdded('tile:1:2', 'hello');
+      expect(mgr.createdObjects).toHaveLength(1);
+      const firstObj = mgr.createdObjects[0]!;
+
+      sec.fireAdded('tile:1:2');
+
+      expect(mgr.disposedObjects).toHaveLength(1);
+      expect(firstObj.disposed).toBe(true);
+      expect(mgr.createdObjects).toHaveLength(2);
+    });
+
+    it('updates internal map so the rebuilt object is stored', () => {
+      const sec = makeSecondarySource();
+      const mgr = new TestManager(dataSource, [sec]);
+
+      dataSource.fireAdded('tile:1:2', 'hello');
+      sec.fireAdded('tile:1:2');
+
+      // Removing should dispose the rebuilt object (2nd one), not throw
+      const removedKeys: string[] = [];
+      mgr.on('removed', (e) => removedKeys.push(e.key));
+      dataSource.fireRemoved('tile:1:2');
+
+      expect(mgr.disposedObjects).toHaveLength(2); // first from rebuild, second from remove
+      expect(removedKeys).toContain('tile:1:2');
+    });
+
+    it('does NOT call onObjectAdded on rebuild (no added event emitted)', () => {
+      const sec = makeSecondarySource();
+      const mgr = new TestManager(dataSource, [sec]);
+
+      const addedEvents: { key: string; value: string }[] = [];
+      mgr.on('added', (e) => addedEvents.push(e));
+
+      dataSource.fireAdded('tile:1:2', 'hello');
+      expect(addedEvents).toHaveLength(1);
+
+      sec.fireAdded('tile:1:2');
+      // Still only 1 added event — rebuild does not emit another
+      expect(addedEvents).toHaveLength(1);
+    });
+
+    it('handles multiple secondary sources independently', () => {
+      const sec1 = makeSecondarySource();
+      const sec2 = makeSecondarySource();
+      const mgr = new TestManager(dataSource, [sec1, sec2]);
+
+      dataSource.fireAdded('tile:1:2', 'hello');
+
+      sec1.fireAdded('tile:1:2');
+      expect(mgr.createdObjects).toHaveLength(2);
+
+      sec2.fireAdded('tile:1:2');
+      expect(mgr.createdObjects).toHaveLength(3);
+    });
   });
 
   describe('constructor', () => {

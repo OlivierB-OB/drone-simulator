@@ -120,116 +120,81 @@ export const contextDataConfig = {
 
 ### 1. Initial Load (App Startup)
 
-```
-App.tsx onMount
-    ↓
-ElevationDataManager subscribes to drone.locationChanged
-    ↓
-Drone at initial location (Paris: 48.853°N, 2.3499°E)
-    ↓
-setLocation() called with initial Mercator coordinates
-    ↓
-Ring of tiles (3×3 = 9 tiles) queued for loading
-    ↓
-maxConcurrentLoads (3) tiles begin downloading
+```mermaid
+flowchart TD
+    Mount["App.tsx onMount"]
+    Mount --> Sub["ElevationDataManager<br/>subscribes to<br/>drone.locationChanged"]
+    Sub --> Init["Drone at initial location<br/>(Paris: 48.853°N,<br/>2.3499°E)"]
+    Init --> Set["setLocation() called with<br/>initial Mercator<br/>coordinates"]
+    Set --> Queue["Ring of tiles<br/>(3×3 = 9 tiles)<br/>queued for loading"]
+    Queue --> Download["maxConcurrentLoads (3)<br/>tiles begin downloading"]
 ```
 
 **Result:** Initial tiles visible after ~2-3 seconds (network dependent)
 
 ### 2. Per-Frame Update (Animation Loop)
 
-Every frame in the animation loop (30-60 FPS):
-
-```
-AnimationLoop.update(deltaTime)
-    ↓
-drone.applyMove(deltaTime)
-    ↓
-drone.location updated (Mercator x,y)
-    ↓
-elevationData.setLocation(drone.location)
-    ↓
-Calculate center tile from Mercator coords
-    ↓
-Has center tile changed? NO → Done, reuse cached data
-                      YES ↓
-                     Ring updated
-                           ├─ Unload tiles outside new ring
-                           ├─ Queue new tiles at ring edge
-                           └─ Respect maxConcurrentLoads
-                           ↓
-                     emit tileRemoved, tileAdded events
-                           ↓
-                     TerrainGeometryObjectManager responds
-                           └─ Create/destroy meshes
-                           ↓
-                     Terrain updates visually
+```mermaid
+flowchart TD
+    AL["AnimationLoop.update<br/>(deltaTime)"]
+    AL --> Move["drone.applyMove<br/>(deltaTime)"]
+    Move --> Loc["drone.location updated<br/>(Mercator x,y)"]
+    Loc --> SetLoc["elevationData<br/>.setLocation"]
+    SetLoc --> Calc["Calculate center tile<br/>from Mercator coords"]
+    Calc --> Check{Has center tile<br/>changed?}
+    Check -->|NO| Done["Done,<br/>reuse cached data"]
+    Check -->|YES| RingUpdate["Ring updated<br/>• Unload tiles outside<br/>new ring<br/>• Queue new tiles<br/>at ring edge<br/>• Respect<br/>maxConcurrentLoads"]
+    RingUpdate --> Emit["emit tileRemoved,<br/>tileAdded events"]
+    Emit --> Manager["TerrainGeometryObjectManager<br/>responds<br/>• Create/destroy meshes"]
+    Manager --> Visual["Terrain updates<br/>visually"]
 ```
 
 **Key property:** Ring updates only when drone crosses tile boundary, not every frame
 
 ### 3. Tile Loading (Network Phase)
 
-```
-Tile queued for loading
-    ↓
-Network request: GET /15/x/y.png from AWS Terrarium
-    ↓
-2-4 second delay (network RTT + PNG decode)
-    ↓
-Tile received → ElevationDataTileParser decodes PNG
-    ↓
-2D array [256][256] created with elevation values
-    ↓
-Cached in memory AND persisted to IndexedDB
-    ↓
-emit tileAdded event
-    ↓
-TerrainGeometryFactory creates Three.js mesh
-    ↓
-Mesh visible in scene
+```mermaid
+flowchart TD
+    Q["Tile queued<br/>for loading"]
+    Q --> Net["Network request:<br/>GET /15/x/y.png<br/>from AWS Terrarium"]
+    Net --> Delay["2-4 second delay<br/>(network RTT +<br/>PNG decode)"]
+    Delay --> Recv["Tile received →<br/>ElevationDataTileParser<br/>decodes PNG"]
+    Recv --> Grid["2D array [256][256]<br/>created with<br/>elevation values"]
+    Grid --> Cache["Cached in memory<br/>AND persisted<br/>to IndexedDB"]
+    Cache --> Emit["emit tileAdded event"]
+    Emit --> Factory["TerrainGeometryFactory<br/>creates Three.js mesh"]
+    Factory --> Visible["Mesh visible<br/>in scene"]
 ```
 
 **Concurrency:** While one tile loads, up to 2 others can load simultaneously (maxConcurrentLoads = 3)
 
 ### 4. Tile Eviction (Memory Management)
 
-```
-Drone leaves ring area
-    ↓
-Tile now outside (tileX ± ringRadius, tileY ± ringRadius)
-    ↓
-In-memory cache entry deleted
-    ↓
-emit tileRemoved event
-    ↓
-Mesh destroyed from Three.js scene
-    ↓
-Memory reclaimed immediately
-    ↓
-Tile remains in IndexedDB for offline/reload scenarios
+```mermaid
+flowchart TD
+    Leave["Drone leaves<br/>ring area"]
+    Leave --> Outside["Tile now outside<br/>(tileX ± ringRadius,<br/>tileY ± ringRadius)"]
+    Outside --> Delete["In-memory cache<br/>entry deleted"]
+    Delete --> Emit["emit tileRemoved event"]
+    Emit --> Destroy["Mesh destroyed from<br/>Three.js scene"]
+    Destroy --> Reclaim["Memory reclaimed<br/>immediately"]
+    Reclaim --> Persist["Tile remains in IndexedDB<br/>for offline/reload<br/>scenarios"]
 ```
 
 **Result:** Memory usage stays constant; ring of ~9 tiles ≈ 2.3 MB
 
 ### 5. Cleanup (App Shutdown)
 
-```
-App.tsx onCleanup
-    ↓
-ElevationDataManager.dispose()
-    ↓
-Abort any pending tile downloads
-    ↓
-Unsubscribe from drone.locationChanged
-    ↓
-Clear in-memory cache
-    ↓
-TerrainGeometryObjectManager.dispose()
-    ↓
-All meshes destroyed
-    ↓
-Three.js resources freed
+```mermaid
+flowchart TD
+    Cleanup["App.tsx onCleanup"]
+    Cleanup --> Dispose["ElevationDataManager<br/>.dispose"]
+    Dispose --> Abort["Abort any pending<br/>tile downloads"]
+    Abort --> Unsub["Unsubscribe from<br/>drone.locationChanged"]
+    Unsub --> Clear["Clear in-memory cache"]
+    Clear --> TMDis["TerrainGeometryObjectManager<br/>.dispose"]
+    TMDis --> Destroy["All meshes destroyed"]
+    Destroy --> Free["Three.js resources freed"]
 ```
 
 ---
@@ -372,17 +337,16 @@ Lower zoom = Fewer tiles, coarser detail, faster loading
 
 The ring system updates are synchronized with the animation loop. See `doc/animation-loop.md` **Step 1-2** for the exact frame sequence:
 
-```
-Frame N:
-  Step 1: drone.applyMove(deltaTime)     → updates drone.location
-  Step 2: elevationData.setLocation()    → updates ring
-          contextData.setLocation()       → updates ring
-                                          ↓
-          If ring changed:
-            Unload old tiles → tileRemoved events
-            Queue new tiles → begin network loading
-
-  Steps 3-9: Mesh creation, rendering, etc.
+```mermaid
+flowchart TD
+    Frame["Frame N"]
+    Frame --> S1["Step 1: drone.applyMove<br/>(deltaTime)"]
+    S1 -->|updates drone.location| S2["Step 2: elevationData<br/>.setLocation"]
+    S2 -->|updates ring| S23["contextData<br/>.setLocation"]
+    S23 -->|updates ring| Check{Ring<br/>changed?}
+    Check -->|No| S3["Steps 3-9:<br/>Mesh creation,<br/>rendering, etc."]
+    Check -->|Yes| RingUP["Unload old tiles<br/>→ tileRemoved events<br/>Queue new tiles<br/>→ begin network loading"]
+    RingUP --> S3
 ```
 
 **Key constraint:** Ring updates before mesh creation so meshes have fresh data
@@ -391,99 +355,40 @@ Frame N:
 
 When `tileAdded` event fires:
 
-```
-ElevationDataManager → emit tileAdded
-                        ↓
-                     TerrainGeometryObjectManager.onTileAdded()
-                        ↓
-                     TerrainGeometryFactory.createGeometry(tile)
-                        ├─ Creates 256×256 vertex grid
-                        ├─ Calculates surface normals
-                        └─ Generates triangle indices
-                        ↓
-                     Three.js Mesh created and added to scene
+```mermaid
+flowchart TD
+    Emit["ElevationDataManager<br/>→ emit tileAdded"]
+    Emit --> Handler["TerrainGeometryObjectManager<br/>.onTileAdded()"]
+    Handler --> Factory["TerrainGeometryFactory<br/>.createGeometry(tile)<br/>• Creates 256×256<br/>vertex grid<br/>• Calculates surface<br/>normals<br/>• Generates triangle<br/>indices"]
+    Factory --> Mesh["Three.js Mesh created<br/>and added to scene"]
 ```
 
 When `tileRemoved` event fires:
 
-```
-ElevationDataManager → emit tileRemoved
-                        ↓
-                     TerrainGeometryObjectManager.onTileRemoved()
-                        ↓
-                     Mesh geometry.dispose()
-                     Mesh material.dispose()
-                     scene.remove(mesh)
+```mermaid
+flowchart TD
+    Emit["ElevationDataManager<br/>→ emit tileRemoved"]
+    Emit --> Handler["TerrainGeometryObjectManager<br/>.onTileRemoved()"]
+    Handler --> Dispose1["Mesh geometry<br/>.dispose()"]
+    Dispose1 --> Dispose2["Mesh material<br/>.dispose()"]
+    Dispose2 --> Remove["scene.remove(mesh)"]
 ```
 
 ### Tile Consumer: ContextDataManager (Similar Pattern)
 
 Context data (roads, buildings, vegetation) uses the same ring pattern:
 
+```mermaid
+flowchart TD
+    Emit["ContextDataManager<br/>→ emit tileAdded"]
+    Emit --> Factories["BuildingMeshFactory,<br/>TerrainCanvasRenderer,<br/>etc."]
+    Factories --> Render["Context features<br/>rendered/cached"]
 ```
-ContextDataManager → emit tileAdded
-                      ↓
-                   BuildingMeshFactory, TerrainCanvasRenderer, etc.
-                      ↓
-                   Context features rendered/cached
-```
 
 ---
-
----
-
-## Shared Base Class
-
-Both managers inherit from `TileDataManager<TileType>` in `src/data/shared/TileDataManager.ts`.
-This abstract class owns all ring management logic so it cannot diverge between the two implementations.
-
-### What the base class owns
-
-- **Fields:** `tileCache`, `pendingLoads`, `loadingCount`, `abortController`, `currentTileCenter`
-- **Concrete methods:** `setLocation()`, `dispose()`, `getTileKey()`, `parseTileKey()`
-- **Private logic:** `initializeTileRing()`, `updateTileRing()`, `isSameTile()`
-
-### Abstract methods (subclasses must implement)
-
-| Method | Purpose |
-|--------|---------|
-| `getConfig()` | Returns `{ zoomLevel, ringRadius, maxConcurrentLoads }` from config |
-| `getTileCoordinates(loc, zoom)` | Mercator → tile coordinates (delegates to loader static method) |
-| `loadTileAsync(key)` | Fetch one tile; respect concurrency; emit `tileAdded` on success |
-| `processQueuedTiles()` | Drain the pending queue after a load slot opens |
-
-### Optional hooks (no-op in base)
-
-| Hook | When called | ContextDataManager override |
-|------|------------|----------------------------|
-| `onTileEvicted(key)` | Per key leaving the ring (cache and pending loads) | Filters `pendingQueue` |
-| `onDispose()` | First thing in `dispose()` | Cancels timeout resolvers, empties `pendingQueue` |
-
-### How the two subclasses differ
-
-`ElevationDataManager` uses a simple scan of the full ring in `processQueuedTiles` to fill
-load slots — no separate queue structure, straightforward concurrency control.
-
-`ContextDataManager` adds a `pendingQueue` (FIFO string array) and `pendingResolvers`
-(timeout-guarded promise callbacks) to handle Overpass API rate limits and long timeouts.
-It overrides both hooks to clean up this extra state on eviction and dispose.
-
----
-
-## Key Files & Implementation
-
-| File | Purpose | Ring-Related Code |
-|------|---------|-------------------|
-| `src/config.ts` | Configuration | Lines 70-99: elevationConfig, contextDataConfig |
-| `src/gis/webMercator.ts` | Shared Web Mercator math | `getTileCoordinates`, `getTileMercatorBounds` — used by both Elevation and Context loaders |
-| `src/data/shared/TileDataManager.ts` | Abstract base class | All ring logic: updateTileRing, setLocation, dispose |
-| `src/data/elevation/ElevationDataManager.ts` | Elevation ring implementation | getConfig, loadTileAsync, processQueuedTiles, getTileAt |
-| `src/data/contextual/ContextDataManager.ts` | Context ring implementation | Same + pendingQueue, pendingResolvers, getRingTiles |
-| `src/visualization/terrain/TerrainGeometryObjectManager.ts` | Mesh lifecycle | onTileAdded(), onTileRemoved() handlers |
-| `src/visualization/contextual/BuildingMeshFactory.ts` | Building mesh creation | Responds to context tile events |
-| `doc/coordinate-system.md` | Mercator to Three.js mapping | Explains Z-negation for spatial alignment |
-| `doc/animation-loop.md` | Frame-by-frame sequence | Steps 1-2: Ring updates, Steps 4-9: Mesh creation |
 
 ## See Also
 
-- **[Glossary](./glossary.md)** - Definitions of all technical terms
+- **[Glossary](../glossary.md)** - Definitions of all technical terms
+- **[Animation Loop](animation-loop.md)** - Frame-by-frame integration
+- **[Coordinate System](coordinate-system.md)** - Z-negation and Mercator details

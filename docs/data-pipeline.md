@@ -2,251 +2,290 @@
 
 ## Overview
 
-The drone simulator uses a consistent **four-stage pipeline pattern** for all data systems. This pattern decouples data retrieval, parsing, and visualization, making the system scalable, testable, and maintainable.
+The drone simulator uses a consistent **five-stage pipeline pattern** for all tile-based data systems. Both pipelines — elevation and contextual — follow the same structure, enabling predictable lifecycle management, independent testability, and clean separation of concerns.
 
-The pattern applies to:
-- **Elevation data** (AWS Terrarium PNG tiles → 3D geometry)
-- **Contextual data** (OpenStreetMap features → canvas texture + 3D objects)
-- **Terrain texture** (OSM features → 2048×2048 canvas)
-- **3D objects** (OSM features → buildings, trees, structures)
+| Pipeline | Source | Output |
+|----------|--------|--------|
+| **Elevation** | AWS Terrarium PNG tiles | 3D terrain geometry |
+| **Contextual** | OpenStreetMap (Overpass API) | Canvas texture + 3D objects |
 
-## The Four-Stage Pattern
+**Why tiles?** Web Mercator z/x/y tiles allow constant-memory streaming: only the tiles around the drone are loaded, the rest are evicted. The ring radius determines how many tiles surround the center tile (radius 1 = 3×3 = 9 tiles).
 
+---
+
+## Pipeline Stages
+
+```mermaid
+flowchart LR
+    Manager["Manager<br/>(ring)"] --> Loader["Loader<br/>(fetch + cache)"]
+    Loader --> Parser["Parser<br/>(decode + parse)"]
+    Parser --> Factory["Factory<br/>(Three.js objects)"]
+    Factory --> TOM["TileObjectManager<br/>(scene management)"]
 ```
-Source Data
-     ↓
-Manager (Ring-based loading, caching, lifecycle)
-     ↓
-Parser (Decode format, extract features, classify)
-     ↓
-Factory (Convert to 3D geometry, create Three.js objects)
-     ↓
-Three.js Scene (Add objects, manage lifecycle)
-```
 
-### Stage 1: Manager
+Each stage communicates via typed events (`tileAdded` / `tileRemoved`) or direct method calls. No stage depends on implementation details of another.
 
-**Role**: Orchestrate data loading and lifecycle management
+---
 
-**Responsibilities**:
-- **Ring-based loading**: Maintain a tile ring around the drone's position
-- **Tile caching**: Keep frequently-accessed tiles in memory and IndexedDB persistent cache
-- **Concurrency control**: Limit simultaneous network requests (typically 3)
-- **Event emission**: Signal when tiles are added/removed
-- **Resource cleanup**: Dispose of tiles and abort pending requests on shutdown
+## Stage 1 — Manager (ring orchestration)
 
-**Key Files**:
-- `ElevationDataManager.ts` — Manages elevation tile loading and caching
-- `ContextDataManager.ts` — Manages OSM feature tile loading and caching
-- `MeshObjectManager.ts` — Manages 3D object lifecycle
-- `TerrainTextureObjectManager.ts` — Manages texture object lifecycle
+**Files**: `src/data/shared/TileDataManager.ts`, `src/data/elevation/ElevationDataManager.ts`, `src/data/contextual/ContextDataManager.ts`
 
-**Configuration Pattern** (in `src/config.ts`):
+`TileDataManager<TileType>` is an abstract base class that owns all ring management logic. Subclasses implement only how a single tile is fetched.
+
+**Responsibilities:**
+- Subscribes to `drone.locationChanged` at construction
+- On each location update, computes the new tile center and calls `updateTileRing()`
+- `updateTileRing()` diffs the desired tile set against the current cache:
+  - **New tiles**: calls `loadTileAsync(key)` for each missing tile
+  - **Evicted tiles**: removes from `tileCache`, cancels from `pendingLoads`, emits `tileRemoved`
+- Concurrency control: `loadingCount` + `maxConcurrentLoads` limit simultaneous network requests (default: **3**); `processQueuedTiles()` drains the queue as slots free
+- Emits `tileAdded` / `tileRemoved` via `TypedEventEmitter`
+- `dispose()`: aborts pending requests via `AbortController`, clears all maps, unsubscribes from drone
+
+**Tile key format**: `"z:x:y"` (e.g., `"15:16832:11432"`)
+
+**ContextDataManager specifics**: Overpass API has tight rate limits. ContextDataManager maintains a timeout queue to handle 429 responses without hammering the server.
+
+**Configuration** (in `src/config.ts`):
 ```typescript
-dataConfig = {
-  zoomLevel: 15,                  // Web Mercator zoom (affects tile resolution)
-  ringRadius: 1,                  // Tile ring size (1 = 3×3 grid, 9 tiles total)
-  maxConcurrentLoads: 3,          // Network concurrency limit
-  // ... service-specific settings
+{
+  zoomLevel: 15,           // Web Mercator zoom level
+  ringRadius: 1,           // 1 → 3×3 = 9 tiles around drone
+  maxConcurrentLoads: 3,   // simultaneous network requests
 }
 ```
 
-**Ring-Based Loading** benefits:
-- Constant memory usage (fixed number of tiles)
-- Minimal network requests (tiles only load near drone)
-- Graceful degradation (cache fallback when network unavailable)
+---
 
-### Stage 2: Parser
+## Stage 2 — Loader (fetch + 3-layer cache)
 
-**Role**: Extract and decode raw data into standardized format
+**Files**: `src/data/elevation/ElevationDataTileLoader.ts`, `src/data/contextual/ContextDataTileLoader.ts`, `src/data/shared/tileLoaderUtils.ts`
 
-**Responsibilities**:
-- **Format decoding**: Parse binary or text data (PNG, GeoJSON, etc.)
-- **Feature extraction**: Identify geographic features and attributes
-- **Data classification**: Categorize features by type
-- **Validation**: Check data integrity and completeness
-- **Transformation**: Normalize data for consistent downstream handling
+The Loader is responsible for fetching a single tile, with caching and retry logic. It is invoked by the Manager's `loadTileAsync()` implementation.
 
-**Key Files**:
-- `ElevationDataTileParser.ts` — Decodes Terrarium RGB formula from PNG pixels
-- `ContextDataTileParser.ts` — Parses GeoJSON and classifies OSM features
-- `TerrainCanvasRenderer.ts` — Renders OSM features to canvas texture
-- Feature-specific parsers (e.g., building attributes, tree species)
+**3-layer cache (checked in order):**
 
-**Example: Elevation Data**
-```
-PNG Image (256×256 pixels, RGBA format)
-     ↓
-Read pixel RGB values
-     ↓
-Apply Terrarium formula: (R × 256 + G + B/256) - 32768
-     ↓
-Elevation grid [256×256] in meters
-```
+1. **In-memory `tileCache` Map** — session-scoped, fastest; checked by the Manager before the Loader is called
+2. **IndexedDB persistence cache** — survives page reloads; checked by `loadWithPersistenceCache()` via `ElevationTilePersistenceCache` / `ContextTilePersistenceCache`
+3. **Network fetch** — AWS Terrarium PNG (elevation) or Overpass API GeoJSON (contextual)
 
-**Example: Contextual Data**
-```
-OverpassJSON response (GeoJSON variant)
-     ↓
-Extract features by type (building, highway, natural, etc.)
-     ↓
-Classify features into categories (buildings, roads, water, etc.)
-     ↓
-Normalize attributes (heights, colors, materials, etc.)
-     ↓
-Feature objects with standardized properties
-```
+`tileLoaderUtils.ts` provides the `loadWithPersistenceCache()` helper that orchestrates the IndexedDB check + network fallback + write-back pattern. Cache errors are silently swallowed — the cache is an optional optimization, not a critical path.
 
-### Stage 3: Factory
+**Retry logic**: Up to **3 attempts** with exponential backoff (`100ms × 2^attempt`). For Overpass API 429 rate-limit responses, a separate 1-second backoff is applied and retries are capped at 1.
 
-**Role**: Create Three.js objects (geometry, meshes, materials)
+**Abort propagation**: Each Loader call accepts an `AbortSignal` from the Manager's `AbortController`, so in-flight requests cancel cleanly when a tile leaves the ring.
 
-**Responsibilities**:
-- **Geometry creation**: Generate Three.js BufferGeometry from parsed data
-- **Material application**: Assign colors, textures, lighting properties
-- **Spatial transformation**: Position objects in Mercator coordinates
-- **Mesh grouping**: Combine related geometry into hierarchical objects
-- **Optimization**: Use InstancedMesh, LOD, or baking where appropriate
+---
 
-**Key Files**:
-- `TerrainGeometryFactory.ts` — Creates Three.js geometry from elevation grids
-- `TerrainObjectFactory.ts` — Creates textured terrain meshes
-- `BuildingMeshFactory.ts` — Creates 3D building geometry with roofs
-- `TreeMeshFactory.ts` — Creates tree meshes with InstancedMesh optimization
-- `RailwayMeshFactory.ts`, `BarrierMeshFactory.ts` — Specialized geometry
+## Stage 3 — Parser (data decoding)
 
-**Example: Elevation Geometry**
-```
-Elevation grid [256×256] values
-     ↓
-Generate vertex positions (one per grid point)
-     ↓
-Compute triangle indices (two per grid square)
-     ↓
-Calculate vertex normals (for lighting)
-     ↓
-Create Three.js BufferGeometry
-     ↓
-Assign MeshPhongMaterial with texture UV mapping
-```
+**Files**: `src/data/elevation/ElevationDataTileParser.ts`, `src/data/contextual/ContextDataTileParser.ts`, `src/data/contextual/strategies/`
 
-**Example: Building Mesh**
-```
-OSM building polygon + attributes
-     ↓
-Extract wall height (from tags or defaults)
-     ↓
-Create ExtrudeGeometry (2D footprint → 3D walls)
-     ↓
-Generate roof geometry (based on roof:shape attribute)
-     ↓
-Apply wall and roof colors
-     ↓
-Position at Mercator coordinates + elevation
-     ↓
-Create Mesh or Group (for multi-part roofs)
-```
+Parsers convert raw network bytes into structured data types. They have no Three.js dependencies and are fully testable in isolation.
 
-### Stage 4: Visualization
+### Elevation parser
 
-**Role**: Manage Three.js objects in the scene
-
-**Responsibilities**:
-- **Scene management**: Add/remove meshes from Three.js scene
-- **Object hierarchy**: Organize objects in spatial groups if needed
-- **Lifecycle coordination**: Ensure geometry and texture availability before rendering
-- **Performance**: Handle LOD transitions or instancing
-- **Cleanup**: Dispose of resources on tile unload
-
-**Key Pattern: TerrainObjectManager**
-
-The elevation + texture pipeline illustrates the coordination pattern:
+`ElevationDataTileParser` decodes AWS Terrarium PNG tiles:
 
 ```
-Drone Position Update
-        ↓
-ElevationDataManager              ContextDataManager
-        ↓                                 ↓
-TerrainGeometryObjectManager      TerrainTextureObjectManager
-        ↓                                 ↓
-[Emit geometryAdded event]        [Emit textureAdded event]
-        │                                │
-        └─────→ TerrainObjectManager ←───┘
-                        ↓
-                [Both available?]
-                        ↓
-                TerrainObjectFactory
-                        ↓
-        Create mesh (geometry + texture)
-                        ↓
-        Add to Three.js Scene
+PNG (256×256 RGBA pixels)
+     ↓
+Read R, G, B channels per pixel
+     ↓
+elevation = (R × 256 + G + B/256) - 32768  (meters)
+     ↓
+number[][] grid [row][column], 256×256
 ```
 
-**Coordination Logic**:
-- Listen to **geometryAdded** and **textureAdded** events
-- Create mesh only when BOTH geometry and texture are ready
-- Maintain separate maps of loaded geometry and textures
-- Remove meshes when either geometry or texture unloads
+Output type: `ElevationDataTile` — includes the grid, tile coordinates, zoom level, and Mercator bounds.
 
-## System-Specific Applications
+### Contextual parser
 
-| System | Source | Manager | Parser | Factory | Scene |
-|--------|--------|---------|--------|---------|-------|
-| **Elevation** | AWS Terrarium PNG | ElevationDataManager | ElevationDataTileParser | TerrainGeometryFactory | Terrain mesh |
-| **Contextual** | OpenStreetMap (Overpass) | ContextDataManager | ContextDataTileParser | Canvas → Texture | Textured terrain |
-| **Objects** | OSM features (GeoJSON) | ContextDataManager | ContextDataTileParser | BuildingMeshFactory, TreeMeshFactory, etc. | 3D buildings, trees |
-| **Texture** | OSM features (canvas render) | ContextDataManager | ContextDataTileParser + TerrainCanvasRenderer | Canvas texture | Applied to mesh UVs |
+`ContextDataTileParser` parses OverpassJSON (a GeoJSON variant) into a structured feature map. It delegates to **9 strategy modules** in `src/data/contextual/strategies/`:
 
-## Key Benefits
+| Strategy file | Feature type |
+|---------------|-------------|
+| `buildingStrategy.ts` | Buildings (footprints, heights, roof shapes) |
+| `roadStrategy.ts` | Roads and highways |
+| `railwayStrategy.ts` | Railways and tracks |
+| `waterStrategy.ts` | Water bodies and waterways |
+| `vegetationStrategy.ts` | Trees, forests, vegetation |
+| `landuseStrategy.ts` | Land use areas (farmland, parks, etc.) |
+| `aerowayStrategy.ts` | Airports, runways, taxiways |
+| `structureStrategy.ts` | Man-made structures (towers, masts, cranes) |
+| `barrierStrategy.ts` | Barriers (walls, hedges) |
 
-**Separation of Concerns**
-- Manager handles async resource lifecycle
-- Parser handles data decoding (no Three.js dependencies)
-- Factory handles geometry creation (testable in isolation)
-- Scene management remains simple (just add/remove meshes)
+Output type: `ContextDataTile` — includes `features` grouped by category, tile coordinates, Mercator bounds, and color palette.
 
-**Testability**
-- Each stage can be tested independently
-- Mocks/stubs replace upstream stages during testing
-- Parser can be tested without network requests
-- Factory can be tested with synthetic parsed data
+**Note**: `TerrainCanvasRenderer` is **not** a parser. It is a texture generator (Stage 4) that consumes an already-parsed `ContextDataTile`.
 
-**Reusability**
-- Parser output used by multiple factories (elevation data feeds both geometry and elevation sampler)
-- Factory code shared across multiple managers (RoofGeometryFactory used by both BuildingMeshFactory and specialized roof rendering)
+---
 
-**Scalability**
-- New data sources fit the pattern with custom Manager + Parser
-- New visualization types use existing managers/parsers
-- Ring-based loading scales to arbitrary terrain sizes
+## Stage 4 — Factory (Three.js object creation)
 
-## Coordinate System Consistency
+**Files**: `src/visualization/terrain/`, `src/visualization/mesh/`
 
-All stages must use the same coordinate convention:
+Factories convert parsed data into Three.js objects. Each factory is pure: given the same input, it produces the same geometry.
 
-**Position**: Mercator X → Three.js X, Elevation → Three.js Y, -Mercator Y → Three.js Z
+### Terrain pipeline (elevation + context)
 
-```typescript
-// In factories, when positioning objects:
-const threeX = mercatorLocation.x;
-const threeY = elevation;
-const threeZ = -mercatorLocation.y;  // Key: negation for north alignment
+```mermaid
+flowchart TD
+    EDT["ElevationDataTile"]
+    CDT["ContextDataTile"]
+
+    EDT --> TGF["TerrainGeometryFactory"]
+    CDT --> TTOM["TerrainTextureObjectManager"]
+
+    TGF --> BG["BufferGeometry"]
+    TTOM --> TCR["TerrainCanvasRenderer<br/>(9-layer painter's<br/>algorithm)"]
+    TCR --> C["canvas"]
+    C --> Texture["THREE.Texture"]
+
+    BG --> TOF["TerrainObjectFactory"]
+    Texture --> TOF
+
+    TOF --> Mesh["Mesh"]
 ```
 
-For full details, see [`doc/coordinate-system.md`](coordinate-system.md).
+### 3D object pipeline (context only)
+
+```mermaid
+flowchart TD
+    CDT["ContextDataTile.features"]
+
+    CDT --> Buildings["BuildingMeshFactory"]
+    CDT --> Vegetation["VegetationMeshFactory"]
+    CDT --> Structures["StructureMeshFactory"]
+    CDT --> Barriers["BarrierMeshFactory"]
+    CDT --> Roads["BridgeMeshFactory<br/>(roads/railways)"]
+
+    Buildings --> EG["ExtrudeGeometry<br/>+ roof"]
+    Vegetation --> IM["InstancedMesh<br/>(trees)"]
+    Structures --> SH["Cylinders, boxes,<br/>cranes"]
+    Barriers --> BG["Wall geometry"]
+    Roads --> BS["Bridge spans"]
+
+    EG --> ES["ElevationSampler"]
+    IM --> ES
+    SH --> ES
+    BG --> ES
+    BS --> ES
+
+    ES --> MOM["MeshObjectManager"]
+    MOM --> Scene["Three.js Scene"]
+```
+
+All factories position objects using the same coordinate convention:
+```
+threeX = mercator.x
+threeY = elevation
+threeZ = -mercator.y   // negation: Mercator Y northward → Three.js -Z northward
+```
+
+---
+
+## Stage 5 — TileObjectManager (scene management)
+
+**File**: `src/visualization/TileObjectManager.ts`
+
+`TileObjectManager<TInput, TOutput>` is an abstract base class that manages the lifecycle of typed Three.js objects in response to tile events from a data source.
+
+**Core pattern:**
+- Subscribes to a **primary** data source (`tileAdded` / `tileRemoved`)
+- On `tileAdded`: calls `createObject(key, tile)`, stores result, calls `onObjectAdded` hook
+- On `tileRemoved`: calls `disposeObject(obj)`, removes from maps, calls `onObjectRemoved` hook
+- Optional **secondary sources**: when they emit `tileAdded` for an **already-present** key, the existing object is disposed and recreated with the stored input — a **rebuild**. This allows late-arriving data to update existing objects without manual orchestration.
+
+**Rebuild use cases:**
+- `TerrainObjectManager`: geometry arrives first (primary), texture arrives later (secondary) → mesh rebuilt with texture applied
+- `MeshObjectManager`: context tile arrives first (primary), elevation tile arrives later (secondary) → meshes rebuilt at correct ground elevation
+
+**Concrete subclasses:**
+
+| Class | Primary | Secondary | Output |
+|-------|---------|-----------|--------|
+| `TerrainGeometryObjectManager` | `ElevationDataManager` | — | `TileResource<BufferGeometry>` + emits geometry events |
+| `TerrainTextureObjectManager` | `ContextDataManager` | — | `TileResource<THREE.Texture> \| null` + emits texture events |
+| `TerrainObjectManager` | `TerrainGeometryObjectManager` | `TerrainTextureObjectManager` | `TileResource<Mesh>` in scene |
+| `MeshObjectManager` | `ContextDataManager` | `ElevationDataManager` | `Object3D[]` in scene |
+
+`TerrainTextureObjectManager` stores `null` for tiles where context data failed — this prevents null textures from triggering a rebuild in `TerrainObjectManager`, enabling graceful degradation to a flat-color material.
+
+---
+
+## Global Coordination Diagrams
+
+### Object wiring
+
+```mermaid
+flowchart TD
+    Drone -->|locationChanged| EDM[ElevationDataManager]
+    Drone -->|locationChanged| CDM[ContextDataManager]
+
+    EDM -->|tileAdded / tileRemoved| TGOM[TerrainGeometryObjectManager]
+    CDM -->|tileAdded / tileRemoved| TTOM[TerrainTextureObjectManager]
+    CDM -->|tileAdded / tileRemoved| MOM[MeshObjectManager]
+
+    TGOM -->|tileAdded primary| TOM[TerrainObjectManager]
+    TTOM -->|tileAdded secondary rebuild| TOM
+
+    EDM -->|tileAdded secondary rebuild| MOM
+
+    TOM -->|add / remove Mesh| Scene[Three.js Scene]
+    MOM -->|add / remove Object3D| Scene
+```
+
+### Data loading path (elevation; contextual is symmetric)
+
+```mermaid
+flowchart LR
+    loc[locationChanged] --> EDM[ElevationDataManager]
+    EDM -->|updateTileRing| ring[compute ring / evict]
+    EDM -->|loadTileAsync| IDB[(IndexedDB<br/>persistence)]
+    IDB -->|miss| Net[Network<br/>AWS PNG]
+    Net --> Parser[ElevationDataTileParser]
+    Parser --> cache[write IndexedDB]
+    IDB -->|hit or result| EDM2[emit tileAdded]
+```
+
+---
+
+## System-Specific Summary
+
+| | Elevation | Contextual (texture) | Contextual (objects) |
+|--|-----------|---------------------|----------------------|
+| **Source** | AWS Terrarium PNG | Overpass API GeoJSON | Overpass API GeoJSON |
+| **Manager** | `ElevationDataManager` | `ContextDataManager` | `ContextDataManager` |
+| **Loader** | `ElevationDataTileLoader` | `ContextDataTileLoader` | `ContextDataTileLoader` |
+| **Parser** | `ElevationDataTileParser` | `ContextDataTileParser` (9 strategies) | `ContextDataTileParser` (9 strategies) |
+| **Factory** | `TerrainGeometryFactory` → `TerrainObjectFactory` | `TerrainTextureFactory` → `TerrainCanvasRenderer` | `BuildingMeshFactory`, `VegetationMeshFactory`, etc. |
+| **TileObjectManager** | `TerrainGeometryObjectManager` → `TerrainObjectManager` | `TerrainTextureObjectManager` → `TerrainObjectManager` | `MeshObjectManager` |
+| **Scene output** | Terrain mesh | Texture on terrain mesh | Buildings, trees, structures |
+
+---
+
+## Graceful Degradation
+
+| Failure | Behavior |
+|---------|----------|
+| Elevation tile fails (all retries) | `null` propagated; no crash; terrain mesh not created for that tile |
+| Context tile fails | `null` stored in `TerrainTextureObjectManager`; mesh rendered with flat color |
+| Null texture | Does **not** emit `tileAdded` from `TerrainTextureObjectManager`; no rebuild triggered |
+| Overpass 429 rate limit | 1-second backoff, max 1 retry; tile skipped, queue continues |
+| IndexedDB unavailable | Warning logged; falls through to network fetch |
+
+---
 
 ## Related Documentation
 
-- **Ring-based loading**: See [`doc/tile-ring-system.md`](tile-ring-system.md)
-- **Animation loop**: See [`doc/animation-loop.md`](animation-loop.md) for frame-by-frame orchestration
-- **Coordinate system**: See [`doc/coordinate-system.md`](coordinate-system.md) for Mercator→Three.js transformation
-- **Specific systems**:
-  - Elevation data: [`doc/data/elevations.md`](data/elevations.md)
-  - Contextual data: [`doc/data/contextual.md`](data/contextual.md)
-  - Canvas rendering: [`doc/visualization/canvas-rendering.md`](visualization/canvas-rendering.md)
-  - 3D objects: [`doc/visualization/objects.md`](visualization/objects.md)
-  - Ground surface: [`doc/visualization/ground-surface.md`](visualization/ground-surface.md)
-
-## See Also
-
-- **[Glossary](./glossary.md)** - Definitions of all technical terms
+- **Elevation data details**: [`data/elevations.md`](data/elevations.md)
+- **Contextual data details**: [`data/contextual.md`](data/contextual.md)
+- **Canvas rendering**: [`visualization/canvas-rendering.md`](visualization/canvas-rendering.md)
+- **Ground surface (terrain mesh)**: [`visualization/ground-surface.md`](visualization/ground-surface.md)
+- **3D objects**: [`visualization/objects.md`](visualization/objects.md)
+- **Animation loop**: [`animation-loop.md`](animation-loop.md) — frame-by-frame orchestration
+- **Coordinate system**: [`coordinate-system.md`](coordinate-system.md) — Mercator → Three.js math
+- **Tile ring system**: [`tile-ring-system.md`](tile-ring-system.md) — ring loading details
+- **Glossary**: [`glossary.md`](glossary.md)

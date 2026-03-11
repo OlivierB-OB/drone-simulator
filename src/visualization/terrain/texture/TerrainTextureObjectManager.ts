@@ -7,8 +7,8 @@ import type { TileResource } from '../types';
 import type * as THREE from 'three';
 
 export type TerrainTextureObjectManagerEvents = {
-  textureAdded: { key: TileKey; texture: TileResource<THREE.Texture> | null };
-  textureRemoved: { key: TileKey };
+  tileAdded: { key: TileKey; tile: TileResource<THREE.Texture> };
+  tileRemoved: { key: TileKey };
 };
 
 /**
@@ -47,11 +47,13 @@ export class TerrainTextureObjectManager extends TileObjectManager<
     key: string,
     obj: TileResource<THREE.Texture> | null
   ): void {
-    this.emit('textureAdded', { key: key as TileKey, texture: obj });
+    if (obj !== null) {
+      this.emit('tileAdded', { key: key as TileKey, tile: obj });
+    }
   }
 
   protected override onObjectRemoved(key: string): void {
-    this.emit('textureRemoved', { key: key as TileKey });
+    this.emit('tileRemoved', { key: key as TileKey });
   }
 
   /**

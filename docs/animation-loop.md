@@ -10,34 +10,18 @@ Each frame executes a **canonical 9-step sequence** that updates the drone's sta
 
 The complete animation frame order (canonical reference):
 
-```
-Frame N:
-  ┌─ 1. drone.applyMove(deltaTime)
-  │     └─ Emits: movingChanged, locationChanged, headingChanged
-  │
-  ├─ 2. elevationData.setLocation(drone.location)
-  │     └─ Emits: tileAdded, tileRemoved (updates ring of tiles)
-  │
-  ├─ 3. contextData.setLocation(drone.location)
-  │     └─ Emits: tileAdded, tileRemoved (context tiles)
-  │
-  ├─ 4. terrainObjectManager.refresh()
-  │     └─ Creates/removes terrain meshes from scene
-  │
-  ├─ 5. textureObjectManager.refresh() (triggered by tileAdded events)
-  │     └─ Creates canvas textures for terrain
-  │
-  ├─ 6. meshObjectManager.refresh()
-  │     └─ Creates/removes 3D feature meshes (buildings, vegetation, etc.)
-  │
-  ├─ 7. droneObject.update()
-  │     └─ Positions and orients the drone cone mesh
-  │
-  ├─ 8. camera.updateChaseCamera()
-  │     └─ Positions camera behind/above drone, updates lookAt
-  │
-  └─ 9. viewer3D.render()
-        └─ Renders Three.js scene to canvas
+```mermaid
+flowchart TD
+    Start["Frame N"] --> S1["1. drone.applyMove<br/>(deltaTime)"]
+    S1 -->|Emits: movingChanged<br/>locationChanged<br/>headingChanged| S2["2. elevationData<br/>.setLocation"]
+    S2 -->|Emits: tileAdded<br/>tileRemoved| S3["3. contextData<br/>.setLocation"]
+    S3 -->|Emits: tileAdded<br/>tileRemoved| S4["4. terrainObjectManager<br/>.refresh"]
+    S4 -->|Creates/removes<br/>terrain meshes| S5["5. textureObjectManager<br/>.refresh"]
+    S5 -->|Creates canvas<br/>textures| S6["6. meshObjectManager<br/>.refresh"]
+    S6 -->|Creates/removes<br/>3D features| S7["7. droneObject<br/>.update"]
+    S7 -->|Positions drone<br/>cone mesh| S8["8. camera<br/>.updateChaseCamera"]
+    S8 -->|Positions camera<br/>behind/above| S9["9. viewer3D<br/>.render"]
+    S9 --> End["Renders scene<br/>to canvas"]
 ```
 
 ## Step-by-Step Breakdown
@@ -206,23 +190,26 @@ Renders the complete Three.js scene to the canvas. This is the only step that ac
 
 The animation frame order reflects important **data dependencies**:
 
-```
-Drone Position (Step 1)
-    ↓
-    ├─→ Elevation Tiles (Step 2)
-    │   ├─→ Terrain Meshes (Step 4)
-    │   │   └─→ Rendering (Step 9)
-    │   └─→ Feature Mesh Heights (Step 6)
-    │
-    ├─→ Context Tiles (Step 3)
-    │   ├─→ Terrain Textures (Step 5)
-    │   └─→ Feature Meshes (Step 6)
-    │
-    ├─→ Drone Visual (Step 7)
-    │   └─→ Rendering (Step 9)
-    │
-    └─→ Camera (Step 8)
-        └─→ Rendering (Step 9)
+```mermaid
+flowchart TD
+    DP["Drone Position<br/>(Step 1)"]
+
+    DP --> ET["Elevation Tiles<br/>(Step 2)"]
+    DP --> CT["Context Tiles<br/>(Step 3)"]
+    DP --> DV["Drone Visual<br/>(Step 7)"]
+    DP --> Cam["Camera<br/>(Step 8)"]
+
+    ET --> TM["Terrain Meshes<br/>(Step 4)"]
+    ET --> FMH["Feature Mesh Heights<br/>(Step 6)"]
+
+    CT --> TT["Terrain Textures<br/>(Step 5)"]
+    CT --> FM["Feature Meshes<br/>(Step 6)"]
+
+    TM --> Render["Rendering<br/>(Step 9)"]
+    DV --> Render
+    Cam --> Render
+    FM --> Render
+    TT --> Render
 ```
 
 ## Implementation Details

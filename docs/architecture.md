@@ -36,17 +36,17 @@ A real-time 3D drone simulator that renders the drone's viewpoint as it moves th
 
 ### Terrain Visualization
 - **TerrainObjectManager** (`src/visualization/terrain/TerrainObjectManager.ts`): Oversees the complete terrain rendering pipeline
-  - Subscribes to both TerrainGeometryObjectManager and TerrainTextureObjectManager
+  - Extends TileObjectManager; uses geometry as primary source, texture as secondary rebuild source
   - Coordinates mesh creation via TerrainObjectFactory
   - Creates/removes 3D mesh objects as needed
 - **TerrainGeometryObjectManager** (`src/visualization/terrain/geometry/TerrainGeometryObjectManager.ts`): Converts raw elevation data into 3D mesh geometry
   - Listens to ElevationDataManager for tile events
-  - Creates TerrainGeometryObject wrappers for Three.js BufferGeometry
-  - Emits geometryAdded/geometryRemoved events
+  - Creates TileResource<BufferGeometry> objects
+  - Emits tileAdded/tileRemoved events
 - **TerrainTextureObjectManager** (`src/visualization/terrain/texture/TerrainTextureObjectManager.ts`): Renders textures (colors, patterns) on terrain
   - Listens to ContextDataManager for tile events
-  - Creates TerrainTextureObject wrappers for Three.js Texture
-  - Emits textureAdded/textureRemoved events
+  - Creates TileResource<Texture> objects (null when context unavailable)
+  - Emits tileAdded (non-null textures only) / tileRemoved events
 - **TerrainCanvasRenderer** (`src/visualization/terrain/texture/TerrainCanvasRenderer.ts`): Renders OSM features to canvas
 - **Receives**: Elevation data and context data
 - **Produces**: 3D mesh objects ready for rendering
@@ -74,30 +74,31 @@ A real-time 3D drone simulator that renders the drone's viewpoint as it moves th
 
 ## Interaction Flow
 
-```
-User Input (Keyboard)
-         ↓
-    DroneController
-         ↓
-      Drone (Physics)
-         ↓
-    AnimationLoop (Timing)
-    ↙    ↓    ↘
-   /     |     \
-  ↓      ↓      ↓
-Drone   Elevation   Context
-Position Update
-  ↓      ↓      ↓
-  └─────→Manager Managers
-         ↓      ↓
-      Terrain   Mesh
-      Objects   Objects
-         ↓      ↓
-         └─→ Viewer3D (Scene)
-              ↓
-         Camera Update
-              ↓
-         Render to Screen
+```mermaid
+flowchart TD
+    UI["User Input<br/>(Keyboard)"]
+
+    UI --> DC["DroneController"]
+    DC --> Drone["Drone<br/>(Physics)"]
+    Drone --> AL["AnimationLoop<br/>(Timing)"]
+
+    AL --> DU["Drone Position<br/>Update"]
+    AL --> EU["Elevation<br/>Update"]
+    AL --> CU["Context<br/>Update"]
+
+    DU --> EM["Elevation<br/>Manager"]
+    EU --> EM
+    CU --> CM["Context<br/>Manager"]
+
+    EM --> TO["Terrain<br/>Objects"]
+    CM --> TO
+    CM --> MO["Mesh<br/>Objects"]
+
+    TO --> Viewer["Viewer3D<br/>(Scene)"]
+    MO --> Viewer
+
+    Viewer --> Cam["Camera<br/>Update"]
+    Cam --> Render["Render<br/>to Screen"]
 ```
 
 ## Data Flow

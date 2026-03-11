@@ -7,8 +7,8 @@ import type { TileResource } from '../types';
 import type { BufferGeometry } from 'three';
 
 export type TerrainGeometryObjectManagerEvents = {
-  geometryAdded: { key: TileKey; geometry: TileResource<BufferGeometry> };
-  geometryRemoved: { key: TileKey };
+  tileAdded: { key: TileKey; tile: TileResource<BufferGeometry> };
+  tileRemoved: { key: TileKey };
 };
 
 /**
@@ -48,11 +48,11 @@ export class TerrainGeometryObjectManager extends TileObjectManager<
     key: string,
     obj: TileResource<BufferGeometry>
   ): void {
-    this.emit('geometryAdded', { key: key as TileKey, geometry: obj });
+    this.emit('tileAdded', { key: key as TileKey, tile: obj });
   }
 
   protected override onObjectRemoved(key: string): void {
-    this.emit('geometryRemoved', { key: key as TileKey });
+    this.emit('tileRemoved', { key: key as TileKey });
   }
 
   /**

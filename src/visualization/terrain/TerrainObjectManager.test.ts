@@ -72,7 +72,10 @@ describe('TerrainObjectManager', () => {
       const tile = createMockElevationTile('9:261:168');
       const geometry = mockGeometryManager.createGeometry('9:261:168', tile);
 
-      mockGeometryManager.emit('geometryAdded', { key: '9:261:168', geometry });
+      mockGeometryManager.emit('tileAdded', {
+        key: '9:261:168',
+        tile: geometry,
+      });
 
       expect(mockScene.add).toHaveBeenCalled();
       expect(manager.getTerrainObject('9:261:168')).toBeDefined();
@@ -83,7 +86,10 @@ describe('TerrainObjectManager', () => {
       const createSpy = vi.spyOn(mockGeometryManager, 'createGeometry');
 
       const geometry = mockGeometryManager.createGeometry('9:261:168', tile);
-      mockGeometryManager.emit('geometryAdded', { key: '9:261:168', geometry });
+      mockGeometryManager.emit('tileAdded', {
+        key: '9:261:168',
+        tile: geometry,
+      });
 
       expect(createSpy).toHaveBeenCalledWith('9:261:168', tile);
     });
@@ -95,7 +101,10 @@ describe('TerrainObjectManager', () => {
         '9:261:168',
         elevTile
       );
-      mockGeometryManager.emit('geometryAdded', { key: '9:261:168', geometry });
+      mockGeometryManager.emit('tileAdded', {
+        key: '9:261:168',
+        tile: geometry,
+      });
 
       expect(mockTextureManager.createTexture).not.toHaveBeenCalled();
     });
@@ -104,7 +113,10 @@ describe('TerrainObjectManager', () => {
       const tile = createMockElevationTile('9:261:168');
 
       const geometry = mockGeometryManager.createGeometry('9:261:168', tile);
-      mockGeometryManager.emit('geometryAdded', { key: '9:261:168', geometry });
+      mockGeometryManager.emit('tileAdded', {
+        key: '9:261:168',
+        tile: geometry,
+      });
 
       const addCalls = (mockScene.add as any).mock.calls;
       expect(addCalls.length).toBeGreaterThan(0);
@@ -116,15 +128,15 @@ describe('TerrainObjectManager', () => {
       const tile2 = createMockElevationTile('9:262:168');
 
       const geom1 = mockGeometryManager.createGeometry('9:261:168', tile1);
-      mockGeometryManager.emit('geometryAdded', {
+      mockGeometryManager.emit('tileAdded', {
         key: '9:261:168',
-        geometry: geom1,
+        tile: geom1,
       });
 
       const geom2 = mockGeometryManager.createGeometry('9:262:168', tile2);
-      mockGeometryManager.emit('geometryAdded', {
+      mockGeometryManager.emit('tileAdded', {
         key: '9:262:168',
-        geometry: geom2,
+        tile: geom2,
       });
 
       expect(manager.getTerrainObject('9:261:168')).toBeDefined();
@@ -137,14 +149,14 @@ describe('TerrainObjectManager', () => {
     it('should remove terrain mesh from scene', () => {
       const tile = createMockElevationTile('9:261:168');
       const geom = mockGeometryManager.createGeometry('9:261:168', tile);
-      mockGeometryManager.emit('geometryAdded', {
+      mockGeometryManager.emit('tileAdded', {
         key: '9:261:168',
-        geometry: geom,
+        tile: geom,
       });
       vi.clearAllMocks();
 
       mockGeometryManager.removeGeometry('9:261:168');
-      mockGeometryManager.emit('geometryRemoved', { key: '9:261:168' });
+      mockGeometryManager.emit('tileRemoved', { key: '9:261:168' });
 
       expect(mockScene.remove).toHaveBeenCalled();
       expect(manager.getTerrainObject('9:261:168')).toBeUndefined();
@@ -153,15 +165,15 @@ describe('TerrainObjectManager', () => {
     it('should dispose terrain resource', () => {
       const tile = createMockElevationTile('9:261:168');
       const geom = mockGeometryManager.createGeometry('9:261:168', tile);
-      mockGeometryManager.emit('geometryAdded', {
+      mockGeometryManager.emit('tileAdded', {
         key: '9:261:168',
-        geometry: geom,
+        tile: geom,
       });
       const terrainResource = manager.getTerrainObject('9:261:168')!;
       const disposeSpy = vi.spyOn(terrainResource, 'dispose');
 
       mockGeometryManager.removeGeometry('9:261:168');
-      mockGeometryManager.emit('geometryRemoved', { key: '9:261:168' });
+      mockGeometryManager.emit('tileRemoved', { key: '9:261:168' });
 
       expect(disposeSpy).toHaveBeenCalled();
     });
@@ -176,19 +188,19 @@ describe('TerrainObjectManager', () => {
       const tile1 = createMockElevationTile('9:261:168');
       const tile2 = createMockElevationTile('9:262:168');
       const geom1 = mockGeometryManager.createGeometry('9:261:168', tile1);
-      mockGeometryManager.emit('geometryAdded', {
+      mockGeometryManager.emit('tileAdded', {
         key: '9:261:168',
-        geometry: geom1,
+        tile: geom1,
       });
 
       const geom2 = mockGeometryManager.createGeometry('9:262:168', tile2);
-      mockGeometryManager.emit('geometryAdded', {
+      mockGeometryManager.emit('tileAdded', {
         key: '9:262:168',
-        geometry: geom2,
+        tile: geom2,
       });
 
       mockGeometryManager.removeGeometry('9:261:168');
-      mockGeometryManager.emit('geometryRemoved', { key: '9:261:168' });
+      mockGeometryManager.emit('tileRemoved', { key: '9:261:168' });
 
       expect(manager.getTerrainObject('9:261:168')).toBeUndefined();
       expect(manager.getTerrainObject('9:262:168')).toBeDefined();
@@ -205,9 +217,9 @@ describe('TerrainObjectManager', () => {
       };
 
       expect(() =>
-        mockTextureManager.emit('textureAdded', {
+        mockTextureManager.emit('tileAdded', {
           key: '9:261:168',
-          texture: mockTextureResource,
+          tile: mockTextureResource,
         })
       ).not.toThrow();
       expect(mockScene.add).not.toHaveBeenCalled();
@@ -222,9 +234,9 @@ describe('TerrainObjectManager', () => {
       };
 
       expect(() =>
-        mockTextureManager.emit('textureAdded', {
+        mockTextureManager.emit('tileAdded', {
           key: '9:261:168',
-          texture: mockTextureResource,
+          tile: mockTextureResource,
         })
       ).not.toThrow();
       expect(mockScene.add).not.toHaveBeenCalled();
@@ -235,9 +247,9 @@ describe('TerrainObjectManager', () => {
     it('should return the terrain resource for a tile key', () => {
       const tile = createMockElevationTile('9:261:168');
       const geom = mockGeometryManager.createGeometry('9:261:168', tile);
-      mockGeometryManager.emit('geometryAdded', {
+      mockGeometryManager.emit('tileAdded', {
         key: '9:261:168',
-        geometry: geom,
+        tile: geom,
       });
 
       const terrainResource = manager.getTerrainObject('9:261:168');
@@ -257,15 +269,15 @@ describe('TerrainObjectManager', () => {
       const tile1 = createMockElevationTile('9:261:168');
       const tile2 = createMockElevationTile('9:262:168');
       const geom1 = mockGeometryManager.createGeometry('9:261:168', tile1);
-      mockGeometryManager.emit('geometryAdded', {
+      mockGeometryManager.emit('tileAdded', {
         key: '9:261:168',
-        geometry: geom1,
+        tile: geom1,
       });
 
       const geom2 = mockGeometryManager.createGeometry('9:262:168', tile2);
-      mockGeometryManager.emit('geometryAdded', {
+      mockGeometryManager.emit('tileAdded', {
         key: '9:262:168',
-        geometry: geom2,
+        tile: geom2,
       });
 
       const obj1 = manager.getTerrainObject('9:261:168')!;
@@ -283,15 +295,15 @@ describe('TerrainObjectManager', () => {
       const tile1 = createMockElevationTile('9:261:168');
       const tile2 = createMockElevationTile('9:262:168');
       const geom1 = mockGeometryManager.createGeometry('9:261:168', tile1);
-      mockGeometryManager.emit('geometryAdded', {
+      mockGeometryManager.emit('tileAdded', {
         key: '9:261:168',
-        geometry: geom1,
+        tile: geom1,
       });
 
       const geom2 = mockGeometryManager.createGeometry('9:262:168', tile2);
-      mockGeometryManager.emit('geometryAdded', {
+      mockGeometryManager.emit('tileAdded', {
         key: '9:262:168',
-        geometry: geom2,
+        tile: geom2,
       });
 
       vi.clearAllMocks();
@@ -304,9 +316,9 @@ describe('TerrainObjectManager', () => {
     it('should clear the objects map', () => {
       const tile = createMockElevationTile('9:261:168');
       const geom = mockGeometryManager.createGeometry('9:261:168', tile);
-      mockGeometryManager.emit('geometryAdded', {
+      mockGeometryManager.emit('tileAdded', {
         key: '9:261:168',
-        geometry: geom,
+        tile: geom,
       });
       expect(manager.getTerrainObject('9:261:168')).toBeDefined();
 

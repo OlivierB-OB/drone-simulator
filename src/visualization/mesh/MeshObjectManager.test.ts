@@ -61,6 +61,19 @@ function makeDataSource() {
   };
 }
 
+function makeElevationDataSource() {
+  let addedHandler:
+    | ((data: { key: string; tile: unknown }) => void)
+    | undefined;
+  return {
+    on: vi.fn((event: string, handler: unknown) => {
+      if (event === 'tileAdded') addedHandler = handler as typeof addedHandler;
+    }),
+    off: vi.fn(),
+    fireAdded: (key: string) => addedHandler!({ key, tile: null }),
+  };
+}
+
 function makeScene(): Scene {
   return { add: vi.fn(), remove: vi.fn() } as unknown as Scene;
 }
@@ -113,11 +126,14 @@ describe('MeshObjectManager', () => {
     scene = makeScene();
   });
 
-  function buildManager(): InstanceType<typeof MeshObjectManager> {
+  function buildManager(
+    elevationSource = makeElevationDataSource()
+  ): InstanceType<typeof MeshObjectManager> {
     return new MeshObjectManager(
       scene,
       dataSource as unknown as ContextDataManager,
-      {} as ElevationSampler
+      {} as ElevationSampler,
+      elevationSource as unknown as import('../../data/elevation/ElevationDataManager').ElevationDataManager
     );
   }
 
@@ -183,6 +199,51 @@ describe('MeshObjectManager', () => {
       dataSource.fireRemoved('9:261:168'); // key no longer in map
 
       expect(scene.remove).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('elevation tileAdded (rebuild)', () => {
+    it('no-ops when elevation key has no matching context tile', () => {
+      const elevationSource = makeElevationDataSource();
+      buildManager(elevationSource);
+      // No context tile loaded — elevation event must not throw or add meshes
+      expect(() => elevationSource.fireAdded('9:261:168')).not.toThrow();
+      expect(scene.add).not.toHaveBeenCalled();
+    });
+
+    it('rebuilds meshes when elevation key matches a loaded context tile', () => {
+      const mesh = makeMockMesh();
+      buildingMeshes.push(mesh);
+
+      const elevationSource = makeElevationDataSource();
+      buildManager(elevationSource);
+
+      dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
+      expect(scene.add).toHaveBeenCalledTimes(1);
+
+      // Reset for rebuild detection
+      vi.clearAllMocks();
+      buildingMeshes.push(makeMockMesh());
+
+      elevationSource.fireAdded('9:261:168');
+
+      // Old mesh removed before new mesh added
+      expect(scene.remove).toHaveBeenCalled();
+      expect(scene.add).toHaveBeenCalled();
+    });
+
+    it('disposes old mesh geometry and material on rebuild', () => {
+      const mesh = makeMockMesh();
+      buildingMeshes.push(mesh);
+
+      const elevationSource = makeElevationDataSource();
+      buildManager(elevationSource);
+
+      dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
+      elevationSource.fireAdded('9:261:168');
+
+      expect(mesh.geometry.dispose).toHaveBeenCalled();
+      expect(mesh.material.dispose).toHaveBeenCalled();
     });
   });
 
