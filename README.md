@@ -8,21 +8,22 @@ An interactive real-time 3D web application that lets you pilot a virtual drone 
 
 ## ✨ Features
 
-| Feature | Description |
-|---------|-------------|
-| **Real-World Terrain** | Fly over actual geographic locations with accurate elevation data from AWS Terrarium satellite imagery |
-| **Interactive Flight Control** | Pilot with arrow keys: forward/backward, strafe left/right, rotate heading |
-| **Dynamic Chase Camera** | Follow the drone from behind with a camera that adjusts heading as you fly |
-| **Seamless Tile Loading** | Terrain loads and unloads in a ring around the drone—no interruption to flight |
-| **Frame-Rate Independent Physics** | Consistent behavior regardless of device performance |
-| **Rich Contextual Data** | OSM (OpenStreetMap) integration: buildings, roads, water, vegetation, railways, and more |
-| **High-Precision Elevation** | Sub-meter accuracy using Terrarium PNG encoding (R×256 + G + B/256) |
+| Feature                            | Description                                                                                            |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Real-World Terrain**             | Fly over actual geographic locations with accurate elevation data from AWS Terrarium satellite imagery |
+| **Interactive Flight Control**     | Pilot with arrow keys: forward/backward, strafe left/right, rotate heading                             |
+| **Dynamic Chase Camera**           | Follow the drone from behind with a camera that adjusts heading as you fly                             |
+| **Seamless Tile Loading**          | Terrain loads and unloads in a ring around the drone—no interruption to flight                         |
+| **Frame-Rate Independent Physics** | Consistent behavior regardless of device performance                                                   |
+| **Rich Contextual Data**           | OSM (OpenStreetMap) integration: buildings, roads, water, vegetation, railways, and more               |
+| **High-Precision Elevation**       | Sub-meter accuracy using Terrarium PNG encoding (R×256 + G + B/256)                                    |
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - **Bun** (runtime & package manager) — [install](https://bun.sh)
 - **Node.js 18+** (or use Bun as your Node alternative)
 
@@ -44,12 +45,12 @@ bun run build
 
 ### Controls
 
-| Input | Action |
-|-------|--------|
-| `↑` / `↓` | Move forward / backward |
-| `←` / `→` | Strafe left / right |
-| `W` / `S` | Rotate heading (turn left / right) |
-| **Mouse/Camera** | Follows drone automatically |
+| Input            | Action                             |
+| ---------------- | ---------------------------------- |
+| `↑` / `↓`        | Move forward / backward            |
+| `←` / `→`        | Strafe left / right                |
+| `W` / `S`        | Rotate heading (turn left / right) |
+| **Mouse/Camera** | Follows drone automatically        |
 
 ---
 
@@ -86,7 +87,7 @@ Render to Screen
 - **`src/visualization/terrain/`** — Converts elevation + context data into 3D meshes and textures
 - **`src/gis/`** — Coordinate system utilities (Mercator ↔ Three.js conversion)
 
-See [`doc/architecture.md`](doc/architecture.md) for the complete component diagram.
+See [`docs/architecture.md`](docs/architecture.md) for the complete component diagram.
 
 ---
 
@@ -108,7 +109,7 @@ drone-simulator/
 │       ├── terrain/               # Terrain geometry & canvas textures
 │       ├── mesh/                  # 3D objects (buildings, structures)
 │       └── drone/                 # Drone visual representation
-├── doc/                           # Comprehensive documentation (76 files)
+├── docs/                           # Comprehensive documentation (76 files)
 │   ├── architecture.md            # Component diagram & data flow
 │   ├── animation-loop.md          # 9-step frame sequence
 │   ├── coordinate-system.md       # CRITICAL: Mercator ↔ Three.js conversion
@@ -141,7 +142,7 @@ bun run test src/drone/Drone.test.ts
 
 **Coverage:** ~69% statement coverage, 32 test files, 90+ tests
 
-See [`doc/README.md#testing`](doc/README.md) for testing patterns.
+See [`docs/README.md#testing`](docs/README.md) for testing patterns.
 
 ---
 
@@ -170,64 +171,72 @@ bun run format:check
 
 ## 📚 Documentation
 
-The `doc/` directory contains 76 comprehensive files organized by topic:
+The `docs/` directory contains 76 comprehensive files organized by topic:
 
 ### Getting Started
-- **[overview.md](doc/overview.md)** — What the simulator does and use cases
-- **[architecture.md](doc/architecture.md)** — Components, interaction flow, data pipelines
-- **[quick-reference.md](doc/README.md)** — Navigation guide to all documentation
+
+- **[overview.md](docs/overview.md)** — What the simulator does and use cases
+- **[architecture.md](docs/architecture.md)** — Components, interaction flow, data pipelines
+- **[quick-reference.md](docs/README.md)** — Navigation guide to all documentation
 
 ### Core Concepts
-- **[coordinate-system.md](doc/coordinate-system.md)** ⭐ **CRITICAL** — Mercator to Three.js conversion (Z-negation, azimuth mapping)
-- **[animation-loop.md](doc/animation-loop.md)** — 9-step frame sequence, timing, dependencies
-- **[tile-ring-system.md](doc/tile-ring-system.md)** — Spatial tile loading/eviction strategy
-- **[data-pipeline.md](doc/data-pipeline.md)** — Four-stage pipeline used across systems
+
+- **[coordinate-system.md](docs/coordinate-system.md)** ⭐ **CRITICAL** — Mercator to Three.js conversion (Z-negation, azimuth mapping)
+- **[animation-loop.md](docs/animation-loop.md)** — 9-step frame sequence, timing, dependencies
+- **[tile-ring-system.md](docs/tile-ring-system.md)** — Spatial tile loading/eviction strategy
+- **[data-pipeline.md](docs/data-pipeline.md)** — Four-stage pipeline used across systems
 
 ### Data Systems
-- **[data/elevations.md](doc/data/elevations.md)** — Terrain height, AWS Terrarium, precision
-- **[data/contextual.md](doc/data/contextual.md)** — OSM features, loading strategy
-- **[data/elevation-sampler.md](doc/data/elevation-sampler.md)** — Bilinear interpolation
+
+- **[data/elevations.md](docs/data/elevations.md)** — Terrain height, AWS Terrarium, precision
+- **[data/contextual.md](docs/data/contextual.md)** — OSM features, loading strategy
+- **[data/elevation-sampler.md](docs/data/elevation-sampler.md)** — Bilinear interpolation
 
 ### Visualization
-- **[visualization/canvas-rendering.md](doc/visualization/canvas-rendering.md)** — OSM feature rasterization (9-layer painter's algorithm)
-- **[visualization/ground-surface.md](doc/visualization/ground-surface.md)** — Terrain mesh generation
-- **[visualization/objects.md](doc/visualization/objects.md)** — Buildings, structures, drone
+
+- **[visualization/canvas-rendering.md](docs/visualization/canvas-rendering.md)** — OSM feature rasterization (9-layer painter's algorithm)
+- **[visualization/ground-surface.md](docs/visualization/ground-surface.md)** — Terrain mesh generation
+- **[visualization/objects.md](docs/visualization/objects.md)** — Buildings, structures, drone
 
 ### Reference
-- **[osm/README.md](doc/osm/README.md)** — OpenStreetMap integration overview
-- **[osm/buildings.md](doc/osm/buildings.md)**, **[highways.md](doc/osm/highways.md)**, **[water.md](doc/osm/water.md)**, etc. — Feature-specific docs
-- **[patterns.md](doc/patterns.md)** — Observer, Factory, Dependency Injection
-- **[glossary.md](doc/glossary.md)** — Technical term definitions
+
+- **[osm/README.md](docs/osm/README.md)** — OpenStreetMap integration overview
+- **[osm/buildings.md](docs/osm/buildings.md)**, **[highways.md](docs/osm/highways.md)**, **[water.md](docs/osm/water.md)**, etc. — Feature-specific docs
+- **[patterns.md](docs/patterns.md)** — Observer, Factory, Dependency Injection
+- **[glossary.md](docs/glossary.md)** — Technical term definitions
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technologies |
-|-------|--------------|
-| **Frontend Framework** | SolidJS 1.9 |
-| **Language** | TypeScript 5.9 |
-| **3D Graphics** | Three.js 0.160 |
-| **Build Tool** | Vite 7.3 |
-| **Test Runner** | Vitest 4.0 + happy-dom |
-| **Package Manager** | Bun |
-| **Code Quality** | ESLint + Prettier |
+| Layer                  | Technologies           |
+| ---------------------- | ---------------------- |
+| **Frontend Framework** | SolidJS 1.9            |
+| **Language**           | TypeScript 5.9         |
+| **3D Graphics**        | Three.js 0.160         |
+| **Build Tool**         | Vite 7.3               |
+| **Test Runner**        | Vitest 4.0 + happy-dom |
+| **Package Manager**    | Bun                    |
+| **Code Quality**       | ESLint + Prettier      |
 
 ---
 
 ## 🌍 Real-World Examples
 
 ### Paris
+
 - **Coordinates:** 48.8566°N, 2.3522°E (Mercator)
 - **Terrain:** Île de France plateau, Seine river valley
 - Configure in `src/config.ts`: `dronePosition: { x: 0.5, y: 0.5 }`
 
 ### Mount Everest
+
 - **Elevation:** 8,848 m (encoded as RGB(162,144,0) in Terrarium)
 - **Precision:** ±0.1 m (using Blue channel)
 - Navigate to high mountains for extreme elevation testing
 
 ### Dead Sea
+
 - **Elevation:** −430 m (negative elevation)
 - **Precision test:** Validates sub-zero elevation handling
 
@@ -236,29 +245,41 @@ The `doc/` directory contains 76 comprehensive files organized by topic:
 ## 🏗️ Key Design Patterns
 
 ### Coordinate System Consistency
+
 All components use the same geographic → 3D conversion:
+
 ```
 threeX = mercator.x         // Direct
 threeY = elevation          // Direct
 threeZ = -mercator.y        // Negated (Y northward → -Z northward)
 ```
-See [`doc/coordinate-system.md`](doc/coordinate-system.md) for the complete strategy.
+
+See [`docs/coordinate-system.md`](docs/coordinate-system.md) for the complete strategy.
 
 ### Observer Pattern
+
 Event-driven updates through `TypedEventEmitter`:
+
 ```typescript
-drone.onMove.subscribe(({position, heading}) => { /* update */ })
-elevationData.onTileAdded.subscribe(({tile}) => { /* create mesh */ })
+drone.onMove.subscribe(({ position, heading }) => {
+  /* update */
+});
+elevationData.onTileAdded.subscribe(({ tile }) => {
+  /* create mesh */
+});
 ```
 
 ### Factory Pattern
+
 Consistent object creation with dependency injection:
+
 ```typescript
-const drone = createDrone(droneConfig)
-const viewer = new Viewer3D(Scene, Camera, Renderer) // Constructor classes
+const drone = createDrone(droneConfig);
+const viewer = new Viewer3D(Scene, Camera, Renderer); // Constructor classes
 ```
 
 ### Resource Cleanup
+
 All components implement `dispose()` for proper cleanup (listeners, timers, resources).
 
 ---
@@ -266,6 +287,7 @@ All components implement `dispose()` for proper cleanup (listeners, timers, reso
 ## ✅ Quality Assurance
 
 **Test Coverage:** ~69% statement coverage
+
 - Coordinate system validation (21 tests)
 - Async resource management (30 tests)
 - Elevation data accuracy (26 tests)
@@ -273,6 +295,7 @@ All components implement `dispose()` for proper cleanup (listeners, timers, reso
 - Animation loop timing (12+ tests)
 
 **Linting & Type Safety:**
+
 ```bash
 # Check all rules + TypeScript types
 bun run lint
@@ -300,7 +323,7 @@ The project follows these principles (see [`CLAUDE.md`](CLAUDE.md)):
 1. **Read the guidelines** — See [`CLAUDE.md`](CLAUDE.md) for working together rules
 2. **Run tests** — Ensure all tests pass: `bun run test`
 3. **Check quality** — Run linting and formatting: `bun run lint && bun run format`
-4. **Document changes** — Update relevant docs in `doc/`
+4. **Document changes** — Update relevant docs in `docs/`
 5. **Follow patterns** — Use existing patterns (Observer, Factory, DI) for consistency
 
 ---
@@ -315,10 +338,10 @@ MIT — See [`LICENSE`](LICENSE) for details
 
 ## 🔗 See Also
 
-- **Architecture Deep Dive** — [`doc/architecture.md`](doc/architecture.md)
-- **Animation Frame Sequence** — [`doc/animation-loop.md`](doc/animation-loop.md)
-- **Coordinate System** — [`doc/coordinate-system.md`](doc/coordinate-system.md)
-- **All Documentation** — [`doc/README.md`](doc/README.md)
+- **Architecture Deep Dive** — [`docs/architecture.md`](docs/architecture.md)
+- **Animation Frame Sequence** — [`docs/animation-loop.md`](docs/animation-loop.md)
+- **Coordinate System** — [`docs/coordinate-system.md`](docs/coordinate-system.md)
+- **All Documentation** — [`docs/README.md`](docs/README.md)
 - **Development Philosophy** — [`CLAUDE.md`](CLAUDE.md)
 
 ---
