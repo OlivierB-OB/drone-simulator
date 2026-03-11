@@ -2,7 +2,7 @@ import type { ElevationDataTile } from '../../../data/elevation/types';
 import type { ElevationDataManager } from '../../../data/elevation/ElevationDataManager';
 import { TerrainGeometryObject } from './TerrainGeometryObject';
 import { TerrainGeometryFactory } from './TerrainGeometryFactory';
-import { TypedEventEmitter } from '../../../core/TypedEventEmitter';
+import { TileObjectManager } from '../../TileObjectManager';
 import type { TileKey } from './types';
 
 export type TerrainGeometryObjectManagerEvents = {
@@ -14,77 +14,71 @@ export type TerrainGeometryObjectManagerEvents = {
  * Manages a collection of TerrainGeometryObject instances that contain elevation tile geometry.
  * Listens to elevation data tile events and emits geometry events.
  */
-export class TerrainGeometryObjectManager extends TypedEventEmitter<TerrainGeometryObjectManagerEvents> {
-  private readonly objects = new Map<TileKey, TerrainGeometryObject>();
-  private onElevationTileAdded = ({
-    key,
-    tile,
-  }: {
-    key: string;
-    tile: ElevationDataTile;
-  }) => {
-    const geometry = this.createGeometry(key as TileKey, tile);
-    this.emit('geometryAdded', { key: key as TileKey, geometry });
-  };
-  private onElevationTileRemoved = ({ key }: { key: string }) => {
-    this.removeGeometry(key as TileKey);
-    this.emit('geometryRemoved', { key: key as TileKey });
-  };
-
+export class TerrainGeometryObjectManager extends TileObjectManager<
+  ElevationDataTile,
+  TerrainGeometryObject,
+  TerrainGeometryObjectManagerEvents
+> {
   constructor(
-    private readonly elevationData: ElevationDataManager,
+    elevationData: ElevationDataManager,
     private readonly factory: TerrainGeometryFactory = new TerrainGeometryFactory()
   ) {
-    super();
-    this.elevationData.on('tileAdded', this.onElevationTileAdded);
-    this.elevationData.on('tileRemoved', this.onElevationTileRemoved);
+    super(elevationData);
+  }
+
+  protected override createObject(
+    key: string,
+    tile: ElevationDataTile
+  ): TerrainGeometryObject {
+    const geometry = this.factory.createGeometry(tile);
+    return new TerrainGeometryObject(
+      key as TileKey,
+      geometry,
+      tile.mercatorBounds
+    );
+  }
+
+  protected override disposeObject(obj: TerrainGeometryObject): void {
+    obj.dispose();
+  }
+
+  protected override onObjectAdded(
+    key: string,
+    obj: TerrainGeometryObject
+  ): void {
+    this.emit('geometryAdded', { key: key as TileKey, geometry: obj });
+  }
+
+  protected override onObjectRemoved(key: string): void {
+    this.emit('geometryRemoved', { key: key as TileKey });
   }
 
   /**
    * Creates geometry for a specific elevation tile and stores it.
+   * Does not emit events — event emission happens via the ElevationDataManager event handler.
    */
   createGeometry(key: TileKey, tile: ElevationDataTile): TerrainGeometryObject {
-    const geometry = this.factory.createGeometry(tile);
-    const terrainGeometry = new TerrainGeometryObject(
-      key,
-      geometry,
-      tile.mercatorBounds
-    );
-    this.objects.set(key, terrainGeometry);
-    return terrainGeometry;
+    const obj = this.createObject(key, tile);
+    this.objects.set(key, obj);
+    return obj;
   }
 
   /**
    * Removes and disposes geometry for a specific tile.
+   * Does not emit events — event emission happens via the ElevationDataManager event handler.
    */
   removeGeometry(key: TileKey): void {
-    const terrainGeometry = this.objects.get(key);
-    if (terrainGeometry) {
-      terrainGeometry.dispose();
-      this.objects.delete(key);
-    }
+    const obj = this.objects.get(key);
+    if (obj !== undefined) this.disposeObject(obj);
+    this.objects.delete(key);
   }
 
   /**
-   * Get a terrain geometry object by its tile key
+   * Get a terrain geometry object by its tile key.
    */
   getTerrainGeometryObject(
     tileKey: TileKey
   ): TerrainGeometryObject | undefined {
     return this.objects.get(tileKey);
-  }
-
-  /**
-   * Clean up all geometries and clear the collection
-   */
-  dispose(): void {
-    this.elevationData.off('tileAdded', this.onElevationTileAdded);
-    this.elevationData.off('tileRemoved', this.onElevationTileRemoved);
-
-    for (const terrainGeometry of this.objects.values()) {
-      terrainGeometry.dispose();
-    }
-    this.objects.clear();
-    this.removeAllListeners();
   }
 }

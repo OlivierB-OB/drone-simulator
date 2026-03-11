@@ -8,6 +8,7 @@ import { VegetationMeshFactory } from './vegetation/VegetationMeshFactory';
 import { StructureMeshFactory } from './structure/StructureMeshFactory';
 import { BarrierMeshFactory } from './barrier/BarrierMeshFactory';
 import { BridgeMeshFactory } from './bridge/BridgeMeshFactory';
+import { TileObjectManager } from '../TileObjectManager';
 
 /**
  * Manages 3D mesh objects (buildings, vegetation, structures, barriers, bridges)
@@ -16,46 +17,35 @@ import { BridgeMeshFactory } from './bridge/BridgeMeshFactory';
  * Follows the same event-driven pattern as TerrainTextureObjectManager:
  * listens to tileAdded/tileRemoved, delegates to per-feature-type factories.
  */
-export class MeshObjectManager {
-  private readonly objects = new Map<string, Object3D[]>();
+export class MeshObjectManager extends TileObjectManager<
+  ContextDataTile,
+  Object3D[]
+> {
   private readonly buildingFactory: BuildingMeshFactory;
   private readonly vegetationFactory: VegetationMeshFactory;
   private readonly structureFactory: StructureMeshFactory;
   private readonly barrierFactory: BarrierMeshFactory;
   private readonly bridgeFactory: BridgeMeshFactory;
 
-  private onTileAdded = ({
-    key,
-    tile,
-  }: {
-    key: string;
-    tile: ContextDataTile;
-  }) => {
-    this.createMeshes(key, tile);
-  };
-
-  private onTileRemoved = ({ key }: { key: string }) => {
-    this.removeMeshes(key);
-  };
-
   constructor(
     private readonly scene: Scene,
-    private readonly contextData: ContextDataManager,
+    contextData: ContextDataManager,
     elevationSampler: ElevationSampler
   ) {
+    super(contextData);
     this.buildingFactory = new BuildingMeshFactory(elevationSampler);
     this.vegetationFactory = new VegetationMeshFactory(elevationSampler);
     this.structureFactory = new StructureMeshFactory(elevationSampler);
     this.barrierFactory = new BarrierMeshFactory(elevationSampler);
     this.bridgeFactory = new BridgeMeshFactory(elevationSampler);
-
-    this.contextData.on('tileAdded', this.onTileAdded);
-    this.contextData.on('tileRemoved', this.onTileRemoved);
   }
 
-  private createMeshes(key: string, tile: ContextDataTile): void {
-    const meshes: Object3D[] = [];
+  protected override createObject(
+    _key: string,
+    tile: ContextDataTile
+  ): Object3D[] {
     const { features } = tile;
+    const meshes: Object3D[] = [];
 
     meshes.push(...this.buildingFactory.create(features.buildings));
     meshes.push(...this.vegetationFactory.create(features.vegetation));
@@ -67,13 +57,10 @@ export class MeshObjectManager {
     for (const mesh of meshes) {
       this.scene.add(mesh);
     }
-    this.objects.set(key, meshes);
+    return meshes;
   }
 
-  private removeMeshes(key: string): void {
-    const meshes = this.objects.get(key);
-    if (!meshes) return;
-
+  protected override disposeObject(meshes: Object3D[]): void {
     for (const mesh of meshes) {
       this.scene.remove(mesh);
       mesh.traverse((child) => {
@@ -89,16 +76,5 @@ export class MeshObjectManager {
         }
       });
     }
-    this.objects.delete(key);
-  }
-
-  dispose(): void {
-    this.contextData.off('tileAdded', this.onTileAdded);
-    this.contextData.off('tileRemoved', this.onTileRemoved);
-
-    for (const key of this.objects.keys()) {
-      this.removeMeshes(key);
-    }
-    this.objects.clear();
   }
 }

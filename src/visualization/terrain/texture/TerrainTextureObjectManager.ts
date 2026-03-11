@@ -2,7 +2,7 @@ import type { ContextDataTile } from '../../../data/contextual/types';
 import type { ContextDataManager } from '../../../data/contextual/ContextDataManager';
 import type { TerrainTextureObject } from './TerrainTextureObject';
 import { TerrainTextureFactory } from './TerrainTextureFactory';
-import { TypedEventEmitter } from '../../../core/TypedEventEmitter';
+import { TileObjectManager } from '../../TileObjectManager';
 import type { TileKey } from '../geometry/types';
 
 export type TerrainTextureObjectManagerEvents = {
@@ -17,53 +17,61 @@ export type TerrainTextureObjectManagerEvents = {
  * Stores null for tiles where context data is unavailable, allowing
  * graceful degradation to solid material without texture overlay.
  */
-export class TerrainTextureObjectManager extends TypedEventEmitter<TerrainTextureObjectManagerEvents> {
-  private readonly objects = new Map<TileKey, TerrainTextureObject | null>();
-  private onContextTileAdded = ({
-    key,
-    tile,
-  }: {
-    key: string;
-    tile: ContextDataTile;
-  }) => {
-    const texture = this.createTexture(key as TileKey, tile);
-    this.emit('textureAdded', { key: key as TileKey, texture });
-  };
-  private onContextTileRemoved = ({ key }: { key: string }) => {
-    this.removeTexture(key as TileKey);
-    this.emit('textureRemoved', { key: key as TileKey });
-  };
-
+export class TerrainTextureObjectManager extends TileObjectManager<
+  ContextDataTile,
+  TerrainTextureObject | null,
+  TerrainTextureObjectManagerEvents
+> {
   constructor(
-    private readonly contextData: ContextDataManager,
+    contextData: ContextDataManager,
     private readonly factory: TerrainTextureFactory = new TerrainTextureFactory()
   ) {
-    super();
-    this.contextData.on('tileAdded', this.onContextTileAdded);
-    this.contextData.on('tileRemoved', this.onContextTileRemoved);
+    super(contextData);
+  }
+
+  protected override createObject(
+    key: string,
+    tile: ContextDataTile
+  ): TerrainTextureObject | null {
+    return this.factory.createTexture(tile, key);
+  }
+
+  protected override disposeObject(obj: TerrainTextureObject | null): void {
+    obj?.dispose();
+  }
+
+  protected override onObjectAdded(
+    key: string,
+    obj: TerrainTextureObject | null
+  ): void {
+    this.emit('textureAdded', { key: key as TileKey, texture: obj });
+  }
+
+  protected override onObjectRemoved(key: string): void {
+    this.emit('textureRemoved', { key: key as TileKey });
   }
 
   /**
    * Creates a texture for a tile using context data.
    * Returns null if context data is unavailable (graceful degradation).
+   * Does not emit events — event emission happens via the ContextDataManager event handler.
    */
   createTexture(
     key: TileKey,
     contextTile: ContextDataTile | null
   ): TerrainTextureObject | null {
-    const textureObject = this.factory.createTexture(contextTile, key);
-    this.objects.set(key, textureObject);
-    return textureObject;
+    const obj = this.factory.createTexture(contextTile, key);
+    this.objects.set(key, obj);
+    return obj;
   }
 
   /**
    * Removes and disposes texture for a specific tile.
+   * Does not emit events — event emission happens via the ContextDataManager event handler.
    */
   removeTexture(key: TileKey): void {
-    const textureObject = this.objects.get(key);
-    if (textureObject) {
-      textureObject.dispose();
-    }
+    const obj = this.objects.get(key);
+    if (obj !== undefined) this.disposeObject(obj);
     this.objects.delete(key);
   }
 
@@ -74,21 +82,5 @@ export class TerrainTextureObjectManager extends TypedEventEmitter<TerrainTextur
     tileKey: TileKey
   ): TerrainTextureObject | null | undefined {
     return this.objects.get(tileKey);
-  }
-
-  /**
-   * Clean up all textures, dispose resources, and clear the collection
-   */
-  dispose(): void {
-    this.contextData.off('tileAdded', this.onContextTileAdded);
-    this.contextData.off('tileRemoved', this.onContextTileRemoved);
-
-    for (const textureObject of this.objects.values()) {
-      if (textureObject) {
-        textureObject.dispose();
-      }
-    }
-    this.objects.clear();
-    this.removeAllListeners();
   }
 }

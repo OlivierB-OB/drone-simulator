@@ -70,6 +70,8 @@ The **2048×2048 pixel canvas** provides sufficient detail for OSM feature rende
 
 ## Core Architecture
 
+The three tile-event-driven managers (`TerrainGeometryObjectManager`, `TerrainTextureObjectManager`, `MeshObjectManager`) all extend the shared abstract base `TileObjectManager`, which handles event subscription, object storage, and disposal lifecycle. Each manager only implements `createObject` and `disposeObject` for its specific output type.
+
 The terrain rendering system consists of three main components working in concert:
 
 ### 1. Elevation Pipeline
@@ -384,6 +386,7 @@ Useful for:
 
 | File | Purpose | Responsibility |
 |------|---------|-----------------|
+| `TileObjectManager.ts` | Abstract base class | Generic tile-event-driven object manager (subscriptions, disposal, lifecycle) |
 | `TerrainObjectManager.ts` | Main orchestrator | Subscribe to geometry/texture managers, coordinate mesh creation, manage lifecycle |
 | `TerrainGeometryObjectManager.ts` | Geometry coordination | Listen to elevation tiles, create geometry objects, emit events |
 | `TerrainTextureObjectManager.ts` | Texture coordination | Listen to context tiles, create texture objects, emit events |
