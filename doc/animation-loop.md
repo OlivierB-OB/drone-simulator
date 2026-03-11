@@ -299,29 +299,7 @@ All steps in the animation loop must use this same transformation to ensure spat
 
 ## Configuration
 
-Animation loop behavior is configured in `src/config.ts`:
-
-```typescript
-// Drone movement
-droneConfig: {
-  initialLocation: { x: ..., y: ... },
-  speed: 50,  // m/s
-  // ...
-}
-
-// Elevation tile loading
-elevationConfig: {
-  zoom: 15,
-  ringRadius: 2,        // Load tiles in 2-tile radius
-  maxConcurrentLoads: 3,  // Limit concurrent fetches
-}
-
-// Camera following
-cameraConfig: {
-  chaseDistance: 200,
-  chaseHeight: 80,
-}
-```
+Animation loop behavior is controlled by `src/config.ts`. See that file for `droneConfig`, `elevationConfig`, and `cameraConfig` values.
 
 ## Related Documentation
 

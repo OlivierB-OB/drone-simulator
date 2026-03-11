@@ -3,16 +3,39 @@
 **OSM Wiki:** https://wiki.openstreetmap.org/wiki/Key:building:levels
 
 ## Definition
-[Content to be fetched from OSM wiki]
+
+The `building:levels` tag represents "the **actual** number of above-ground non-roof levels (= floors = storeys) of a building."
+
+Underground levels and roofs don't count toward this value. This is used in 3D modeling to determine building height when the `height` tag is not specified (standard assumption: 3 meters per floor).
 
 ## Data Type
-[Format to be documented]
+
+**Positive integers only** — no fractional values. The value represents the actual above-ground floor count.
+
+| Value | Meaning | Default Height |
+|-------|---------|-----------------|
+| 1 | Single ground level | 3m |
+| 2 | Two-story building | 6m |
+| 3 | Three-story building | 9m |
+| 4-5 | Mid-rise building | 12-15m |
+| 6+ | High-rise building | 18m+ |
 
 ## Common Values in Drone Simulator
-[Values to be documented]
+
+The `building:levels` tag is used as a fallback when `height=*` is not specified:
+
+- Parsed as integer number of levels
+- Multiplied by default 3 meters per level
+- Overridden if explicit `height=*` tag is present
+- Example: `building:levels=4` → 12m height (if no height= tag)
 
 ## Related Tags
-[Related tags to be documented]
+
+- [height](height.md) — Precise height in meters (takes precedence)
+- [min_height](min_height.md) — Height to lowest feature
+- [building:min_level](building_min_level.md) — Lowest floor number
+- [roof:levels](https://wiki.openstreetmap.org/wiki/Key:roof:levels) — Number of roof sections
+- [building:levels:underground](https://wiki.openstreetmap.org/wiki/Key:building:levels:underground) — Basement levels
 
 ## See Also
 - [Tag Quick Reference](README.md)

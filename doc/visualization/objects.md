@@ -721,36 +721,6 @@ Changes apply to all newly-loaded tiles; existing tiles retain old values until 
 
 ---
 
-## Coordinate System Reference
-
-### Quick Reference
-
-| Concept | Value | Usage |
-|---|---|---|
-| **Mercator X** | East-West position (meters) | Direct to Three.js X |
-| **Mercator Y** | North-South position (meters), increases northward | Negated to Three.js Z (Z = -Y) |
-| **Elevation** | Altitude (meters above sea level) | Direct to Three.js Y |
-| **Azimuth** | Compass bearing (0°=North, 90°=East), clockwise | Negated for Three.js rotation.y |
-
-### Z-Negation Critical Points
-
-The Z-negation (`z = -mercatorY`) is **fundamental** to the entire system:
-
-1. **Drone Movement**: Uses positive cos(azimuth) for northward movement (Mercator Y increases)
-2. **Camera Default**: Three.js default camera looks along -Z axis
-3. **Object Placement**: All meshes use `position.z = -mercatorY`
-4. **Terrain Positioning**: Terrain meshes use same formula
-
-**Verification Test**: If Z-negation is wrong, north would look like south.
-
-### Full Coordinate Transformation Formulas
-
-See `doc/coordinate-system.md` for:
-- Latitude/longitude to Mercator conversion
-- Direction vectors for all azimuths
-- Chase camera positioning
-- Complete examples with Paris coordinates
-
 ## See Also
 
 - **[Glossary](../glossary.md)** - Definitions of all technical terms

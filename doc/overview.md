@@ -19,6 +19,3 @@ The Drone Simulator is an interactive web application that lets you pilot a virt
 - **Flight Simulation** - Practice drone piloting and navigation with realistic controls
 - **Geographic Visualization** - Visualize elevation data and landscape features in an intuitive 3D environment
 
-## How It Works
-
-The simulator loads terrain data for your current location and dynamically updates it as you move. The 3D view follows your drone, giving you a pilot's-eye perspective of the landscape. All elevation data is sourced from real-world geographic data, ensuring the terrain you see is accurate.

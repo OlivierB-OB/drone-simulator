@@ -3,17 +3,64 @@
 **OSM Wiki:** https://wiki.openstreetmap.org/wiki/Key:railway
 
 ## Definition
-[Content to be fetched from OSM wiki]
+Primary tag used to specify the type of railway line or rail transport infrastructure. Indicates the functional classification and operational characteristics of the rail feature.
 
 ## Data Type
-[Format to be documented]
+String value representing the railway type classification. Applied to ways (linear features).
+
+## Railway Classifications
+
+**Mainline Railways:**
+- `rail` - Standard gauge main line railway
+- `narrow_gauge` - Narrower gauge railway (< standard 1435mm)
+- `light_rail` - Tram-quality rail, separate from road
+- `tram` - Street-running tram/streetcar tracks
+- `metro` - Underground/rapid transit system
+- `monorail` - Single rail system
+- `funicular` - Cable-driven inclined railway
+
+**Specialty/Status:**
+- `disused` - Former railway no longer in use
+- `abandoned` - Abandoned railway (very degraded)
+- `construction` - Railway under construction
+- `preserved` - Historic/heritage railway
 
 ## Common Values in Drone Simulator
-[Values to be documented]
+
+The drone simulator uses `railway` tags for rail rendering via `railwaySpec` in config.ts:
+
+**Active railways (dash pattern [5,3] or [4,3], color #888888):**
+- `rail` - Standard gauge (width: 4m)
+- `narrow_gauge` - Narrow gauge (width: 3m)
+- `light_rail` - Light rail (width: 3m)
+- `tram` - Tram lines (width: 2m)
+- `metro` - Metro/subway (width: 4m)
+- `monorail` - Monorail (width: 3m, color #999999)
+- `funicular` - Funicular (width: 3m)
+
+**Inactive railways (dash pattern [2,4], color #aaaaaa):**
+- `disused` - Disused (width: 2m)
+- `abandoned` - Abandoned (width: 2m)
+
+## Usage Notes
+
+- Applied to ways (linear features only)
+- Combine with `gauge` tag for detailed rail specifications
+- Use with `layer` and `bridge`/`tunnel` for grade separation
+- `level` indicates underground/elevated sections
+- `tracks` specifies number of parallel rails
 
 ## Related Tags
-[Related tags to be documented]
+- `gauge` - Rail track gauge in millimeters
+- `tracks` - Number of parallel railway tracks
+- `bridge` - Bridge crossing indicator
+- `tunnel` - Tunnel indicator
+- `layer` - Z-order for grade separation
+- `level` - Underground/elevated indication
+- `service` - Service type (main, siding, spur, branch)
+- `maxspeed` - Speed limit
 
 ## See Also
-- [Tag Quick Reference](README.md)
-- [OSM Key Documentation](https://wiki.openstreetmap.org/wiki/Key:railway)
+- [OSM Key Tag Documentation](https://wiki.openstreetmap.org/wiki/Key:railway)
+- [gauge tag documentation](gauge.md)
+- [Canvas Rendering Documentation](../../visualization/canvas-rendering.md)

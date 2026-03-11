@@ -3,17 +3,60 @@
 **OSM Wiki:** https://wiki.openstreetmap.org/wiki/Key:aerialway
 
 ## Definition
-[Content to be fetched from OSM wiki]
+Specifies aerial transport systems including cable cars, ski lifts, gondolas, and other suspended transportation.
 
 ## Data Type
-[Format to be documented]
+String value representing the aerial transport type. Applied to ways (lines) and nodes (stations/pylons).
+
+## Common Aerial Transport Types
+
+**Passenger Transport:**
+- `cable_car` - Cable-pulled transport (San Francisco style)
+- `gondola` - Suspended cable transport (common at ski resorts)
+- `mixed_lift` - Combined surface/aerial lift
+- `chair_lift` - Chair suspended on moving cable
+- `drag_lift` - Surface drag lift (T-bar, J-bar, platter)
+- `t-bar` - T-shaped drag lift
+- `j-bar` - J-shaped drag lift
+- `platter` - Platter/disc drag lift
+- `rope_tow` - Rope tow lift
+- `magic_carpet` - Motorized carpet lift
+
+**Specialty:**
+- `station` - Terminal station
+- `pylon` - Support pylon/tower
+- `jig_bungee` - Jig bungee lift
 
 ## Common Values in Drone Simulator
-[Values to be documented]
+
+The drone simulator documents `aerialway` for reference data:
+
+**Infrastructure rendering:**
+- `pylon` - Rendered via `structureDefaults.aerialway_pylon` (shape: box, radius: 1m, height: 12m, color: #b0b0b8)
+- Cable lines mapped as ways
+- Stations mapped as nodes or small areas
+
+## Usage Notes
+
+- Applied to ways (cable lines) and nodes (stations/pylons)
+- `aerialway=pylon` on nodes for support structures
+- `aerialway=station` on nodes for terminals
+- Use with `name` for facility identification
+- `operator` specifies managing company
+- `capacity` indicates passenger/freight capacity
+- `duration` for travel time information
 
 ## Related Tags
-[Related tags to be documented]
+- `man:made` - Infrastructure classification
+- `name` - Facility name
+- `operator` - Operating company
+- `capacity` - Transport capacity (people/hour)
+- `duration` - Typical journey duration (minutes)
+- `opening_hours` - Seasonal/daily operation
+- `height` - Height of structure
+- `layer` - Z-ordering for overlapping features
 
 ## See Also
-- [Tag Quick Reference](README.md)
-- [OSM Key Documentation](https://wiki.openstreetmap.org/wiki/Key:aerialway)
+- [OSM Key Tag Documentation](https://wiki.openstreetmap.org/wiki/Key:aerialway)
+- [man:made tag documentation](man_made.md)
+- [aeroway tag documentation](aeroway.md)

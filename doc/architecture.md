@@ -103,17 +103,8 @@ Position Update
 ## Data Flow
 
 ### Each Frame
-1. **Input Processing**: DroneController reads keyboard input
-2. **Physics Update**: Drone updates its position and heading based on movement commands
-3. **Data Loading**: ElevationDataManager and ContextDataManager fetch new data tiles around drone's new location
-4. **Geometry Generation**: TerrainGeometryObjectManager generates 3D mesh from elevation data
-5. **Texture Rendering**: TerrainTextureObjectManager applies colors and patterns
-6. **Scene Update**:
-   - TerrainObjectManager places terrain meshes in the scene
-   - MeshObjectManager places context objects
-   - DroneObject updates drone's 3D representation
-7. **Camera Update**: Camera positions itself relative to drone
-8. **Rendering**: Viewer3D renders the complete scene to the screen
+
+See [`doc/animation-loop.md`](animation-loop.md) for the complete 9-step frame sequence with timing details and dependencies.
 
 ### As Drone Moves
 - Drone moves through geographic coordinates (Mercator projection)
