@@ -5,8 +5,11 @@ export class DroneController {
   private keydownHandler!: (event: KeyboardEvent) => void;
   private keyupHandler!: (event: KeyboardEvent) => void;
   private mousemoveHandler!: (event: MouseEvent) => void;
+  private mousedownHandler!: (event: MouseEvent) => void;
+  private mouseupHandler!: (event: MouseEvent) => void;
   private wheelHandler!: (event: WheelEvent) => void;
   private lastMouseX: number | null = null;
+  private isMouseDown: boolean = false;
 
   constructor(
     private readonly containerRef: HTMLElement,
@@ -57,7 +60,18 @@ export class DroneController {
   }
 
   private setupMouseListeners() {
+    this.mousedownHandler = () => {
+      this.isMouseDown = true;
+    };
+
+    this.mouseupHandler = () => {
+      this.isMouseDown = false;
+      this.lastMouseX = null;
+    };
+
     this.mousemoveHandler = (event: MouseEvent) => {
+      if (!this.isMouseDown) return;
+
       const currentX = event.clientX;
 
       if (this.lastMouseX === null) {
@@ -73,7 +87,10 @@ export class DroneController {
 
       this.lastMouseX = currentX;
     };
+
     if (this.containerRef) {
+      this.containerRef.addEventListener('mousedown', this.mousedownHandler);
+      this.containerRef.addEventListener('mouseup', this.mouseupHandler);
       this.containerRef.addEventListener('mousemove', this.mousemoveHandler);
     }
   }
@@ -92,6 +109,8 @@ export class DroneController {
   public dispose() {
     document.removeEventListener('keydown', this.keydownHandler);
     document.removeEventListener('keyup', this.keyupHandler);
+    this.containerRef.removeEventListener('mousedown', this.mousedownHandler);
+    this.containerRef.removeEventListener('mouseup', this.mouseupHandler);
     this.containerRef.removeEventListener('mousemove', this.mousemoveHandler);
     this.containerRef.removeEventListener('wheel', this.wheelHandler);
   }
