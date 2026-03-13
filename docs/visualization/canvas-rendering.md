@@ -718,7 +718,7 @@ Step 8: Render (Three.js renderer)
 Step 9: Next frame
 ```
 
-See [`doc/animation-loop.md`](../animation-loop.md) for detailed timing and dependencies.
+Canvas rendering happens via `TerrainTextureObjectManager` listening to context tile events.
 
 ---
 

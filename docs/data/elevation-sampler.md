@@ -21,7 +21,7 @@ meshObjectManager = new MeshObjectManager(
 );
 ```
 
-It's then used by all mesh factories (BuildingMeshFactory, VegetationMeshFactory, StructureMeshFactory, etc.) to determine object placement heights during the animation loop's mesh creation phase.
+It's then used by all mesh factories (BuildingMeshFactory, VegetationMeshFactory, StructureMeshFactory, etc.) to determine object placement heights when creating 3D feature objects.
 
 ---
 
@@ -428,7 +428,7 @@ On modern CPUs, sampling 10,000 elevations takes < 10 ms.
 
 ### Integration in Animation Loop
 
-ElevationSampler is called during the **mesh creation phase** of the animation loop (as documented in [Animation Loop Architecture](../animation-loop.md)):
+ElevationSampler is called during mesh creation when 3D features are placed on terrain:
 
 ```
 Frame N:
@@ -498,7 +498,7 @@ matrix.setPosition(treeX, terrainY + trunkOffset, -treeY);
 
 ### Lifecycle Integration
 
-ElevationSampler is initialized once at app startup and distributed to all mesh factories. It's used during the **mesh creation phase** of the animation loop to sample terrain elevation. For complete integration details including initialization, animation loop orchestration, and cleanup, see **[3D Object Visualization](../visualization/objects.md#rendering-pipeline)** and **[Ground Surface Rendering](../visualization/ground-surface.md#integration-with-drone-system)**.
+ElevationSampler is initialized once at app startup and distributed to all mesh factories. It samples terrain elevation when creating 3D feature objects. For complete integration details, see **[3D Object Visualization](../visualization/objects.md#rendering-pipeline)** and **[Ground Surface Rendering](../visualization/ground-surface.md#integration-with-drone-system)**.
 
 ### Coordinate System Consistency
 

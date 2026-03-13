@@ -277,7 +277,7 @@ All ground surface code uses this formula consistently. Implementation details:
 
 ### Lifecycle
 
-Ground surface rendering is tightly integrated with the drone's **animation loop** and is driven by the standard animation frame sequence. See [Animation Loop Architecture](../animation-loop.md) for the complete frame timing and detailed step-by-step breakdown.
+Ground surface rendering is driven by tile events from `ElevationDataManager` and `ContextDataManager`; meshes are created/removed via `TerrainObjectManager` as tiles load/unload.
 
 Terrain tiles are added/removed as the drone moves (steps 2-4 handle elevation loading, mesh creation, and removal). The system maintains a configurable ring of tiles around the drone and evicts tiles outside the ring.
 

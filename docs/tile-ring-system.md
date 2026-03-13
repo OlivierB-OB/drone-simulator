@@ -335,21 +335,7 @@ Lower zoom = Fewer tiles, coarser detail, faster loading
 
 ### Animation Loop Timing
 
-The ring system updates are synchronized with the animation loop. See `doc/animation-loop.md` **Step 1-2** for the exact frame sequence:
-
-```mermaid
-flowchart TD
-    Frame["Frame N"]
-    Frame --> S1["Step 1: drone.applyMove<br/>(deltaTime)"]
-    S1 -->|updates drone.location| S2["Step 2: elevationData<br/>.setLocation"]
-    S2 -->|updates ring| S23["contextData<br/>.setLocation"]
-    S23 -->|updates ring| Check{Ring<br/>changed?}
-    Check -->|No| S3["Steps 3-9:<br/>Mesh creation,<br/>rendering, etc."]
-    Check -->|Yes| RingUP["Unload old tiles<br/>→ tileRemoved events<br/>Queue new tiles<br/>→ begin network loading"]
-    RingUP --> S3
-```
-
-**Key constraint:** Ring updates before mesh creation so meshes have fresh data
+The ring system updates when the drone moves. AnimationLoop calls `drone.applyMove(deltaTime)`, which emits `locationChanged`. This triggers `ElevationDataManager.setLocation()` and `ContextDataManager.setLocation()`, which update their tile rings. Ring updates complete before mesh creation so meshes have fresh data.
 
 ### Tile Consumer: TerrainGeometryObjectManager
 
@@ -390,5 +376,4 @@ flowchart TD
 ## See Also
 
 - **[Glossary](../glossary.md)** - Definitions of all technical terms
-- **[Animation Loop](animation-loop.md)** - Frame-by-frame integration
 - **[Coordinate System](coordinate-system.md)** - Z-negation and Mercator details

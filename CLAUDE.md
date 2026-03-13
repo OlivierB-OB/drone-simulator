@@ -64,7 +64,7 @@ Full docs in `docs/`. See `docs/README.md` for the complete index.
 - `src/visualization/DroneObject.ts` - Cone mesh representing the drone in the scene
 - `src/config.ts` - Centralized config: drone position/speed, camera chase distance/height, elevation zoom/ring/concurrency
 
-**Animation Frame Order:** See `docs/animation-loop.md` for the detailed frame sequence, timing, and dependencies. The animation loop is orchestrated through event subscriptions triggered by `drone.applyMove(deltaTime)` (step 1), which cascades into data loading, mesh creation, and rendering.
+**Animation Frame Timing:** `AnimationLoop` (`src/core/AnimationLoop.ts`) manages `requestAnimationFrame` timing and calls `drone.applyMove(deltaTime)` each frame. Subsequent data loading, mesh creation, and rendering are orchestrated via event subscriptions in `App.tsx` and triggered by drone movement—not controlled by AnimationLoop itself.
 
 ## Coordinate System: World → Three.js Conversion
 

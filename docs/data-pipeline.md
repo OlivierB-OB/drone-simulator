@@ -285,7 +285,6 @@ flowchart LR
 - **Canvas rendering**: [`visualization/canvas-rendering.md`](visualization/canvas-rendering.md)
 - **Ground surface (terrain mesh)**: [`visualization/ground-surface.md`](visualization/ground-surface.md)
 - **3D objects**: [`visualization/objects.md`](visualization/objects.md)
-- **Animation loop**: [`animation-loop.md`](animation-loop.md) — frame-by-frame orchestration
 - **Coordinate system**: [`coordinate-system.md`](coordinate-system.md) — Mercator → Three.js math
 - **Tile ring system**: [`tile-ring-system.md`](tile-ring-system.md) — ring loading details
 - **Glossary**: [`glossary.md`](glossary.md)

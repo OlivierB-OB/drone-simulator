@@ -111,7 +111,6 @@ drone-simulator/
 │       └── drone/                 # Drone visual representation
 ├── docs/                           # Comprehensive documentation (76 files)
 │   ├── architecture.md            # Component diagram & data flow
-│   ├── animation-loop.md          # 9-step frame sequence
 │   ├── coordinate-system.md       # CRITICAL: Mercator ↔ Three.js conversion
 │   ├── data/                      # Elevation & contextual data docs
 │   ├── visualization/             # Canvas rendering, mesh creation
@@ -182,7 +181,6 @@ The `docs/` directory contains 76 comprehensive files organized by topic:
 ### Core Concepts
 
 - **[coordinate-system.md](docs/coordinate-system.md)** ⭐ **CRITICAL** — Mercator to Three.js conversion (Z-negation, azimuth mapping)
-- **[animation-loop.md](docs/animation-loop.md)** — 9-step frame sequence, timing, dependencies
 - **[tile-ring-system.md](docs/tile-ring-system.md)** — Spatial tile loading/eviction strategy
 - **[data-pipeline.md](docs/data-pipeline.md)** — Four-stage pipeline used across systems
 
@@ -339,7 +337,6 @@ MIT — See [`LICENSE`](LICENSE) for details
 ## 🔗 See Also
 
 - **Architecture Deep Dive** — [`docs/architecture.md`](docs/architecture.md)
-- **Animation Frame Sequence** — [`docs/animation-loop.md`](docs/animation-loop.md)
 - **Coordinate System** — [`docs/coordinate-system.md`](docs/coordinate-system.md)
 - **All Documentation** — [`docs/README.md`](docs/README.md)
 - **Development Philosophy** — [`CLAUDE.md`](CLAUDE.md)

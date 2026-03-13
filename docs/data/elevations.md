@@ -337,11 +337,9 @@ Elevation data is used to create the visible terrain mesh in the 3D scene. For d
 
 Briefly: TerrainGeometryFactory reads the elevation grid, creates 256×256 vertices with proper coordinate transformation, computes normals for lighting, and generates triangle indices. The resulting mesh combines with OSM feature textures to form the final terrain surface (approximately 131,000 vertices per tile).
 
-### Animation Frame Order
+### Animation Frame Integration
 
-Elevation loading integrates into the standard animation frame sequence. See [Animation Loop Architecture](../animation-loop.md) for the complete frame timing and detailed step-by-step breakdown.
-
-**Key constraint:** Elevation data must update **before** terrain mesh creation (step 2 before step 4) so that meshes have height data available when they are created.
+Elevation data updates when the drone moves. `AnimationLoop` calls `drone.applyMove(deltaTime)` each frame, which triggers `ElevationDataManager.setLocation()` via event subscription. Elevation tiles must load before terrain meshes are created.
 
 ### Coordinate Consistency: Mercator to Three.js
 

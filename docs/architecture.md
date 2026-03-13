@@ -105,7 +105,7 @@ flowchart TD
 
 ### Each Frame
 
-See [`doc/animation-loop.md`](animation-loop.md) for the complete 9-step frame sequence with timing details and dependencies.
+Data loading (elevation, context), mesh creation, and rendering happen via event subscriptions; see `src/App.tsx` for how drone movement cascades into tile loading and visual updates.
 
 ### As Drone Moves
 - Drone moves through geographic coordinates (Mercator projection)

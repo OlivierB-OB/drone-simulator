@@ -341,8 +341,7 @@ The system handles missing data and cache failures:
 
 ## Integration & Performance
 
-Context data loading runs in **step 3** of the animation frame sequence (after drone movement, before mesh creation). For event flow, coordinate transforms, and tile ring management, see:
-- **[Animation Loop Architecture](../animation-loop.md)** — full frame sequence
+Context data loads when the drone moves, after elevation updates. For tile ring management, caching, and network concurrency, see:
 - **[Tile Ring System](../tile-ring-system.md)** — ring lifecycle, caching, eviction, network concurrency
 - **[Coordinate System](../coordinate-system.md)** — Mercator → Three.js transforms
 
