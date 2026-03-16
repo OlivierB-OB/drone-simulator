@@ -80,7 +80,7 @@ export class TerrainCanvasRenderer {
 
     for (const lu of sorted) {
       ctx.fillStyle = lu.color;
-      this.drawPolygon(ctx, lu.geometry, bounds, scaleX, scaleY, true, false);
+      this.drawPolygon(ctx, lu.geometry, bounds, scaleX, scaleY);
     }
   }
 
@@ -93,18 +93,9 @@ export class TerrainCanvasRenderer {
   ): void {
     for (const water of tile.features.waters) {
       if (!water.isArea || water.type === 'wetland') continue;
+      if (water.geometry.type !== 'Polygon') continue;
       ctx.fillStyle = water.color;
-      if (water.geometry.type === 'Polygon') {
-        this.drawPolygon(
-          ctx,
-          water.geometry,
-          bounds,
-          scaleX,
-          scaleY,
-          true,
-          false
-        );
-      }
+      this.drawPolygon(ctx, water.geometry, bounds, scaleX, scaleY);
     }
   }
 
@@ -117,18 +108,9 @@ export class TerrainCanvasRenderer {
   ): void {
     for (const water of tile.features.waters) {
       if (water.type !== 'wetland') continue;
+      if (water.geometry.type !== 'Polygon') continue;
       ctx.fillStyle = water.color;
-      if (water.geometry.type === 'Polygon') {
-        this.drawPolygon(
-          ctx,
-          water.geometry,
-          bounds,
-          scaleX,
-          scaleY,
-          true,
-          false
-        );
-      }
+      this.drawPolygon(ctx, water.geometry, bounds, scaleX, scaleY);
     }
   }
 
@@ -144,11 +126,10 @@ export class TerrainCanvasRenderer {
     ctx.lineJoin = 'round';
     for (const water of tile.features.waters) {
       if (water.isArea) continue;
+      if (water.geometry.type !== 'LineString') continue;
       ctx.strokeStyle = water.color;
       ctx.lineWidth = water.widthMeters * scaleX;
-      if (water.geometry.type === 'LineString') {
-        this.drawLineString(ctx, water.geometry, bounds, scaleX, scaleY);
-      }
+      this.drawLineString(ctx, water.geometry, bounds, scaleX, scaleY);
     }
   }
 
@@ -162,32 +143,9 @@ export class TerrainCanvasRenderer {
     for (const veg of tile.features.vegetation) {
       // tree and tree_row are mesh-only (§5.4) — no canvas rendering
       if (veg.type === 'tree' || veg.type === 'tree_row') continue;
-
+      if (veg.geometry.type !== 'Polygon') continue;
       ctx.fillStyle = veg.color;
-
-      if (veg.geometry.type === 'Polygon') {
-        this.drawPolygon(
-          ctx,
-          veg.geometry,
-          bounds,
-          scaleX,
-          scaleY,
-          true,
-          false
-        );
-      } else if (veg.geometry.type === 'LineString') {
-        ctx.strokeStyle = veg.color;
-        ctx.lineWidth = 0.5;
-        ctx.setLineDash([]);
-        this.drawLineString(ctx, veg.geometry, bounds, scaleX, scaleY);
-      } else if (veg.geometry.type === 'Point') {
-        const [x, y] = veg.geometry.coordinates as [number, number];
-        const canvasX = (x - bounds.minX) * scaleX;
-        const canvasY = (bounds.maxY - y) * scaleY;
-        ctx.beginPath();
-        ctx.arc(canvasX, canvasY, 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      this.drawPolygon(ctx, veg.geometry, bounds, scaleX, scaleY);
     }
   }
 
@@ -204,15 +162,7 @@ export class TerrainCanvasRenderer {
       ctx.strokeStyle = aeroway.color;
 
       if (aeroway.geometry.type === 'Polygon') {
-        this.drawPolygon(
-          ctx,
-          aeroway.geometry,
-          bounds,
-          scaleX,
-          scaleY,
-          true,
-          false
-        );
+        this.drawPolygon(ctx, aeroway.geometry, bounds, scaleX, scaleY);
       } else if (aeroway.geometry.type === 'LineString') {
         ctx.lineWidth = (aeroway.widthMeters ?? 45) * scaleX; // runway: 45m, taxiway: 23m, taxilane: 12m
         this.drawLineString(ctx, aeroway.geometry, bounds, scaleX, scaleY);
@@ -276,9 +226,7 @@ export class TerrainCanvasRenderer {
     geometry: Polygon,
     bounds: MercatorBounds,
     scaleX: number,
-    scaleY: number,
-    fill: boolean,
-    stroke: boolean
+    scaleY: number
   ): void {
     const rings = geometry.coordinates as [number, number][][];
 
@@ -298,8 +246,7 @@ export class TerrainCanvasRenderer {
       ctx.closePath();
     }
 
-    if (fill) ctx.fill('evenodd');
-    if (stroke) ctx.stroke();
+    ctx.fill('evenodd');
   }
 
   private drawLineString(

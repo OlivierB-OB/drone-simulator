@@ -7,11 +7,13 @@ The drone simulator visualizes millions of OpenStreetMap (OSM) features—roads,
 ### Why Canvas Textures?
 
 Rendering each OSM feature as an individual 3D mesh would create **millions of geometry objects**, causing:
+
 - Excessive draw calls (GPU bottleneck)
 - Memory overhead (vertices + indices per feature)
 - CPU overhead during scene management
 
 Instead, features are **rasterized to a 2048×2048 canvas** per tile, then applied as a texture. Result:
+
 - **Single texture per tile** (minimal memory: ~12 MB per canvas)
 - **Single mesh per tile** (one draw call per tile)
 - **CPU rendering** is fast enough for offline canvas generation
@@ -38,13 +40,13 @@ Visible in 3D scene
 
 ### Classes & Components
 
-| Component | Responsibility |
-|-----------|-----------------|
-| **ContextDataTile** | Data structure holding parsed OSM features for a tile (buildings, roads, water, vegetation, etc.) |
-| **TerrainCanvasRenderer** | Main rendering engine; draws features to canvas in painter's algorithm order |
-| **MercatorBounds** | Spatial bounds object: `{minX, maxX, minY, maxY}` defining tile extents in Mercator coordinates |
-| **CanvasRenderingContext2D** | Standard HTML5 canvas 2D drawing API |
-| **Three.js CanvasTexture** | Wraps HTML canvas as a Three.js texture; applied to terrain mesh material |
+| Component                    | Responsibility                                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------------- |
+| **ContextDataTile**          | Data structure holding parsed OSM features for a tile (buildings, roads, water, vegetation, etc.) |
+| **TerrainCanvasRenderer**    | Main rendering engine; draws features to canvas in painter's algorithm order                      |
+| **MercatorBounds**           | Spatial bounds object: `{minX, maxX, minY, maxY}` defining tile extents in Mercator coordinates   |
+| **CanvasRenderingContext2D** | Standard HTML5 canvas 2D drawing API                                                              |
+| **Three.js CanvasTexture**   | Wraps HTML canvas as a Three.js texture; applied to terrain mesh material                         |
 
 ### Data Flow Diagram
 
@@ -103,6 +105,7 @@ Visible in 3D scene
 ### 1. Tile Data Input
 
 **Source:** `ContextDataManager` provides a parsed `ContextDataTile` object containing:
+
 - Buildings (polygons, areas)
 - Roads (lines with width)
 - Railways (lines with width and dash pattern)
@@ -116,14 +119,16 @@ Visible in 3D scene
 **Input:** Mercator bounds `{minX, maxX, minY, maxY}` for the tile
 
 **Calculation:**
+
 ```typescript
 const mercatorWidth = mercatorBounds.maxX - mercatorBounds.minX;
 const mercatorHeight = mercatorBounds.maxY - mercatorBounds.minY;
-const scaleX = width / mercatorWidth;    // canvas width = 2048 pixels
-const scaleY = height / mercatorHeight;  // canvas height = 2048 pixels
+const scaleX = width / mercatorWidth; // canvas width = 2048 pixels
+const scaleY = height / mercatorHeight; // canvas height = 2048 pixels
 ```
 
 This maps Mercator coordinates to canvas pixel coordinates:
+
 ```
 canvasX = (mercatorX - minX) * scaleX
 canvasY = (maxY - mercatorY) * scaleY
@@ -134,8 +139,9 @@ canvasY = (maxY - mercatorY) * scaleY
 ### 3. Canvas Preparation
 
 **Clear with base color:**
+
 ```typescript
-ctx.fillStyle = groundColors.default;  // '#d8c8a8' (tan)
+ctx.fillStyle = groundColors.default; // '#d8c8a8' (tan)
 ctx.fillRect(0, 0, 2048, 2048);
 ```
 
@@ -145,17 +151,17 @@ Features are drawn in a specific order so that overlapping features layer correc
 
 **Layer order (lines 38-52 in `TerrainCanvasRenderer.ts`):**
 
-| # | Layer | Method | Features | Z-Order |
-|---|-------|--------|----------|---------|
-| 0 | Ground fill | `clear()` | Base tan color | Lowest |
-| 1 | Landuse | `drawLanduse()` | Parks, forests, residential, farmland | Background |
-| 2 | Water bodies | `drawWaterBodies()` | Lakes, ponds, reservoirs (polygons) | Mid-background |
-| 3 | Wetlands | `drawWetlands()` | Marshes, swamps (polygon areas) | Mid-background |
-| 4 | Waterway lines | `drawWaterwayLines()` | Rivers, canals, streams (lines) | Mid-ground |
-| 5 | Vegetation | `drawVegetation()` | Forests, woods, scrub (areas) | Mid-ground |
-| 6 | Aeroways | `drawAeroways()` | Runways, taxiways, helipads | Mid-ground |
-| 7 | Roads | `drawRoads()` | Streets, highways (sorted by width ascending) | Foreground |
-| 8 | Railways | `drawRailways()` | Rail lines with dashes | Highest |
+| #   | Layer          | Method                | Features                                      | Z-Order        |
+| --- | -------------- | --------------------- | --------------------------------------------- | -------------- |
+| 0   | Ground fill    | `clear()`             | Base tan color                                | Lowest         |
+| 1   | Landuse        | `drawLanduse()`       | Parks, forests, residential, farmland         | Background     |
+| 2   | Water bodies   | `drawWaterBodies()`   | Lakes, ponds, reservoirs (polygons)           | Mid-background |
+| 3   | Wetlands       | `drawWetlands()`      | Marshes, swamps (polygon areas)               | Mid-background |
+| 4   | Waterway lines | `drawWaterwayLines()` | Rivers, canals, streams (lines)               | Mid-ground     |
+| 5   | Vegetation     | `drawVegetation()`    | Forests, woods, scrub (areas)                 | Mid-ground     |
+| 6   | Aeroways       | `drawAeroways()`      | Runways, taxiways, helipads                   | Mid-ground     |
+| 7   | Roads          | `drawRoads()`         | Streets, highways (sorted by width ascending) | Foreground     |
+| 8   | Railways       | `drawRailways()`      | Rail lines with dashes                        | Highest        |
 
 ### 5. Feature Drawing Methods
 
@@ -168,12 +174,12 @@ for (const ring of polygonRings) {
   for (const [x, y] of ring) {
     canvasX = (x - bounds.minX) * scaleX;
     canvasY = (bounds.maxY - y) * scaleY;
-    ctx.moveTo(canvasX, canvasY);  // First point
-    ctx.lineTo(canvasX, canvasY);  // Subsequent points
+    ctx.moveTo(canvasX, canvasY); // First point
+    ctx.lineTo(canvasX, canvasY); // Subsequent points
   }
-  ctx.closePath();  // Close ring
+  ctx.closePath(); // Close ring
 }
-ctx.fill('evenodd');  // Handle holes correctly
+ctx.fill('evenodd'); // Handle holes correctly
 ```
 
 **Even-odd fill rule:** For polygons with holes (e.g., a lake with islands), the even-odd rule correctly handles alternate winding. A point is filled if a ray from the point crosses an odd number of boundaries.
@@ -187,13 +193,14 @@ ctx.beginPath();
 for (const [x, y] of coordinates) {
   canvasX = (x - bounds.minX) * scaleX;
   canvasY = (bounds.maxY - y) * scaleY;
-  ctx.moveTo(canvasX, canvasY);      // First point
-  ctx.lineTo(canvasX, canvasY);      // Subsequent points
+  ctx.moveTo(canvasX, canvasY); // First point
+  ctx.lineTo(canvasX, canvasY); // Subsequent points
 }
-ctx.stroke();  // Draw line
+ctx.stroke(); // Draw line
 ```
 
 **Line properties:**
+
 - `lineWidth` = feature width in meters × `scaleX` (converts Mercator meters to canvas pixels)
 - `strokeStyle` = feature color (from config)
 - `lineCap` = 'round' (roads) or 'butt' (railways)
@@ -208,7 +215,7 @@ const [x, y] = coordinates;
 const canvasX = (x - bounds.minX) * scaleX;
 const canvasY = (bounds.maxY - y) * scaleY;
 ctx.beginPath();
-ctx.arc(canvasX, canvasY, radius, 0, Math.PI * 2);  // radius in pixels
+ctx.arc(canvasX, canvasY, radius, 0, Math.PI * 2); // radius in pixels
 ctx.fill();
 ```
 
@@ -218,12 +225,13 @@ After all features are drawn, the canvas is converted to a Three.js texture:
 
 ```typescript
 const texture = new THREE.CanvasTexture(canvas);
-texture.magFilter = THREE.NearestFilter;      // Close: sharp pixels
-texture.minFilter = THREE.LinearMipmapLinearFilter;  // Distance: blurred
+texture.magFilter = THREE.NearestFilter; // Close: sharp pixels
+texture.minFilter = THREE.LinearMipmapLinearFilter; // Distance: blurred
 texture.generateMipmaps = true;
 ```
 
 This texture is then applied to the terrain mesh material:
+
 ```typescript
 const material = new THREE.MeshPhongMaterial({ map: texture });
 const mesh = new THREE.Mesh(geometry, material);
@@ -280,6 +288,7 @@ const sorted = [...tile.features.roads].sort(
 ### Input: Mercator Coordinates (Geographic)
 
 OSM features arrive with coordinates in **Mercator projection**:
+
 - **X:** Increases eastward (longitude)
 - **Y:** Increases northward (latitude)
 - **Units:** Meters (Web Mercator EPSG:3857)
@@ -289,6 +298,7 @@ Example: Paris = (261,700 m, 6,250,000 m)
 ### Output: Canvas Pixel Coordinates (Raster)
 
 Canvas is a 2048×2048 pixel image:
+
 - **X:** 0 to 2048 (left to right)
 - **Y:** 0 to 2048 (top to bottom, inverted from Mercator)
 - **Units:** Pixels
@@ -322,13 +332,13 @@ South (low mercatorY)  → high canvasY (bottom of canvas)
 
 Code lines where transformation occurs:
 
-| Location | Context |
-|----------|---------|
-| `TerrainCanvasRenderer.ts:40-43` | Scale factor calculation in `renderTile()` |
-| `TerrainCanvasRenderer.ts:338-339` | Polygon coordinate transform in `drawPolygon()` |
+| Location                           | Context                                               |
+| ---------------------------------- | ----------------------------------------------------- |
+| `TerrainCanvasRenderer.ts:40-43`   | Scale factor calculation in `renderTile()`            |
+| `TerrainCanvasRenderer.ts:338-339` | Polygon coordinate transform in `drawPolygon()`       |
 | `TerrainCanvasRenderer.ts:367-368` | LineString coordinate transform in `drawLineString()` |
-| `TerrainCanvasRenderer.ts:215-216` | Point coordinate transform (vegetation example) |
-| `TerrainCanvasRenderer.ts:257-258` | Point coordinate transform (aeroways example) |
+| `TerrainCanvasRenderer.ts:215-216` | Point coordinate transform (vegetation example)       |
+| `TerrainCanvasRenderer.ts:257-258` | Point coordinate transform (aeroways example)         |
 
 ---
 
@@ -341,7 +351,7 @@ Code lines where transformation occurs:
 ```typescript
 drawPolygon(
   ctx: CanvasRenderingContext2D,
-  rings: Array<Array<[number, number]>>,
+  rings: [number, number][][],
   bounds: MercatorBounds,
   scaleX: number,
   scaleY: number,
@@ -376,7 +386,7 @@ drawPolygon(
 ```typescript
 drawLineString(
   ctx: CanvasRenderingContext2D,
-  coordinates: Array<[number, number]>,
+  coordinates: [number, number][],
   bounds: MercatorBounds,
   scaleX: number,
   scaleY: number
@@ -403,6 +413,7 @@ drawLineString(
 ```
 
 **Properties before calling:**
+
 - `ctx.strokeStyle` = color (e.g., '#777060' for roads)
 - `ctx.lineWidth` = width in pixels (`feature.widthMeters * scaleX`)
 - `ctx.lineCap` = 'round' or 'butt'
@@ -424,6 +435,7 @@ ctx.fill();
 ```
 
 **Examples:**
+
 - Helipad: radius = 4 pixels (line 260)
 - Vegetation point: radius = 2 pixels (line 218)
 
@@ -433,63 +445,68 @@ ctx.fill();
 
 ### All Supported Features
 
-| Feature Type | OSM Key | Example Sub-Types | Canvas Drawing Method | Color Config | Width/Dash |
-|--------------|---------|-------------------|----------------------|--------------|-----------|
-| **Landuse** | `landuse` | grassland, farmland, residential, commercial, industrial, park, forest | Polygon | `groundColors.landuse.*` | N/A |
-| **Water bodies** | `natural=water` | lake, pond, reservoir | Polygon | `groundColors.water.body` (#3a6ab0) | N/A |
-| **Waterways** | `waterway` | river, canal, stream | LineString | `groundColors.water.line` (#3a6ab0) | From `waterwayWidthsMeters` |
-| **Wetlands** | `natural=wetland` | marsh, bog, swamp | Polygon | `groundColors.water.wetland` (#5a9a6a) | N/A |
-| **Vegetation** | `natural` | wood, forest, scrub, heath, fell, tundra | Polygon/LineString/Point | `groundColors.vegetation.*` (#3a7a30) | 0.5px (line) or 2px (point) |
-| **Aeroways** | `aeroway` | aerodrome, runway, taxiway, apron, helipad | Polygon/LineString/Point | `groundColors.aeroways.*` | From feature or 45m/4px |
-| **Roads** | `highway` | motorway, primary, residential, footway, track, path | LineString | `roadSpec.*.color` + `surfaceColors` | From `roadSpec.*.widthMeters` + special `[2,2]` for steps |
-| **Railways** | `railway` | rail, light_rail, tram, metro, monorail, disused | LineString | `railwaySpec.*.color` (#888888) | From `railwaySpec.*.widthMeters` + `dash` pattern |
+| Feature Type     | OSM Key           | Example Sub-Types                                                      | Canvas Drawing Method    | Color Config                           | Width/Dash                                                |
+| ---------------- | ----------------- | ---------------------------------------------------------------------- | ------------------------ | -------------------------------------- | --------------------------------------------------------- |
+| **Landuse**      | `landuse`         | grassland, farmland, residential, commercial, industrial, park, forest | Polygon                  | `groundColors.landuse.*`               | N/A                                                       |
+| **Water bodies** | `natural=water`   | lake, pond, reservoir                                                  | Polygon                  | `groundColors.water.body` (#3a6ab0)    | N/A                                                       |
+| **Waterways**    | `waterway`        | river, canal, stream                                                   | LineString               | `groundColors.water.line` (#3a6ab0)    | From `waterwayWidthsMeters`                               |
+| **Wetlands**     | `natural=wetland` | marsh, bog, swamp                                                      | Polygon                  | `groundColors.water.wetland` (#5a9a6a) | N/A                                                       |
+| **Vegetation**   | `natural`         | wood, forest, scrub, heath, fell, tundra                               | Polygon/LineString/Point | `groundColors.vegetation.*` (#3a7a30)  | 0.5px (line) or 2px (point)                               |
+| **Aeroways**     | `aeroway`         | aerodrome, runway, taxiway, apron, helipad                             | Polygon/LineString/Point | `groundColors.aeroways.*`              | From feature or 45m/4px                                   |
+| **Roads**        | `highway`         | motorway, primary, residential, footway, track, path                   | LineString               | `roadSpec.*.color` + `surfaceColors`   | From `roadSpec.*.widthMeters` + special `[2,2]` for steps |
+| **Railways**     | `railway`         | rail, light_rail, tram, metro, monorail, disused                       | LineString               | `railwaySpec.*.color` (#888888)        | From `railwaySpec.*.widthMeters` + `dash` pattern         |
 
 ### Color Values (from `src/config.ts`)
 
 #### Landuse Colors
+
 ```typescript
 groundColors.landuse = {
-  grassland: '#90b860',      // Green
-  farmland: '#c0cc70',       // Light green
-  residential: '#d8d4cc',    // Tan
-  commercial: '#d8d4cc',     // Tan
-  industrial: '#d8d4cc',     // Tan
-  forest: '#3a7a30',         // Dark green
-  park: '#90b860',           // Green
+  grassland: '#90b860', // Green
+  farmland: '#c0cc70', // Light green
+  residential: '#d8d4cc', // Tan
+  commercial: '#d8d4cc', // Tan
+  industrial: '#d8d4cc', // Tan
+  forest: '#3a7a30', // Dark green
+  park: '#90b860', // Green
   // ... 20+ more types
-}
+};
 ```
 
 #### Water Colors
+
 ```typescript
 groundColors.water = {
-  body: '#3a6ab0',     // Deep blue (lakes, ponds)
-  line: '#3a6ab0',     // Deep blue (rivers, streams)
-  wetland: '#5a9a6a',  // Teal (marshes, swamps)
-}
+  body: '#3a6ab0', // Deep blue (lakes, ponds)
+  line: '#3a6ab0', // Deep blue (rivers, streams)
+  wetland: '#5a9a6a', // Teal (marshes, swamps)
+};
 ```
 
 #### Vegetation Colors
+
 ```typescript
 groundColors.vegetation = {
-  wood: '#3a7a30',     // Dark green (woods, forests)
-  forest: '#3a7a30',   // Dark green
-  scrub: '#5a8a40',    // Medium green (bushes, scrub)
+  wood: '#3a7a30', // Dark green (woods, forests)
+  forest: '#3a7a30', // Dark green
+  scrub: '#5a8a40', // Medium green (bushes, scrub)
   // ... 3 more types
-}
+};
 ```
 
 #### Aeroway Colors
+
 ```typescript
 groundColors.aeroways = {
-  aerodrome: '#d8d4c0',  // Light tan (airport grounds)
-  runway: '#888880',     // Dark gray (landing strip)
-  taxiway: '#999990',    // Medium gray (aircraft path)
-  helipad: '#ccccaa',    // Pale yellow (helicopter landing)
-}
+  aerodrome: '#d8d4c0', // Light tan (airport grounds)
+  runway: '#888880', // Dark gray (landing strip)
+  taxiway: '#999990', // Medium gray (aircraft path)
+  helipad: '#ccccaa', // Pale yellow (helicopter landing)
+};
 ```
 
 #### Road Colors & Widths
+
 ```typescript
 roadSpec = {
   motorway: { widthMeters: 25, color: '#777060' },
@@ -499,10 +516,11 @@ roadSpec = {
   footway: { widthMeters: 2, color: '#ccccbb' },
   track: { widthMeters: 3, color: '#c4a882' },
   // ... 15+ more types
-}
+};
 ```
 
 #### Railway Widths & Dashes
+
 ```typescript
 railwaySpec = {
   rail: { widthMeters: 4, dash: [5, 3], color: '#888888' },
@@ -511,10 +529,11 @@ railwaySpec = {
   metro: { widthMeters: 4, dash: [4, 3], color: '#888888' },
   disused: { widthMeters: 2, dash: [2, 4], color: '#aaaaaa' },
   // ... 4 more types
-}
+};
 ```
 
 #### Waterway Widths
+
 ```typescript
 waterwayWidthsMeters = {
   river: 20,
@@ -523,20 +542,20 @@ waterwayWidthsMeters = {
   tidal_channel: 10,
   ditch: 2,
   drain: 2,
-}
+};
 ```
 
 ### Canvas Drawing Settings (from Code)
 
-| Feature Type | fillStyle | strokeStyle | lineWidth | lineCap | lineJoin | lineDash |
-|--------------|-----------|-------------|-----------|---------|----------|----------|
-| Landuse | `lu.color` | N/A | N/A | N/A | N/A | N/A |
-| Water bodies | `water.color` | N/A | N/A | N/A | N/A | N/A |
-| Waterways | N/A | `water.color` | `water.widthMeters * scaleX` | 'round' | 'round' | `[]` |
-| Vegetation | `veg.color` | N/A | N/A | N/A | N/A | N/A |
-| Aeroways | `aeroway.color` | `aeroway.color` | width varies | N/A | N/A | `[]` |
-| Roads | N/A | `road.surfaceColor \|\| road.color` | `road.widthMeters * scaleX` | 'round' | 'round' | `[2,2]` for steps, `[]` else |
-| Railways | N/A | `railway.color` | `railway.widthMeters * scaleX` | 'butt' | 'miter' | `railway.dash` |
+| Feature Type | fillStyle       | strokeStyle                         | lineWidth                      | lineCap | lineJoin | lineDash                     |
+| ------------ | --------------- | ----------------------------------- | ------------------------------ | ------- | -------- | ---------------------------- |
+| Landuse      | `lu.color`      | N/A                                 | N/A                            | N/A     | N/A      | N/A                          |
+| Water bodies | `water.color`   | N/A                                 | N/A                            | N/A     | N/A      | N/A                          |
+| Waterways    | N/A             | `water.color`                       | `water.widthMeters * scaleX`   | 'round' | 'round'  | `[]`                         |
+| Vegetation   | `veg.color`     | N/A                                 | N/A                            | N/A     | N/A      | N/A                          |
+| Aeroways     | `aeroway.color` | `aeroway.color`                     | width varies                   | N/A     | N/A      | `[]`                         |
+| Roads        | N/A             | `road.surfaceColor \|\| road.color` | `road.widthMeters * scaleX`    | 'round' | 'round'  | `[2,2]` for steps, `[]` else |
+| Railways     | N/A             | `railway.color`                     | `railway.widthMeters * scaleX` | 'butt'  | 'miter'  | `railway.dash`               |
 
 ---
 
@@ -545,10 +564,12 @@ waterwayWidthsMeters = {
 ### Canvas Size: 2048×2048
 
 **Trade-off:**
+
 - **Pro:** High detail, crisp roads/features at close range
 - **Con:** CPU rendering time increases with size
 
 Calculation:
+
 ```
 Pixels per meter = 2048 / tileWidth
 At zoom 15, tileWidth ≈ 40,075 meters
@@ -558,12 +579,14 @@ Pixels per meter ≈ 0.051 (very high detail)
 ### Redraw Frequency
 
 Canvas is **redrawn once per tile load**, not every frame:
+
 - **Cost:** CPU time once per new tile
 - **Benefit:** No per-frame overhead after initial load
 
 ### Memory Usage
 
 **Per-tile memory:**
+
 ```
 2048 × 2048 × 4 bytes (RGBA) ≈ 16 MB
 However, WebGL mipmapping doubles this ≈ 32 MB
@@ -575,8 +598,9 @@ Typical visible tiles: 3×3 grid = ~288 MB maximum
 ### Concurrency
 
 Contextual tiles load with concurrency control:
+
 ```typescript
-maxConcurrentLoads: 3  // Max 3 simultaneous tile fetches
+maxConcurrentLoads: 3; // Max 3 simultaneous tile fetches
 ```
 
 Canvas rendering is **synchronous** but fast (typically <100ms per 2048×2048 canvas).
@@ -617,11 +641,12 @@ Lake water:    Ring boundary crossed 0 times → Filled (correct)
 Tiles are positioned at **tile centers** in Mercator space:
 
 ```typescript
-meshPosition.x = tileCenter_mercatorX
-meshPosition.z = -tileCenter_mercatorY  // Z-negated
+meshPosition.x = tileCenter_mercatorX;
+meshPosition.z = -tileCenter_mercatorY; // Z-negated
 ```
 
 Canvas bounds match tile extent perfectly:
+
 ```
 Canvas pixel (0, 0)      ↔ Mercator (minX, maxY)
 Canvas pixel (2048, 0)   ↔ Mercator (maxX, maxY)
@@ -644,7 +669,7 @@ This ensures **pixel-perfect alignment** at tile boundaries.
 **Important:** `tree` and `tree_row` OSM features are **excluded from canvas**:
 
 ```typescript
-if (veg.type === 'tree' || veg.type === 'tree_row') continue;  // Line 188
+if (veg.type === 'tree' || veg.type === 'tree_row') continue; // Line 188
 ```
 
 **Reason:** Individual trees are rendered as **3D mesh objects** (cones/spheres) in the scene, not canvas textures. Tree rows are similarly 3D.
@@ -668,6 +693,7 @@ const texture = new THREE.CanvasTexture(canvas);
 ### Terrain Mesh System
 
 **Flow:**
+
 ```
 TerrainCanvasRenderer (canvas) → TerrainTextureFactory (texture) → TerrainObjectFactory
                                                                            ↓
@@ -677,27 +703,28 @@ TerrainCanvasRenderer (canvas) → TerrainTextureFactory (texture) → TerrainOb
 The canvas texture is applied to the terrain mesh via the material's `.map` property. The mesh is positioned using Mercator → Three.js transformation:
 
 ```typescript
-position.x = mercatorX
-position.y = 0
-position.z = -mercatorY  // Z-negated (critical!)
+position.x = mercatorX;
+position.y = 0;
+position.z = -mercatorY; // Z-negated (critical!)
 ```
 
 ### Coordinate Consistency
 
 Canvas rendering uses **identical transformation** as all other components:
 
-| Component | Transformation |
-|-----------|-----------------|
-| Canvas: `canvasY = (maxY - mercatorY) * scaleY` | Inverts Y |
-| Terrain geometry: Z vertices use `-mercatorY` | Inverts Y |
-| Drone position: Z = `-mercatorY` | Inverts Y |
-| Camera: lookAt uses Z negation | Inverts Y |
+| Component                                       | Transformation |
+| ----------------------------------------------- | -------------- |
+| Canvas: `canvasY = (maxY - mercatorY) * scaleY` | Inverts Y      |
+| Terrain geometry: Z vertices use `-mercatorY`   | Inverts Y      |
+| Drone position: Z = `-mercatorY`                | Inverts Y      |
+| Camera: lookAt uses Z negation                  | Inverts Y      |
 
 **Guarantee:** All components use the same formula. Buildings, roads, and terrain align perfectly in 3D space.
 
 ### Event-Driven Pipeline
 
 **Animation loop flow:**
+
 ```
 Step 1: Drone moves (Drone.applyMove)
    ↓
@@ -726,27 +753,27 @@ Canvas rendering happens via `TerrainTextureObjectManager` listening to context 
 
 ### Main Engine
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/visualization/terrain/texture/TerrainCanvasRenderer.ts` | 1-380 | Canvas rendering engine (9 drawing methods) |
-| `src/visualization/terrain/texture/TerrainTextureFactory.ts` | ~80 | Creates CanvasTexture from canvas |
-| `src/visualization/terrain/TerrainTextureObjectManager.ts` | ~100 | Listens to context tiles, triggers canvas generation |
+| File                                                         | Lines | Purpose                                              |
+| ------------------------------------------------------------ | ----- | ---------------------------------------------------- |
+| `src/visualization/terrain/texture/TerrainCanvasRenderer.ts` | 1-380 | Canvas rendering engine (9 drawing methods)          |
+| `src/visualization/terrain/texture/TerrainTextureFactory.ts` | ~80   | Creates CanvasTexture from canvas                    |
+| `src/visualization/terrain/TerrainTextureObjectManager.ts`   | ~100  | Listens to context tiles, triggers canvas generation |
 
 ### Configuration
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/config.ts` | 295-348 | `groundColors` object (all feature colors) |
+| File            | Lines   | Purpose                                           |
+| --------------- | ------- | ------------------------------------------------- |
+| `src/config.ts` | 295-348 | `groundColors` object (all feature colors)        |
 | `src/config.ts` | 353-429 | `roadSpec`, `railwaySpec`, `waterwayWidthsMeters` |
-| `src/config.ts` | 465-469 | `textureConfig.groundCanvasSize` (2048) |
+| `src/config.ts` | 465-469 | `textureConfig.groundCanvasSize` (2048)           |
 
 ### Integration Points
 
-| File | Purpose |
-|------|---------|
+| File                                        | Purpose                                |
+| ------------------------------------------- | -------------------------------------- |
 | `src/data/contextual/ContextDataManager.ts` | Provides tiles to TextureObjectManager |
-| `src/data/contextual/types.ts` | ContextDataTile, feature types |
-| `src/gis/types.ts` | MercatorBounds definition |
+| `src/data/contextual/types.ts`              | ContextDataTile, feature types         |
+| `src/gis/types.ts`                          | MercatorBounds definition              |
 
 ### Related Documentation
 

@@ -156,7 +156,7 @@ describe('ElevationDataManager', () => {
 
   describe('event emission', () => {
     it('should emit tileAdded when tile finishes loading', async () => {
-      const events: Array<{ key: string; tile: ElevationDataTile }> = [];
+      const events: { key: string; tile: ElevationDataTile }[] = [];
       manager.on('tileAdded', (data) => {
         events.push(data);
       });
@@ -211,7 +211,7 @@ describe('ElevationDataManager', () => {
     });
 
     it('should emit events in correct order: load → emit → process queue', async () => {
-      const events: Array<{ event: string; key: string }> = [];
+      const events: { event: string; key: string }[] = [];
 
       manager.on('tileAdded', ({ key }) => {
         events.push({ event: 'tileAdded', key });

@@ -55,7 +55,7 @@ export class ContextDataTileParser {
 
     // Build node map for coordinate lookup
     const nodeMap = new Map<number, { lat: number; lng: number }>();
-    const osm_elements = osmData.elements as Array<Record<string, unknown>>;
+    const osm_elements = osmData.elements as Record<string, unknown>[];
 
     for (const element of osm_elements) {
       if (element.type === 'node' && typeof element.id === 'number') {
@@ -72,7 +72,7 @@ export class ContextDataTileParser {
       if (element.type === 'way' && typeof element.id === 'number') {
         const nodes = (element.nodes as number[]) || [];
         const geometry = element.geometry as
-          | Array<{ lat: number; lon: number }>
+          | { lat: number; lon: number }[]
           | undefined;
         const coords = this.buildLineStringCoordinates(
           nodes,
@@ -257,7 +257,7 @@ export class ContextDataTileParser {
     }
 
     const members = element.members as
-      | Array<{ type: string; ref: number; role: string }>
+      | { type: string; ref: number; role: string }[]
       | undefined;
     if (!members || members.length === 0) return;
 
@@ -375,7 +375,7 @@ export class ContextDataTileParser {
    */
   private static buildLineStringCoordinates(
     nodes: number[],
-    geometry: Array<{ lat: number; lon: number }> | undefined,
+    geometry: { lat: number; lon: number }[] | undefined,
     nodeMap: Map<number, { lat: number; lng: number }>
   ): [number, number][] {
     const coordinates: [number, number][] = [];

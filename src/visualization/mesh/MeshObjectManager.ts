@@ -68,7 +68,7 @@ export class MeshObjectManager extends TileObjectManager<
       mesh.traverse((child) => {
         const m = child as unknown as {
           geometry?: { dispose: () => void };
-          material?: { dispose: () => void } | Array<{ dispose: () => void }>;
+          material?: { dispose: () => void } | { dispose: () => void }[];
         };
         m.geometry?.dispose();
         if (Array.isArray(m.material)) {

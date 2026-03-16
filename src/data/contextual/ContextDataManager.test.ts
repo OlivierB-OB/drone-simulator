@@ -157,7 +157,7 @@ describe('ContextDataManager', () => {
   // -----------------------------------------------------------------------
   describe('event emission', () => {
     it('emits tileAdded when tile is placed in cache', () => {
-      const events: Array<{ key: string; tile: ContextDataTile }> = [];
+      const events: { key: string; tile: ContextDataTile }[] = [];
       contextManager.on('tileAdded', (data) => events.push(data));
 
       const coords: TileCoordinates = { z: 15, x: 100, y: 100 };

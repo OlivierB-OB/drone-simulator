@@ -13,17 +13,6 @@ interface TileDataSource<TInput> {
   off(event: 'tileRemoved', handler: (data: { key: string }) => void): void;
 }
 
-interface RebuildTrigger {
-  on(
-    event: 'tileAdded',
-    handler: (data: { key: string; tile: unknown }) => void
-  ): void;
-  off(
-    event: 'tileAdded',
-    handler: (data: { key: string; tile: unknown }) => void
-  ): void;
-}
-
 /**
  * Abstract base class for managers that create/dispose typed objects
  * in response to tile lifecycle events from a data source.
@@ -75,7 +64,7 @@ export abstract class TileObjectManager<
 
   constructor(
     private readonly dataSource: TileDataSource<TInput>,
-    private readonly secondarySources: RebuildTrigger[] = []
+    private readonly secondarySources: TileDataSource<unknown>[] = []
   ) {
     super();
     dataSource.on('tileAdded', this.onTileAdded);

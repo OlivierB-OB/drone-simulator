@@ -298,10 +298,8 @@ function countMeshes(
 }
 
 /** Collect positions of rotor discs (CircleGeometry children positioned above Y=0) */
-function collectRotorPositions(
-  obj: Group | Mesh
-): Array<{ x: number; z: number }> {
-  const positions: Array<{ x: number; z: number }> = [];
+function collectRotorPositions(obj: Group | Mesh): { x: number; z: number }[] {
+  const positions: { x: number; z: number }[] = [];
   (obj as Group).traverse((child) => {
     if (child instanceof Mesh && child.geometry?.type === 'CircleGeometry') {
       positions.push({ x: child.position.x, z: child.position.z });
