@@ -1,11 +1,12 @@
 import {
   Shape,
-  Path,
   ExtrudeGeometry,
   MeshLambertMaterial,
+  DoubleSide,
   Mesh,
   Group,
   type Object3D,
+  Path,
 } from 'three';
 import type { BuildingVisual, Polygon } from '../../../data/contextual/types';
 import type { ElevationSampler } from '../util/ElevationSampler';
@@ -134,7 +135,10 @@ export class BuildingMeshFactory {
         building.roofColor ??
         (isPitched ? roofColorDefaults.pitched : roofColorDefaults.flat);
 
-      const wallMaterial = new MeshLambertMaterial({ color: wallColor });
+      const wallMaterial = new MeshLambertMaterial({
+        color: wallColor,
+        side: DoubleSide,
+      });
       const roofMaterial = new MeshLambertMaterial({ color: roofColor });
 
       // ExtrudeGeometry groups: 0 = sides (walls), 1 = top cap (roof/ceiling), 2 = bottom cap

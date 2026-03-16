@@ -44,6 +44,9 @@ export class ContextDataTileLoader {
   node["building"](${bbox});
   way["building"](${bbox});
   relation["building"](${bbox});
+  node["building:part"](${bbox});
+  way["building:part"](${bbox});
+  relation["building:part"](${bbox});
   way["highway"](${bbox});
   way["railway"](${bbox});
   way["waterway"](${bbox});
