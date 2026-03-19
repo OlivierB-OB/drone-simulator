@@ -3,15 +3,33 @@ import { classifyOvertureVegetation } from './overtureClassify';
 import type { Point, LineString, Polygon } from 'geojson';
 
 const POINT: Point = { type: 'Point', coordinates: [0, 0] };
-const LINE: LineString = { type: 'LineString', coordinates: [[0, 0], [1, 1]] };
+const LINE: LineString = {
+  type: 'LineString',
+  coordinates: [
+    [0, 0],
+    [1, 1],
+  ],
+};
 const POLYGON: Polygon = {
   type: 'Polygon',
-  coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]],
+  coordinates: [
+    [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+      [0, 0],
+    ],
+  ],
 };
 
 describe('classifyOvertureVegetation', () => {
   it('remaps land_cover tree Polygon to forest', () => {
-    const result = classifyOvertureVegetation('id1', { class: 'tree' }, POLYGON);
+    const result = classifyOvertureVegetation(
+      'id1',
+      { class: 'tree' },
+      POLYGON
+    );
     expect(result.type).toBe('forest');
   });
 
@@ -26,7 +44,11 @@ describe('classifyOvertureVegetation', () => {
   });
 
   it('passes forest Polygon through unchanged with heightCategory=tall', () => {
-    const result = classifyOvertureVegetation('id4', { class: 'forest' }, POLYGON);
+    const result = classifyOvertureVegetation(
+      'id4',
+      { class: 'forest' },
+      POLYGON
+    );
     expect(result.type).toBe('forest');
     expect(result.heightCategory).toBe('tall');
   });
@@ -37,12 +59,20 @@ describe('classifyOvertureVegetation', () => {
   });
 
   it('scrub Polygon is unaffected by tree remap', () => {
-    const result = classifyOvertureVegetation('id6', { class: 'scrub' }, POLYGON);
+    const result = classifyOvertureVegetation(
+      'id6',
+      { class: 'scrub' },
+      POLYGON
+    );
     expect(result.type).toBe('scrub');
   });
 
   it('wood Polygon has heightCategory=tall', () => {
-    const result = classifyOvertureVegetation('id7', { class: 'wood' }, POLYGON);
+    const result = classifyOvertureVegetation(
+      'id7',
+      { class: 'wood' },
+      POLYGON
+    );
     expect(result.type).toBe('wood');
     expect(result.heightCategory).toBe('tall');
   });

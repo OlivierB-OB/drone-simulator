@@ -176,7 +176,10 @@ export class OvertureParser {
         features.vegetation.push(
           classifyOvertureVegetation(id, props, geometry as Point)
         );
-      } else if (featureClass === 'tree_row' && geometry.type === 'LineString') {
+      } else if (
+        featureClass === 'tree_row' &&
+        geometry.type === 'LineString'
+      ) {
         features.vegetation.push(
           classifyOvertureVegetation(id, props, geometry as LineString)
         );

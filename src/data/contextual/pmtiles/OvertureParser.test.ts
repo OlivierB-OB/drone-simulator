@@ -219,7 +219,9 @@ describe('OvertureParser', () => {
     const layers: DecodedTile = new Map([
       [
         'land',
-        mockLayer([mockFeature(1, [[{ x: 2048, y: 2048 }]], { class: 'tree' })]),
+        mockLayer([
+          mockFeature(1, [[{ x: 2048, y: 2048 }]], { class: 'tree' }),
+        ]),
       ],
     ]);
 
@@ -231,10 +233,7 @@ describe('OvertureParser', () => {
 
   it('routes land LineString class=tree_row to vegetation', () => {
     const layers: DecodedTile = new Map([
-      [
-        'land',
-        mockLayer([mockFeature(2, [LINE], { class: 'tree_row' })]),
-      ],
+      ['land', mockLayer([mockFeature(2, [LINE], { class: 'tree_row' })])],
     ]);
 
     const features = OvertureParser.parse(layers, bounds, coords);
@@ -245,10 +244,7 @@ describe('OvertureParser', () => {
 
   it('routes land Polygon class=tree with no vegetation subtype to landuse', () => {
     const layers: DecodedTile = new Map([
-      [
-        'land',
-        mockLayer([mockFeature(3, [SQUARE], { class: 'tree' })]),
-      ],
+      ['land', mockLayer([mockFeature(3, [SQUARE], { class: 'tree' })])],
     ]);
 
     const features = OvertureParser.parse(layers, bounds, coords);
@@ -258,10 +254,7 @@ describe('OvertureParser', () => {
 
   it('remaps land_cover Polygon class=tree to forest', () => {
     const layers: DecodedTile = new Map([
-      [
-        'land_cover',
-        mockLayer([mockFeature(3, [SQUARE], { class: 'tree' })]),
-      ],
+      ['land_cover', mockLayer([mockFeature(3, [SQUARE], { class: 'tree' })])],
     ]);
 
     const features = OvertureParser.parse(layers, bounds, coords);

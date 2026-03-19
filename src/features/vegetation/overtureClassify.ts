@@ -46,7 +46,8 @@ export function classifyOvertureVegetation(
 ): VegetationVisual {
   const rawClass = (props.class as string) ?? 'vegetation';
   // land_cover `class: 'tree'` is a forested polygon area, not an individual tree
-  const vegClass = rawClass === 'tree' && geometry.type !== 'Point' ? 'forest' : rawClass;
+  const vegClass =
+    rawClass === 'tree' && geometry.type !== 'Point' ? 'forest' : rawClass;
   const height = typeof props.height === 'number' ? props.height : undefined;
 
   // Forest/wood types are always tall
