@@ -1,135 +1,53 @@
 import type { ContextDataTile } from './types';
-import type { TileCoordinates, MercatorBounds } from '../elevation/types';
+import type { TileCoordinates } from '../elevation/types';
 import { colorPalette } from '../../config';
 import { ContextTilePersistenceCache } from './ContextTilePersistenceCache';
-import { ContextDataTileParser } from './ContextDataTileParser';
-import { getTileMercatorBounds, MAX_EXTENT } from '../../gis/webMercator';
+import { getTileMercatorBounds } from '../../gis/webMercator';
 import { loadWithPersistenceCache } from '../shared/tileLoaderUtils';
-import { featureRegistry } from '../../features/registry';
-import '../../features/registration';
+import { OvertureParser } from './pmtiles/OvertureParser';
+import type { PMTilesReader } from './pmtiles/PMTilesReader';
 
 /**
- * Factory for loading and parsing context data tiles from OSM Overpass API.
+ * Factory for loading and parsing context data tiles from Overture Maps PMTiles.
  * Loads geospatial features (buildings, roads, railways, etc.) for a given tile.
  */
 export class ContextDataTileLoader {
   /**
-   * Converts Mercator meters to latitude/longitude (decimal degrees).
-   * Required for Overpass API bbox parameter.
-   */
-  private static mercatorToLatLng(x: number, y: number): [number, number] {
-    const lng = (x / MAX_EXTENT) * 180;
-    const lat =
-      (Math.atan(Math.sinh((Math.PI * y) / MAX_EXTENT)) * 180) / Math.PI;
-    return [lat, lng];
-  }
-
-  /**
-   * Generates an OverpassQL query string for a tile's bounding box.
-   * Queries for buildings, roads, railways, waters, airports, vegetation, and land use.
-   */
-  private static generateOverpassQuery(bounds: MercatorBounds): string {
-    // Convert bounds to lat/lng (south, west, north, east)
-    const [minLat, minLng] = this.mercatorToLatLng(bounds.minX, bounds.minY);
-    const [maxLat, maxLng] = this.mercatorToLatLng(bounds.maxX, bounds.maxY);
-
-    // Ensure correct order: (south, west, north, east)
-    const south = Math.min(minLat, maxLat);
-    const west = Math.min(minLng, maxLng);
-    const north = Math.max(minLat, maxLat);
-    const east = Math.max(minLng, maxLng);
-
-    const bbox = `${south},${west},${north},${east}`;
-
-    const fragments = featureRegistry
-      .getQueryModules()
-      .flatMap((m) => m.overpassFragments!(bbox));
-
-    return `[out:json][timeout:30];(\n  ${fragments.join('\n  ')}\n);\nout;>;\nout qt;`;
-  }
-
-  /**
-   * Loads a context data tile from the Overpass API.
-   * Parses the OSM response and groups features by type.
-   *
-   * @param coordinates - Tile coordinates to load
-   * @param endpoint - Overpass API endpoint
-   * @param timeout - Query timeout in milliseconds
-   * @param signal - Optional AbortSignal for cancellation
-   * @returns Loaded context tile
-   * @throws Error if tile cannot be loaded or parsed
+   * Loads a context data tile from Overture Maps PMTiles archives.
+   * Decodes MVT layers and classifies features by type.
    */
   static async loadTile(
     coordinates: TileCoordinates,
-    endpoint: string,
-    timeout: number,
+    reader: PMTilesReader,
     signal?: AbortSignal
   ): Promise<ContextDataTile> {
+    if (signal?.aborted) {
+      throw new Error('Aborted');
+    }
+
     const bounds = getTileMercatorBounds(coordinates);
-    const query = this.generateOverpassQuery(bounds);
 
     try {
-      // Create an AbortController that combines external signal with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      const layers = await reader.getTile(
+        coordinates.z,
+        coordinates.x,
+        coordinates.y
+      );
 
-      // If external signal is provided, abort controller when it signals
-      const abortHandler = signal ? () => controller.abort() : null;
-      if (signal && abortHandler) {
-        signal.addEventListener('abort', abortHandler);
-      }
+      const features = OvertureParser.parse(layers, bounds, coordinates);
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        body: query,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        signal: controller.signal,
-      });
-
-      try {
-        if (!response.ok) {
-          // Check for rate limiting
-          if (response.status === 429) {
-            const error = new Error(
-              `Overpass API rate limited (429): ${response.statusText}`
-            );
-            (error as Error & { statusCode: number }).statusCode = 429;
-            throw error;
-          }
-          throw new Error(`Overpass API error: ${response.statusText}`);
-        }
-
-        const osmData = await response.json();
-
-        // Parse OSM data and group features by type
-        const features = ContextDataTileParser.parseOSMData(
-          osmData,
-          bounds,
-          coordinates.z
-        );
-
-        return {
-          coordinates,
-          mercatorBounds: bounds,
-          zoomLevel: coordinates.z,
-          features,
-          colorPalette,
-        };
-      } finally {
-        clearTimeout(timeoutId);
-        if (signal && abortHandler) {
-          signal.removeEventListener('abort', abortHandler);
-        }
-      }
+      return {
+        coordinates,
+        mercatorBounds: bounds,
+        zoomLevel: coordinates.z,
+        features,
+        colorPalette,
+      };
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(
           `Error loading tile ${coordinates.z}/${coordinates.x}/${coordinates.y}: ${error.message}`,
-          {
-            cause: error,
-          }
+          { cause: error }
         );
       }
       throw error;
@@ -137,21 +55,12 @@ export class ContextDataTileLoader {
   }
 
   /**
-   * Attempts to load a tile with exponential backoff retry logic.
-   * Handles rate limiting (429) separately with longer backoff.
+   * Attempts to load a tile with basic retry logic.
    * Returns null if all retry attempts fail.
-   *
-   * @param coordinates - Tile coordinates to load
-   * @param endpoint - Overpass API endpoint
-   * @param timeout - Query timeout in milliseconds
-   * @param maxRetries - Maximum retry attempts (default: 3)
-   * @param signal - Optional AbortSignal for cancellation
-   * @returns Loaded tile or null if loading failed
    */
   static async loadTileWithRetry(
     coordinates: TileCoordinates,
-    endpoint: string,
-    timeout: number,
+    reader: PMTilesReader,
     maxRetries: number = 3,
     signal?: AbortSignal
   ): Promise<ContextDataTile | null> {
@@ -159,24 +68,10 @@ export class ContextDataTileLoader {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        return await this.loadTile(coordinates, endpoint, timeout, signal);
+        return await this.loadTile(coordinates, reader, signal);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        const isRateLimit =
-          (error as Error & { statusCode?: number }).statusCode === 429;
 
-        // Skip retry if rate limited (better to fail than hammer server more)
-        if (isRateLimit && attempt === 0) {
-          // Only retry once for rate limits, with long backoff
-          const delayMs = 1000; // Wait 1 second for rate limit
-          await new Promise((resolve) => setTimeout(resolve, delayMs));
-          continue;
-        } else if (isRateLimit) {
-          // Don't retry rate limit errors more than once
-          break;
-        }
-
-        // Exponential backoff for other errors: wait 100ms * 2^attempt before retry
         if (attempt < maxRetries - 1) {
           const delayMs = 100 * Math.pow(2, attempt);
           await new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -192,26 +87,18 @@ export class ContextDataTileLoader {
 
   /**
    * Loads a context data tile from the persistence cache if available,
-   * otherwise fetches from Overpass API with retries and caches the result.
-   *
-   * @param coordinates - Tile coordinates to load
-   * @param endpoint - Overpass API endpoint
-   * @param timeout - Query timeout in milliseconds
-   * @param maxRetries - Maximum number of retry attempts (default: 3)
-   * @param signal - Optional AbortSignal for cancellation
-   * @returns Loaded context tile or null if load fails
+   * otherwise fetches from PMTiles and caches the result.
    */
   static async loadTileWithCache(
     coordinates: TileCoordinates,
-    endpoint: string,
-    timeout: number,
+    reader: PMTilesReader,
     maxRetries: number = 3,
     signal?: AbortSignal
   ): Promise<ContextDataTile | null> {
     const tileKey = `${coordinates.z}:${coordinates.x}:${coordinates.y}`;
 
     return loadWithPersistenceCache(tileKey, ContextTilePersistenceCache, () =>
-      this.loadTileWithRetry(coordinates, endpoint, timeout, maxRetries, signal)
+      this.loadTileWithRetry(coordinates, reader, maxRetries, signal)
     );
   }
 }

@@ -144,13 +144,13 @@ describe('ContextDataManager', () => {
     });
 
     it('does not start more loads than maxConcurrentLoads at once', () => {
-      // Force loadingCount to be at the limit
-      (contextManager as any).loadingCount = 3;
+      // Force loadingCount to be at the limit (maxConcurrentLoads = 6)
+      (contextManager as any).loadingCount = 6;
 
       // processQueuedTiles should be a no-op (queue empty too)
       expect(() => (contextManager as any).processQueuedTiles()).not.toThrow();
 
-      expect((contextManager as any).loadingCount).toBe(3);
+      expect((contextManager as any).loadingCount).toBe(6);
     });
   });
 

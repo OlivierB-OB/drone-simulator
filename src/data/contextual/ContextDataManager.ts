@@ -10,6 +10,7 @@ import {
   type TileDataEvents,
 } from '../shared/TileDataManager';
 import type { Drone } from '../../drone/Drone';
+import { PMTilesReader } from './pmtiles/PMTilesReader';
 
 export type ContextDataEvents = TileDataEvents<ContextDataTile>;
 
@@ -21,9 +22,9 @@ type PendingResolver = {
 };
 
 /**
- * Manages context data (OSM features) loading and caching.
+ * Manages context data (Overture Maps features) loading and caching.
  * Maintains a ring of tiles around the drone's current location and automatically
- * loads/unloads tiles as the drone moves. Uses OSM Overpass API for data.
+ * loads/unloads tiles as the drone moves. Uses Overture Maps PMTiles for data.
  *
  * Emits `tileAdded` when a tile finishes loading and is cached.
  * Emits `tileRemoved` when a tile is evicted from the cache.
@@ -38,8 +39,19 @@ export class ContextDataManager extends TileDataManager<ContextDataTile> {
   declare private pendingQueue: string[];
   declare private pendingResolvers: PendingResolver[];
 
+  declare private pmtilesReader: PMTilesReader;
+
   constructor(drone: Drone) {
     super(drone);
+  }
+
+  private getReader(): PMTilesReader {
+    this.pmtilesReader ??= new PMTilesReader({
+      baseUrl: contextDataConfig.overtureBaseUrl,
+      version: contextDataConfig.overtureVersion,
+      themes: contextDataConfig.overtureThemes,
+    });
+    return this.pmtilesReader;
   }
 
   protected getConfig(): TileManagerConfig {
@@ -68,6 +80,7 @@ export class ContextDataManager extends TileDataManager<ContextDataTile> {
       clearTimeout(resolver.timeoutId);
     }
     this.pendingResolvers = [];
+    this.pmtilesReader?.dispose();
   }
 
   /**
@@ -129,8 +142,7 @@ export class ContextDataManager extends TileDataManager<ContextDataTile> {
     try {
       const tile = await ContextDataTileLoader.loadTileWithCache(
         coordinates,
-        contextDataConfig.overpassEndpoint,
-        contextDataConfig.queryTimeout,
+        this.getReader(),
         3,
         this.abortController.signal
       );

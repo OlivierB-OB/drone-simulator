@@ -3,14 +3,14 @@ import { TilePersistenceCache } from '../shared/TilePersistenceCache';
 
 const _cache = new TilePersistenceCache<ContextDataTile>({
   dbName: 'drone-simulator-context',
-  dbVersion: 4,
+  dbVersion: 5,
   storeName: 'contextTiles',
   clearOnUpgrade: true, // Wipe on upgrade to clear stale color/structure data
 });
 
 /**
  * Local persistence cache for context tiles using IndexedDB.
- * Caches successfully loaded tiles for 24 hours to avoid redundant Overpass API fetches.
+ * Caches successfully loaded tiles for 24 hours to avoid redundant PMTiles fetches.
  * Gracefully degrades if IndexedDB unavailable (private mode, old browser).
  */
 export const ContextTilePersistenceCache = {

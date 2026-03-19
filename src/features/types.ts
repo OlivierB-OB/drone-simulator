@@ -1,5 +1,4 @@
 import type { Object3D } from 'three';
-import type { Point, LineString, Polygon } from 'geojson';
 import type { MercatorBounds } from '../gis/types';
 import type { ElevationSampler } from '../visualization/mesh/util/ElevationSampler';
 import type { ModulesFeatures } from './registrationTypes';
@@ -17,15 +16,6 @@ export interface FeatureModule<T> {
 
   moduleFeaturesFactory(): T;
 
-  overpassFragments?(bbox: string): string[];
-
-  matches?(tags: Record<string, string>, geometryType: string): boolean;
-  classify?(
-    id: string,
-    tags: Record<string, string>,
-    geometry: Point | LineString | Polygon,
-    features: ModulesFeatures
-  ): void;
   postProcess?(features: ModulesFeatures): void;
 
   drawCanvas?(features: ModulesFeatures, draw: CanvasDrawContext): void;

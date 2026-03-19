@@ -1,8 +1,14 @@
 import type { VegetationVisual } from './types';
 import type { HexColor } from '../sharedTypes';
-import { getHeightCategory } from '../../data/contextual/strategies/parserUtils';
 import { groundColors } from '../../config';
 import type { LineString, Point, Polygon } from 'geojson';
+
+function getHeightCategory(height?: number): 'tall' | 'medium' | 'short' {
+  if (!height) return 'medium';
+  if (height > 20) return 'tall';
+  if (height > 5) return 'medium';
+  return 'short';
+}
 
 function getColorForVegetation(vegType: string): HexColor {
   const typeNormalized = vegType.toLowerCase();

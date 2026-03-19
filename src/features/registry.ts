@@ -1,5 +1,4 @@
 import type { Object3D } from 'three';
-import type { Point, LineString, Polygon } from 'geojson';
 import type { CanvasDrawContext } from './types';
 import type { ElevationSampler } from '../visualization/mesh/util/ElevationSampler';
 import type { ModulesFeatures } from './registrationTypes';
@@ -15,28 +14,10 @@ export class FeatureModuleRegistry {
     );
   }
 
-  classify(
-    id: string,
-    tags: Record<string, string>,
-    geometry: Point | LineString | Polygon,
-    features: ModulesFeatures
-  ): void {
-    for (const mod of this.modules) {
-      if (!mod.matches || !mod.classify) continue;
-      if (!mod.matches(tags, geometry.type)) continue;
-      mod.classify(id, tags, geometry, features);
-      return; // first match wins
-    }
-  }
-
   runPostProcessing(features: ModulesFeatures): void {
     for (const mod of this.modules) {
       mod.postProcess?.(features);
     }
-  }
-
-  getQueryModules(): typeof MODULES {
-    return this.modules.filter((m) => m.overpassFragments);
   }
 
   getCanvasModules(): typeof MODULES {

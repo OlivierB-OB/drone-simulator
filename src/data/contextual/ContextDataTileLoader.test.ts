@@ -1,358 +1,207 @@
 import { describe, it, expect } from 'vitest';
-import { ContextDataTileParser } from './ContextDataTileParser';
+import { classifyOvertureBuilding } from '../../features/building/overtureClassify';
+import { classifyOvertureRoad } from '../../features/road/overtureClassify';
+import { classifyOvertureRailway } from '../../features/railway/overtureClassify';
+import { classifyOvertureWater } from '../../features/water/overtureClassify';
+import { classifyOvertureAeroway } from '../../features/aeroway/overtureClassify';
+import { classifyOvertureVegetation } from '../../features/vegetation/overtureClassify';
+import { classifyOvertureLanduse } from '../../features/landuse/overtureClassify';
+import { polygon, lineString, point } from '@turf/helpers';
 
-describe('ContextDataTileLoader', () => {
-  describe('Visual property extraction', () => {
-    // These are unit tests for the extraction logic
-    // Note: Full integration tests would require mocking fetch for Overpass API
+describe('Overture classify functions', () => {
+  it('classifies buildings with visual properties', () => {
+    const geom = polygon([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ],
+    ]).geometry;
 
-    it('extracts buildings with visual properties only', () => {
-      // Mock OSM data with a building
-      const osmData = {
-        elements: [
-          {
-            type: 'way',
-            id: 1,
-            tags: {
-              building: 'residential',
-              'building:type': 'residential',
-              'building:levels': '3',
-              height: '10',
-              name: 'Test House',
-              // Non-visual attributes that should be ignored
-              'addr:street': 'Main St',
-              'addr:housenumber': '123',
-              source: 'bing',
-            },
-            nodes: [1, 2, 3, 4, 1],
-            geometry: [
-              { lat: 48.85, lon: 2.35 },
-              { lat: 48.851, lon: 2.35 },
-              { lat: 48.851, lon: 2.351 },
-              { lat: 48.85, lon: 2.351 },
-              { lat: 48.85, lon: 2.35 },
-            ],
-          },
-        ],
-      };
+    const building = classifyOvertureBuilding(
+      'b1',
+      { class: 'residential', height: 10, num_floors: 3 },
+      geom
+    );
 
-      const bounds = {
-        minX: 200000,
-        maxX: 300000,
-        minY: 6000000,
-        maxY: 6100000,
-      };
-
-      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
-
-      expect(features.buildings).toHaveLength(1);
-      const building = features.buildings[0]!;
-      expect(building.type).toBe('residential');
-      expect(building.height).toBe(10);
-      expect(building.levelCount).toBe(3);
-      expect(building.color).toBeDefined();
-      // Verify non-visual properties are NOT in the object
-      expect((building as any).tags).toBeUndefined();
-      expect((building as any)['addr:street']).toBeUndefined();
-    });
-
-    it('accepts buildings without height or levels (uses type-based defaults)', () => {
-      const osmData = {
-        elements: [
-          {
-            type: 'way',
-            id: 1,
-            tags: {
-              building: 'yes',
-              // No height or levels — will use buildingHeightDefaults at render time
-              name: 'Unknown Building',
-            },
-            nodes: [1, 2, 3, 4, 1],
-            geometry: [
-              { lat: 48.85, lon: 2.35 },
-              { lat: 48.851, lon: 2.35 },
-              { lat: 48.851, lon: 2.351 },
-              { lat: 48.85, lon: 2.351 },
-              { lat: 48.85, lon: 2.35 },
-            ],
-          },
-        ],
-      };
-
-      const bounds = {
-        minX: 200000,
-        maxX: 300000,
-        minY: 6000000,
-        maxY: 6100000,
-      };
-
-      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
-
-      // Buildings without height/levels are now accepted for 3D rendering
-      expect(features.buildings).toHaveLength(1);
-      expect(features.buildings[0]!.height).toBeUndefined();
-      expect(features.buildings[0]!.levelCount).toBeUndefined();
-    });
-
-    it('extracts roads with correct widthMeters (footways also included)', () => {
-      const osmData = {
-        elements: [
-          {
-            type: 'way',
-            id: 1,
-            tags: {
-              highway: 'primary',
-              lanes: '2',
-              maxspeed: '50',
-              surface: 'asphalt',
-            },
-            nodes: [1, 2],
-            geometry: [
-              { lat: 48.85, lon: 2.35 },
-              { lat: 48.851, lon: 2.35 },
-            ],
-          },
-          {
-            type: 'way',
-            id: 2,
-            tags: {
-              highway: 'footway',
-            },
-            nodes: [3, 4],
-            geometry: [
-              { lat: 48.852, lon: 2.35 },
-              { lat: 48.853, lon: 2.35 },
-            ],
-          },
-        ],
-      };
-
-      const bounds = {
-        minX: 200000,
-        maxX: 300000,
-        minY: 6000000,
-        maxY: 6100000,
-      };
-
-      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
-
-      // Both primary and footway are included (footways render at 1px)
-      expect(features.roads).toHaveLength(2);
-      const road = features.roads[0]!;
-      expect(road.type).toBe('primary');
-      expect(road.laneCount).toBe(2);
-      expect(road.widthMeters).toBe(15); // primary = 15m
-      expect(road.surfaceColor).toBe('#777060'); // asphalt surface override
-      expect(road.color).toBeDefined();
-      expect((road as any).tags).toBeUndefined();
-      expect((road as any).surface).toBeUndefined();
-
-      const footway = features.roads[1]!;
-      expect(footway.type).toBe('footway');
-      expect(footway.widthMeters).toBe(2); // footway = 2m
-    });
-
-    it('extracts railways with track count and color', () => {
-      const osmData = {
-        elements: [
-          {
-            type: 'way',
-            id: 1,
-            tags: {
-              railway: 'light_rail',
-              gauge: '1435',
-              operator: 'RATP', // Non-visual, should be ignored
-            },
-            nodes: [1, 2],
-            geometry: [
-              { lat: 48.85, lon: 2.35 },
-              { lat: 48.851, lon: 2.35 },
-            ],
-          },
-        ],
-      };
-
-      const bounds = {
-        minX: 200000,
-        maxX: 300000,
-        minY: 6000000,
-        maxY: 6100000,
-      };
-
-      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
-
-      expect(features.railways).toHaveLength(1);
-      const railway = features.railways[0]!;
-      expect(railway.type).toBe('light_rail');
-      expect(railway.trackCount).toBeDefined();
-      expect(railway.widthMeters).toBe(3); // light_rail = 3m
-      expect(railway.dash).toEqual([4, 3]);
-      expect(railway.color).toBeDefined();
-      expect((railway as any).tags).toBeUndefined();
-      expect((railway as any).operator).toBeUndefined();
-    });
-
-    it('extracts water features with area flag', () => {
-      const osmData = {
-        elements: [
-          {
-            type: 'way',
-            id: 1,
-            tags: {
-              water: 'lake',
-              name: 'Test Lake',
-              description: 'A nice lake', // Non-visual
-            },
-            nodes: [1, 2, 3, 4, 1],
-            geometry: [
-              { lat: 48.85, lon: 2.35 },
-              { lat: 48.851, lon: 2.35 },
-              { lat: 48.851, lon: 2.351 },
-              { lat: 48.85, lon: 2.351 },
-              { lat: 48.85, lon: 2.35 }, // Closed ring = area
-            ],
-          },
-          {
-            type: 'way',
-            id: 2,
-            tags: {
-              waterway: 'river',
-            },
-            nodes: [5, 6],
-            geometry: [
-              { lat: 48.852, lon: 2.35 },
-              { lat: 48.853, lon: 2.35 }, // Open = not area
-            ],
-          },
-        ],
-      };
-
-      const bounds = {
-        minX: 200000,
-        maxX: 300000,
-        minY: 6000000,
-        maxY: 6100000,
-      };
-
-      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
-
-      expect(features.waters).toHaveLength(2);
-
-      const lake = features.waters[0]!;
-      expect(lake.type).toBe('lake');
-      expect(lake.isArea).toBe(true); // Closed ring
-      expect((lake as any).tags).toBeUndefined();
-      expect((lake as any).description).toBeUndefined();
-
-      const river = features.waters[1]!;
-      expect(river.type).toBe('river');
-      expect(river.isArea).toBe(false); // Open ring
-      expect(river.widthMeters).toBe(20); // river = 20m
-    });
-
-    it('extracts vegetation with height category', () => {
-      const osmData = {
-        elements: [
-          {
-            type: 'node',
-            id: 1,
-            lat: 48.85,
-            lon: 2.35,
-            tags: {
-              natural: 'tree',
-              height: '25', // tall
-              species: 'oak', // Non-visual
-            },
-          },
-          {
-            type: 'way',
-            id: 2,
-            tags: {
-              natural: 'forest',
-              height: '10', // medium
-            },
-            nodes: [2, 3, 4, 5, 2],
-            geometry: [
-              { lat: 48.86, lon: 2.35 },
-              { lat: 48.861, lon: 2.35 },
-              { lat: 48.861, lon: 2.351 },
-              { lat: 48.86, lon: 2.351 },
-              { lat: 48.86, lon: 2.35 },
-            ],
-          },
-        ],
-      };
-
-      const bounds = {
-        minX: 200000,
-        maxX: 300000,
-        minY: 6000000,
-        maxY: 6100000,
-      };
-
-      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
-
-      expect(features.vegetation).toHaveLength(2);
-
-      const tree = features.vegetation[0]!;
-      expect(tree.type).toBe('tree');
-      expect(tree.height).toBe(25);
-      expect(tree.heightCategory).toBe('tall');
-      expect((tree as any).tags).toBeUndefined();
-      expect((tree as any).species).toBeUndefined();
-
-      const forest = features.vegetation[1]!;
-      expect(forest.type).toBe('forest');
-      expect(forest.height).toBe(10);
-      expect(forest.heightCategory).toBe('medium');
-    });
-
-    it('extracts airport features', () => {
-      const osmData = {
-        elements: [
-          {
-            type: 'node',
-            id: 1,
-            lat: 48.89,
-            lon: 2.45,
-            tags: {
-              aeroway: 'aerodrome',
-              name: 'CDG Airport',
-              'iata:code': 'CDG',
-              'icao:code': 'LFPG',
-              wikipedia: 'Charles_de_Gaulle_Airport', // Non-visual
-            },
-          },
-        ],
-      };
-
-      const bounds = {
-        minX: 200000,
-        maxX: 300000,
-        minY: 6000000,
-        maxY: 6100000,
-      };
-
-      const features = ContextDataTileParser.parseOSMData(osmData, bounds, 14);
-
-      expect(features.airports).toHaveLength(1);
-      const airport = features.airports[0]!;
-      expect(airport.type).toBe('aerodrome');
-      expect(airport.color).toBeDefined();
-      expect((airport as any).tags).toBeUndefined();
-      expect((airport as any).wikipedia).toBeUndefined();
-      expect((airport as any)['iata:code']).toBeUndefined(); // IATA not stored
-      expect((airport as any)['icao:code']).toBeUndefined(); // ICAO not stored
-    });
+    expect(building.type).toBe('residential');
+    expect(building.height).toBe(10);
+    expect(building.levelCount).toBe(3);
+    expect(building.color).toBeDefined();
+    expect(building.isPart).toBe(false);
   });
 
-  describe('Color palette integration', () => {
-    it('returns ContextDataTile with colorPalette', async () => {
-      // This is a structure test - we verify the color palette is included
-      // Full integration test would require mocking fetch
-      // The test validates that when a tile is constructed,
-      // it includes the colorPalette object with proper structure
-      // This ensures downstream visualization code has colors available
-    });
+  it('classifies building parts', () => {
+    const geom = polygon([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ],
+    ]).geometry;
+
+    const part = classifyOvertureBuilding(
+      'bp1',
+      { class: 'commercial', height: 20 },
+      geom,
+      true
+    );
+
+    expect(part.isPart).toBe(true);
+    expect(part.height).toBe(20);
+  });
+
+  it('classifies buildings without height (uses defaults)', () => {
+    const geom = polygon([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ],
+    ]).geometry;
+
+    const building = classifyOvertureBuilding('b2', { class: 'yes' }, geom);
+
+    expect(building.height).toBeUndefined();
+    expect(building.levelCount).toBeUndefined();
+  });
+
+  it('classifies roads with correct widthMeters', () => {
+    const geom = lineString([
+      [0, 0],
+      [1, 1],
+    ]).geometry;
+
+    const road = classifyOvertureRoad(
+      'r1',
+      { class: 'primary', lanes: 2, surface: 'asphalt' },
+      geom
+    );
+
+    expect(road.type).toBe('primary');
+    expect(road.laneCount).toBe(2);
+    expect(road.widthMeters).toBe(15);
+    expect(road.surfaceColor).toBe('#777060');
+    expect(road.color).toBeDefined();
+  });
+
+  it('classifies footways with narrow width', () => {
+    const geom = lineString([
+      [0, 0],
+      [1, 1],
+    ]).geometry;
+
+    const footway = classifyOvertureRoad('r2', { class: 'footway' }, geom);
+
+    expect(footway.type).toBe('footway');
+    expect(footway.widthMeters).toBe(2);
+  });
+
+  it('classifies railways with track specs', () => {
+    const geom = lineString([
+      [0, 0],
+      [1, 1],
+    ]).geometry;
+
+    const railway = classifyOvertureRailway(
+      'rw1',
+      { class: 'light_rail' },
+      geom
+    );
+
+    expect(railway.type).toBe('light_rail');
+    expect(railway.trackCount).toBeDefined();
+    expect(railway.widthMeters).toBe(3);
+    expect(railway.dash).toEqual([4, 3]);
+    expect(railway.color).toBeDefined();
+  });
+
+  it('classifies water areas', () => {
+    const geom = polygon([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ],
+    ]).geometry;
+
+    const lake = classifyOvertureWater('w1', { class: 'lake' }, geom);
+
+    expect(lake.type).toBe('lake');
+    expect(lake.isArea).toBe(true);
+    expect(lake.color).toBeDefined();
+  });
+
+  it('classifies waterways as lines', () => {
+    const geom = lineString([
+      [0, 0],
+      [1, 1],
+    ]).geometry;
+
+    const river = classifyOvertureWater('w2', { class: 'river' }, geom);
+
+    expect(river.type).toBe('river');
+    expect(river.isArea).toBe(false);
+    expect(river.widthMeters).toBe(20);
+  });
+
+  it('classifies aeroway features', () => {
+    const geom = point([0, 0]).geometry;
+
+    const airport = classifyOvertureAeroway('a1', { class: 'aerodrome' }, geom);
+
+    expect(airport.type).toBe('aerodrome');
+    expect(airport.color).toBeDefined();
+  });
+
+  it('classifies vegetation with height category', () => {
+    const geom = polygon([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ],
+    ]).geometry;
+
+    const forest = classifyOvertureVegetation(
+      'v1',
+      { class: 'forest', height: 25 },
+      geom
+    );
+
+    expect(forest.type).toBe('forest');
+    expect(forest.heightCategory).toBe('tall');
+    expect(forest.color).toBeDefined();
+  });
+
+  it('classifies landuse features', () => {
+    const geom = polygon([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ],
+    ]).geometry;
+
+    const landuse = classifyOvertureLanduse(
+      'l1',
+      { class: 'residential' },
+      geom
+    );
+
+    expect(landuse.type).toBe('residential');
+    expect(landuse.color).toBeDefined();
   });
 });

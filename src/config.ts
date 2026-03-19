@@ -77,7 +77,7 @@ export const elevationConfig: TileDataConfig & {
   elevationEndpoint: string;
 } = {
   // Web Mercator zoom level for terrain tiles (13 ≈ 25m resolution per pixel)
-  zoomLevel: 15,
+  zoomLevel: 13,
 
   // Number of tiles in each direction from center (1 = 3×3 grid of tiles)
   ringRadius: 1,
@@ -91,22 +91,26 @@ export const elevationConfig: TileDataConfig & {
 
 export const contextDataConfig: TileDataConfig & {
   queryTimeout: number;
-  overpassEndpoint: string;
+  overtureVersion: string;
+  overtureBaseUrl: string;
+  overtureThemes: string[];
 } = {
   // Web Mercator zoom level for context data tiles (14-15 balances detail vs. request size)
-  zoomLevel: 15,
+  zoomLevel: 13,
 
   // Number of tiles in each direction from center (1 = 3×3 grid of tiles)
   ringRadius: 1,
 
-  // Maximum concurrent Overpass API requests
-  maxConcurrentLoads: 3,
+  // Maximum concurrent PMTiles requests (no rate limiting)
+  maxConcurrentLoads: 6,
 
   // Query timeout in milliseconds
   queryTimeout: 30000,
 
-  // Overpass API endpoint
-  overpassEndpoint: 'https://lambert.openstreetmap.de/api/interpreter',
+  // Overture Maps PMTiles configuration
+  overtureVersion: '2026-02-18.0',
+  overtureBaseUrl: 'https://tiles.overturemaps.org',
+  overtureThemes: ['buildings', 'transportation', 'base'],
 };
 
 /**
