@@ -6,15 +6,29 @@ import { getTileMercatorBounds } from '../../gis/webMercator';
 import { loadWithPersistenceCache } from '../shared/tileLoaderUtils';
 import { OvertureParser } from './pmtiles/OvertureParser';
 import type { PMTilesReader } from './pmtiles/PMTilesReader';
+import { filterFeaturesByBounds } from './pmtiles/featureBoundsFilter';
+import { featureRegistry } from '../../features/registry';
 
 /**
  * Factory for loading and parsing context data tiles from Overture Maps PMTiles.
  * Loads geospatial features (buildings, roads, railways, etc.) for a given tile.
+ *
+ * When the requested zoom exceeds the PMTiles maxZoom (overzoom), fetches the
+ * parent tile, fans out features to all zoom-N sub-tiles, and pre-populates the
+ * persistence cache for all siblings. An in-flight deduplication map ensures
+ * each parent tile is fetched only once across concurrent requests.
  */
 export class ContextDataTileLoader {
+  // Deduplicates concurrent requests for the same parent tile during overzoom fan-out.
+  // Key format: "z:x:y" of the parent tile.
+  private static readonly parentFetches = new Map<
+    string,
+    Promise<ContextDataTile[]>
+  >();
+
   /**
    * Loads a context data tile from Overture Maps PMTiles archives.
-   * Decodes MVT layers and classifies features by type.
+   * Handles overzoom transparently via parent fetch + fan-out caching.
    */
   static async loadTile(
     coordinates: TileCoordinates,
@@ -25,33 +39,121 @@ export class ContextDataTileLoader {
       throw new Error('Aborted');
     }
 
-    const bounds = getTileMercatorBounds(coordinates);
+    const effectiveZ = await reader.getEffectiveDataZoom();
 
-    try {
-      const layers = await reader.getTile(
-        coordinates.z,
-        coordinates.x,
-        coordinates.y
-      );
-
-      const features = OvertureParser.parse(layers, bounds, coordinates);
-
-      return {
-        coordinates,
-        mercatorBounds: bounds,
-        zoomLevel: coordinates.z,
-        features,
-        colorPalette,
-      };
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(
-          `Error loading tile ${coordinates.z}/${coordinates.x}/${coordinates.y}: ${error.message}`,
-          { cause: error }
-        );
-      }
-      throw error;
+    if (coordinates.z <= effectiveZ) {
+      return this.loadTileDirect(coordinates, reader);
     }
+
+    return this.loadTileWithOverzoom(coordinates, reader, effectiveZ);
+  }
+
+  private static async loadTileDirect(
+    coordinates: TileCoordinates,
+    reader: PMTilesReader
+  ): Promise<ContextDataTile> {
+    const bounds = getTileMercatorBounds(coordinates);
+    const { tile: layers } = await reader.getTile(coordinates);
+    const features = OvertureParser.parse(layers, bounds, coordinates);
+    return {
+      coordinates,
+      mercatorBounds: bounds,
+      zoomLevel: coordinates.z,
+      features,
+      colorPalette,
+    };
+  }
+
+  private static async loadTileWithOverzoom(
+    coordinates: TileCoordinates,
+    reader: PMTilesReader,
+    effectiveZ: number
+  ): Promise<ContextDataTile> {
+    const dz = coordinates.z - effectiveZ;
+    const parentCoords: TileCoordinates = {
+      z: effectiveZ,
+      x: coordinates.x >> dz,
+      y: coordinates.y >> dz,
+    };
+    const parentKey = `${parentCoords.z}:${parentCoords.x}:${parentCoords.y}`;
+    const requestedKey = `${coordinates.z}:${coordinates.x}:${coordinates.y}`;
+
+    let parentPromise = this.parentFetches.get(parentKey);
+    if (!parentPromise) {
+      parentPromise = this.fetchAndFanOut(
+        parentCoords,
+        coordinates.z,
+        reader
+      ).finally(() => this.parentFetches.delete(parentKey));
+      this.parentFetches.set(parentKey, parentPromise);
+    }
+
+    const subTiles = await parentPromise;
+    return (
+      subTiles.find(
+        (t) =>
+          `${t.coordinates.z}:${t.coordinates.x}:${t.coordinates.y}` ===
+          requestedKey
+      ) ?? this.emptyTile(coordinates)
+    );
+  }
+
+  /**
+   * Fetches the parent tile and fans out features to all zoom-N sub-tiles.
+   * Writes each sub-tile to the persistence cache (fire-and-forget).
+   */
+  private static async fetchAndFanOut(
+    parentCoords: TileCoordinates,
+    targetZ: number,
+    reader: PMTilesReader
+  ): Promise<ContextDataTile[]> {
+    const parentBounds = getTileMercatorBounds(parentCoords);
+    const { tile: layers } = await reader.getTile(parentCoords);
+    const allFeatures = OvertureParser.parse(
+      layers,
+      parentBounds,
+      parentCoords
+    );
+
+    const dz = targetZ - parentCoords.z;
+    const subCount = 1 << dz;
+    const baseX = parentCoords.x << dz;
+    const baseY = parentCoords.y << dz;
+
+    const subTiles: ContextDataTile[] = [];
+    for (let dy = 0; dy < subCount; dy++) {
+      for (let dx = 0; dx < subCount; dx++) {
+        const subCoords: TileCoordinates = {
+          z: targetZ,
+          x: baseX + dx,
+          y: baseY + dy,
+        };
+        const subBounds = getTileMercatorBounds(subCoords);
+        const subFeatures = filterFeaturesByBounds(allFeatures, subBounds);
+        const subTile: ContextDataTile = {
+          coordinates: subCoords,
+          mercatorBounds: subBounds,
+          zoomLevel: targetZ,
+          features: subFeatures,
+          colorPalette,
+        };
+        subTiles.push(subTile);
+        // Pre-populate siblings in cache (fire-and-forget)
+        const subKey = `${subCoords.z}:${subCoords.x}:${subCoords.y}`;
+        ContextTilePersistenceCache.set(subKey, subTile).catch(() => {});
+      }
+    }
+    return subTiles;
+  }
+
+  private static emptyTile(coordinates: TileCoordinates): ContextDataTile {
+    return {
+      coordinates,
+      mercatorBounds: getTileMercatorBounds(coordinates),
+      zoomLevel: coordinates.z,
+      features: featureRegistry.modulesFeaturesFactory(),
+      colorPalette,
+    };
   }
 
   /**

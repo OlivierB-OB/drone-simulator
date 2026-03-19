@@ -76,8 +76,8 @@ export interface TileDataConfig {
 export const elevationConfig: TileDataConfig & {
   elevationEndpoint: string;
 } = {
-  // Web Mercator zoom level for terrain tiles (13 ≈ 25m resolution per pixel)
-  zoomLevel: 13,
+  // Web Mercator zoom level for terrain tiles (15 ≈ 25m resolution per pixel)
+  zoomLevel: 15,
 
   // Number of tiles in each direction from center (1 = 3×3 grid of tiles)
   ringRadius: 1,
@@ -95,8 +95,8 @@ export const contextDataConfig: TileDataConfig & {
   overtureBaseUrl: string;
   overtureThemes: string[];
 } = {
-  // Web Mercator zoom level for context data tiles (14-15 balances detail vs. request size)
-  zoomLevel: 13,
+  // Web Mercator zoom level for context data tiles (zoom 15 via PMTiles overzoom from maxZoom 13/14)
+  zoomLevel: 15,
 
   // Number of tiles in each direction from center (1 = 3×3 grid of tiles)
   ringRadius: 1,
