@@ -215,6 +215,60 @@ describe('OvertureParser', () => {
     expect(features.landuse).toHaveLength(0);
   });
 
+  it('routes land Point class=tree to vegetation', () => {
+    const layers: DecodedTile = new Map([
+      [
+        'land',
+        mockLayer([mockFeature(1, [[{ x: 2048, y: 2048 }]], { class: 'tree' })]),
+      ],
+    ]);
+
+    const features = OvertureParser.parse(layers, bounds, coords);
+    expect(features.vegetation).toHaveLength(1);
+    expect(features.vegetation[0]!.type).toBe('tree');
+    expect(features.landuse).toHaveLength(0);
+  });
+
+  it('routes land LineString class=tree_row to vegetation', () => {
+    const layers: DecodedTile = new Map([
+      [
+        'land',
+        mockLayer([mockFeature(2, [LINE], { class: 'tree_row' })]),
+      ],
+    ]);
+
+    const features = OvertureParser.parse(layers, bounds, coords);
+    expect(features.vegetation).toHaveLength(1);
+    expect(features.vegetation[0]!.type).toBe('tree_row');
+    expect(features.landuse).toHaveLength(0);
+  });
+
+  it('routes land Polygon class=tree with no vegetation subtype to landuse', () => {
+    const layers: DecodedTile = new Map([
+      [
+        'land',
+        mockLayer([mockFeature(3, [SQUARE], { class: 'tree' })]),
+      ],
+    ]);
+
+    const features = OvertureParser.parse(layers, bounds, coords);
+    expect(features.landuse).toHaveLength(1);
+    expect(features.vegetation).toHaveLength(0);
+  });
+
+  it('remaps land_cover Polygon class=tree to forest', () => {
+    const layers: DecodedTile = new Map([
+      [
+        'land_cover',
+        mockLayer([mockFeature(3, [SQUARE], { class: 'tree' })]),
+      ],
+    ]);
+
+    const features = OvertureParser.parse(layers, bounds, coords);
+    expect(features.vegetation).toHaveLength(1);
+    expect(features.vegetation[0]!.type).toBe('forest');
+  });
+
   it('ignores unknown layer names', () => {
     const layers: DecodedTile = new Map([
       [

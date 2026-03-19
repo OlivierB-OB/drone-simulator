@@ -53,7 +53,7 @@ A directed or undirected edge in the transportation network. Carries geometry, c
 | `type` | string | Yes | `"segment"` |
 | `version` | integer | Yes | Feature version |
 | `sources` | array | Yes | Source provenance records |
-| `subtype` | string | Yes | `"road"` or `"rail"` |
+| `subtype` | string | Yes | `"road"`, `"rail"`, or `"water"` |
 | `connectors` | array | Yes | Ordered connector IDs; first = start, last = end |
 | `names` | object | No | Localized names |
 | `level` | integer | No | Vertical level (0 = ground) |
@@ -71,7 +71,7 @@ Applies when `subtype` is `"road"`.
 |-------|------|-------------|
 | `road_class` | string | Functional road class (see RoadClass) |
 | `road_surface` | string | Pavement surface type (see RoadSurface) |
-| `road_flags` | array | Boolean road characteristics (see RoadFlag) |
+| `road_flags` | array | Linearly-referenced boolean road characteristics (see RoadFlagRule) |
 | `speed_limits` | array | Linearly-referenced speed limit rules (see SpeedLimitRule) |
 | `access_restrictions` | array | Linearly-referenced access rules (see AccessRestrictionRule) |
 | `width_rules` | array | Linearly-referenced lane/width rules |
@@ -94,6 +94,13 @@ Applies when `subtype` is `"rail"`.
 | `max_speed` | integer | Maximum operating speed in km/h |
 | `is_freight` | boolean | `true` if the line carries freight |
 | `is_high_speed` | boolean | `true` for high-speed rail lines |
+| `rail_flags` | array | Linearly-referenced boolean rail characteristics (see RailFlagRule) |
+
+---
+
+### Water-Specific Fields
+
+Applies when `subtype` is `"water"`. Water segments carry no subtype-specific fields; only the [Core Properties](#core-properties) apply.
 
 ---
 
@@ -134,9 +141,18 @@ Applies when `subtype` is `"rail"`.
 | `preserved` | Heritage or museum railway |
 | `disused` | Disused rail corridor |
 
+### RoadFlagRule
+
+Each entry in `road_flags` is a rule object:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `between` | [float, float] | Optional normalized range [0.0, 1.0] along the segment; omit for entire segment |
+| `values` | array of RoadFlag | One or more boolean flags active in this range |
+
 ### RoadFlag (7 values)
 
-Boolean characteristics set in the `road_flags` array. A segment may have zero or more flags.
+Boolean characteristics referenced from `RoadFlagRule.values`.
 
 | Value | Description |
 |-------|-------------|
@@ -144,9 +160,33 @@ Boolean characteristics set in the `road_flags` array. A segment may have zero o
 | `is_tunnel` | Segment passes through a tunnel |
 | `is_under_construction` | Road is currently being built |
 | `is_abandoned` | Road is abandoned or decommissioned |
-| `is_roundabout` | Segment is part of a roundabout |
-| `is_oneway` | Travel permitted in one direction only |
-| `is_toll` | Toll road or tolled section |
+| `is_covered` | Road is covered (e.g. by a building or canopy) |
+| `is_indoor` | Road is inside a building |
+| `is_link` | *(deprecated)* On/off ramp or connector link; use `is_link` road class instead |
+
+### RailFlagRule
+
+Each entry in `rail_flags` is a rule object, identical in structure to RoadFlagRule:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `between` | [float, float] | Optional normalized range [0.0, 1.0] along the segment |
+| `values` | array of RailFlag | One or more boolean flags active in this range |
+
+### RailFlag (8 values)
+
+Boolean characteristics referenced from `RailFlagRule.values`.
+
+| Value | Description |
+|-------|-------------|
+| `is_bridge` | Segment crosses on a bridge structure |
+| `is_tunnel` | Segment passes through a tunnel |
+| `is_under_construction` | Rail line is currently being built |
+| `is_abandoned` | Rail line is abandoned or decommissioned |
+| `is_covered` | Rail line is covered |
+| `is_passenger` | Line carries passenger traffic |
+| `is_freight` | Line carries freight traffic |
+| `is_disused` | Rail corridor is disused but not fully abandoned |
 
 ### RoadSurface (7 values)
 

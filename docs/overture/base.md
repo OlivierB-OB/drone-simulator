@@ -133,6 +133,8 @@ Land polygons representing physical land surface, islands, and coastlines. Serve
 | `reef` | Reef or shoal |
 | `rock` | Exposed rock |
 
+> **Individual OSM features via `class`:** OSM-derived land features may carry `class: 'tree'` (Point) for a single tree (`natural=tree`) or `class: 'tree_row'` (LineString) for a row of trees (`natural=tree_row`). These route to the vegetation pipeline, not landuse.
+
 ---
 
 ## land_cover
@@ -172,6 +174,8 @@ Natural surface cover of the land: forests, grasslands, snow, sand, wetlands, et
 ### Class Values
 
 `crop`, `farmland`, `grass`, `heath`, `mangrove`, `meadow`, `moss`, `orchard`, `scrub`, `snow`, `tree`, `wetland`, `wood`
+
+> **`subtype: 'tree'` / `class: 'tree'`** in `land_cover` is always a forested polygon area. The classifier remaps this to `'forest'` for correct rendering via `ForestStrategy`.
 
 ---
 

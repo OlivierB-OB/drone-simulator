@@ -160,6 +160,7 @@ export class OvertureParser {
       const props = f.properties;
       const id = String(props.id ?? `land-${i}`);
       const subtype = props.subtype as string | undefined;
+      const featureClass = props.class as string | undefined;
 
       // Route by subtype: vegetation-like subtypes go to vegetation, rest to landuse
       if (
@@ -170,6 +171,14 @@ export class OvertureParser {
       ) {
         features.vegetation.push(
           classifyOvertureVegetation(id, props, geometry)
+        );
+      } else if (featureClass === 'tree' && geometry.type === 'Point') {
+        features.vegetation.push(
+          classifyOvertureVegetation(id, props, geometry as Point)
+        );
+      } else if (featureClass === 'tree_row' && geometry.type === 'LineString') {
+        features.vegetation.push(
+          classifyOvertureVegetation(id, props, geometry as LineString)
         );
       } else if (geometry.type === 'Polygon') {
         features.landuse.push(
