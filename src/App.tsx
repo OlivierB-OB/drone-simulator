@@ -17,6 +17,7 @@ import { MeshObjectManager } from './visualization/mesh/MeshObjectManager';
 import { ElevationSampler } from './visualization/mesh/util/ElevationSampler';
 import { OriginManager } from './gis/OriginManager';
 import { droneConfig } from './config';
+import { AttributionBar } from './ui/AttributionBar';
 
 export function App() {
   let viewer3D: Viewer3D | null = null;
@@ -107,6 +108,7 @@ export function App() {
   return (
     <div class="app">
       <div id="threejs-container" />
+      <AttributionBar />
     </div>
   );
 }

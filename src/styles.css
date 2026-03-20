@@ -22,6 +22,7 @@ body {
 }
 
 .app {
+  position: relative;
   width: 100%;
   height: 100%;
   display: flex;
@@ -32,4 +33,30 @@ body {
   width: 100%;
   height: 100%;
   flex: 1;
+}
+
+.attribution-bar {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+  line-height: 1.4;
+  color: #333;
+  text-align: right;
+  pointer-events: none;
+  user-select: none;
+  z-index: 10;
+}
+
+.attribution-bar a {
+  color: #0078a8;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.attribution-bar a:hover {
+  text-decoration: underline;
 }
