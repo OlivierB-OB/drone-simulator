@@ -108,7 +108,7 @@ export function App() {
 
   return (
     <div class="app">
-      <Header />
+      <Header onLocationSelect={(geo) => drone?.teleport(geo)} />
       <div id="threejs-container" />
       <AttributionBar />
     </div>

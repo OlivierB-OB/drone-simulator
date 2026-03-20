@@ -137,6 +137,12 @@ export class Drone {
     if (!this.isMoving()) this.emitter.emit('movingChanged', false);
   }
 
+  teleport(geo: GeoCoordinates): void {
+    this.location.lat = geo.lat;
+    this.location.lng = geo.lng;
+    this.emitter.emit('locationChanged', this.getLocation());
+  }
+
   applyMove(deltaTime: number): void {
     if (!this.isMoving()) {
       return;

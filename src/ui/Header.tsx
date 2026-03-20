@@ -1,14 +1,21 @@
 import { SiGithub, SiOpenstreetmap, SiThreedotjs } from 'solid-icons/si';
 import { TbOutlineMap } from 'solid-icons/tb';
 import { Tooltip } from './Tooltip';
+import { LocationSearch } from './LocationSearch';
+import type { GeoCoordinates } from '../gis/GeoCoordinates';
 
-export function Header() {
+type Props = {
+  onLocationSelect: (geo: GeoCoordinates) => void;
+};
+
+export function Header(props: Props) {
   return (
-    <header class="py-4 flex justify-between items-center px-6 bg-white text-gray-900 border-b border-gray-900 shrink-0">
+    <header class="py-4 grid grid-cols-[1fr_auto_1fr] items-center px-6 bg-white text-gray-900 border-b border-gray-900 shrink-0">
       <span class="text-base font-semibold tracking-[0.04em]">
         OSM Drone Simulator
       </span>
-      <div class="flex gap-4">
+      <LocationSearch onSelect={props.onLocationSelect} />
+      <div class="flex justify-end gap-4">
         <Tooltip content="Map data © OpenStreetMap contributors">
           <a
             href="https://www.openstreetmap.org"
