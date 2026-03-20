@@ -2,6 +2,14 @@ import type { RoadVisual } from './types';
 import type { LineString } from 'geojson';
 import { roadSpec, surfaceColors } from '../../config';
 import type { HexColor } from '../sharedTypes';
+import {
+  parseFlagRules,
+  getTunnelRanges,
+  parseLevelRules,
+  getUndergroundRanges,
+  mergeRanges,
+  splitExcluding,
+} from '../flagRuleUtils';
 
 const OVERTURE_TO_HIGHWAY: Record<string, string> = {
   motorway: 'motorway',
@@ -26,7 +34,7 @@ export function classifyOvertureRoad(
   id: string,
   props: Record<string, unknown>,
   geometry: LineString
-): RoadVisual {
+): RoadVisual[] {
   const overtureClass = (props.class as string) ?? 'unclassified';
   const highwayType = OVERTURE_TO_HIGHWAY[overtureClass] ?? 'unclassified';
   const spec = roadSpec[highwayType] ?? roadSpec['default']!;
@@ -36,18 +44,29 @@ export function classifyOvertureRoad(
     ? surfaceColors[surface.toLowerCase()]
     : undefined;
 
-  return {
+  const visual: Omit<RoadVisual, 'geometry'> = {
     id,
-    geometry,
     type: highwayType,
     widthMeters: spec.widthMeters,
     laneCount:
       typeof props.lanes === 'number' ? (props.lanes as number) : undefined,
     color: spec.color,
     surfaceColor,
-    tunnel: props.is_tunnel === true ? true : undefined,
     bridge: props.is_bridge === true ? true : undefined,
     layer:
       typeof props.layer === 'number' ? (props.layer as number) : undefined,
   };
+
+  const flagRules = parseFlagRules(props.road_flags);
+  const levelRules = parseLevelRules(props.level_rules);
+  const tunnelRanges = getTunnelRanges(flagRules);
+  const undergroundRanges = getUndergroundRanges(levelRules);
+  const excludeRanges = mergeRanges([...tunnelRanges, ...undergroundRanges]);
+  const segments = splitExcluding(geometry, excludeRanges);
+
+  return segments.map((geom, i) => ({
+    ...visual,
+    id: i === 0 ? id : `${id}-${i}`,
+    geometry: geom,
+  }));
 }

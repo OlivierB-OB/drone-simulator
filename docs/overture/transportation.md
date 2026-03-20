@@ -56,7 +56,6 @@ A directed or undirected edge in the transportation network. Carries geometry, c
 | `subtype` | string | Yes | `"road"`, `"rail"`, or `"water"` |
 | `connectors` | array | Yes | Ordered connector IDs; first = start, last = end |
 | `names` | object | No | Localized names |
-| `level` | integer | No | Vertical level (0 = ground) |
 | `source_tags` | object | No | Raw upstream tags |
 | `wikidata` | string | No | Wikidata QID |
 | `cartography` | object | No | Rendering hints |
@@ -72,6 +71,7 @@ Applies when `subtype` is `"road"`.
 | `road_class` | string | Functional road class (see RoadClass) |
 | `road_surface` | string | Pavement surface type (see RoadSurface) |
 | `road_flags` | array | Linearly-referenced boolean road characteristics (see RoadFlagRule) |
+| `level_rules` | array | Linearly-referenced Z-order rules; entries with `level < 0` are underground (see LevelRule) |
 | `speed_limits` | array | Linearly-referenced speed limit rules (see SpeedLimitRule) |
 | `access_restrictions` | array | Linearly-referenced access rules (see AccessRestrictionRule) |
 | `width_rules` | array | Linearly-referenced lane/width rules |
@@ -95,6 +95,7 @@ Applies when `subtype` is `"rail"`.
 | `is_freight` | boolean | `true` if the line carries freight |
 | `is_high_speed` | boolean | `true` for high-speed rail lines |
 | `rail_flags` | array | Linearly-referenced boolean rail characteristics (see RailFlagRule) |
+| `level_rules` | array | Linearly-referenced Z-order rules; entries with `level < 0` are underground (see LevelRule) |
 
 ---
 
@@ -190,6 +191,17 @@ Boolean characteristics referenced from `RailFlagRule.values`.
 | `is_freight` | Line carries freight traffic |
 | `is_disused` | Rail corridor is disused but not fully abandoned |
 
+### LevelRule
+
+Each entry in `level_rules` defines a Z-order value for a portion of the segment:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `between` | [float, float] | Optional normalized range [0.0, 1.0]; omit for entire segment |
+| `level` | integer | Z-order value: negative = underground, 0 = ground, positive = elevated |
+
+**Note:** `level_rules` works alongside `road_flags`/`rail_flags` — both are checked for underground detection. `is_tunnel` in flags and `level < 0` in `level_rules` are equivalent signals; ranges from both sources are unioned before exclusion.
+
 ### RoadSurface (7 values)
 
 | Value | Description |
@@ -264,7 +276,7 @@ connector A ──── segment 1 ──── connector B ──── segment
 
 - Each segment's `connectors` array lists its endpoint connector IDs in order.
 - Segments sharing a connector are connected in the graph.
-- `level` on segment and connector enables grade-separated crossings (e.g. bridge over tunnel) without a shared connector.
+- `level_rules` on segments and `level` on connectors enable grade-separated crossings (e.g. bridge over tunnel) without a shared connector.
 
 ---
 

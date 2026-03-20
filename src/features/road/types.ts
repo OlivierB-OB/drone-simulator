@@ -12,7 +12,6 @@ export interface RoadVisual {
   laneCount?: number; // Number of lanes if available
   color: HexColor; // Derived from road type
   surfaceColor?: HexColor; // Override color from surface tag (asphalt, concrete, etc.)
-  tunnel?: boolean; // is_tunnel=true — skip rendering
   bridge?: boolean; // bridge=yes
   layer?: number; // layer tag
 }

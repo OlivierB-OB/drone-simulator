@@ -123,11 +123,11 @@ export class OvertureParser {
 
       if (props.subtype === 'rail' || RAIL_CLASSES.has(segClass)) {
         features.railways.push(
-          classifyOvertureRailway(id, props, geometry as LineString)
+          ...classifyOvertureRailway(id, props, geometry as LineString)
         );
       } else {
         features.roads.push(
-          classifyOvertureRoad(id, props, geometry as LineString)
+          ...classifyOvertureRoad(id, props, geometry as LineString)
         );
       }
     }

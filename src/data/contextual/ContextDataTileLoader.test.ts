@@ -84,7 +84,7 @@ describe('Overture classify functions', () => {
       'r1',
       { class: 'primary', lanes: 2, surface: 'asphalt' },
       geom
-    );
+    )[0]!;
 
     expect(road.type).toBe('primary');
     expect(road.laneCount).toBe(2);
@@ -99,7 +99,7 @@ describe('Overture classify functions', () => {
       [1, 1],
     ]).geometry;
 
-    const footway = classifyOvertureRoad('r2', { class: 'footway' }, geom);
+    const footway = classifyOvertureRoad('r2', { class: 'footway' }, geom)[0]!;
 
     expect(footway.type).toBe('footway');
     expect(footway.widthMeters).toBe(2);
@@ -115,7 +115,7 @@ describe('Overture classify functions', () => {
       'rw1',
       { class: 'light_rail' },
       geom
-    );
+    )[0]!;
 
     expect(railway.type).toBe('light_rail');
     expect(railway.widthMeters).toBe(3);
@@ -280,24 +280,135 @@ describe('Overture classify functions', () => {
       'r3',
       { class: 'primary', road_surface: 'asphalt' },
       geom
-    );
+    )[0]!;
 
     expect(road.surfaceColor).toBe('#777060');
   });
 
-  it('extracts is_tunnel for roads', () => {
+  it('returns empty array for fully-tunnelled road (road_flags)', () => {
     const geom = lineString([
       [0, 0],
-      [1, 1],
+      [1, 0],
     ]).geometry;
 
-    const road = classifyOvertureRoad(
+    const roads = classifyOvertureRoad(
       'r4',
-      { class: 'primary', is_tunnel: true },
+      { class: 'primary', road_flags: '[{"values":["is_tunnel"]}]' },
       geom
     );
 
-    expect(road.tunnel).toBe(true);
+    expect(roads).toHaveLength(0);
+  });
+
+  it('returns cropped geometry for partial road tunnel (road_flags with between)', () => {
+    const geom = lineString([
+      [0, 0],
+      [0.5, 0],
+      [1, 0],
+    ]).geometry;
+
+    // Tunnel covers the last 70% — only first 30% should remain
+    const roads = classifyOvertureRoad(
+      'r5',
+      {
+        class: 'primary',
+        road_flags: '[{"values":["is_tunnel"],"between":[0.3,1.0]}]',
+      },
+      geom
+    );
+
+    expect(roads).toHaveLength(1);
+    const road0 = roads[0]!;
+    const endX =
+      road0.geometry.coordinates[road0.geometry.coordinates.length - 1]![0];
+    expect(endX).toBeLessThan(0.5);
+  });
+
+  it('returns empty array for fully-tunnelled railway (rail_flags)', () => {
+    const geom = lineString([
+      [0, 0],
+      [1, 0],
+    ]).geometry;
+
+    const railways = classifyOvertureRailway(
+      'rw2',
+      { class: 'rail', rail_flags: '[{"values":["is_tunnel"]}]' },
+      geom
+    );
+
+    expect(railways).toHaveLength(0);
+  });
+
+  it('returns empty array for fully-underground road (level_rules)', () => {
+    const geom = lineString([
+      [0, 0],
+      [1, 0],
+    ]).geometry;
+
+    const roads = classifyOvertureRoad(
+      'r-lr1',
+      { class: 'primary', level_rules: [{ level: -1 }] },
+      geom
+    );
+
+    expect(roads).toHaveLength(0);
+  });
+
+  it('returns first half when level_rules marks second half underground', () => {
+    const geom = lineString([
+      [0, 0],
+      [0.5, 0],
+      [1, 0],
+    ]).geometry;
+
+    const roads = classifyOvertureRoad(
+      'r-lr2',
+      { class: 'primary', level_rules: [{ level: -1, between: [0.5, 1.0] }] },
+      geom
+    );
+
+    expect(roads).toHaveLength(1);
+    const endX =
+      roads[0]!.geometry.coordinates[
+        roads[0]!.geometry.coordinates.length - 1
+      ]![0];
+    expect(endX).toBeLessThan(0.6);
+  });
+
+  it('combines is_tunnel and negative level_rules as union exclusion', () => {
+    const geom = lineString([
+      [0, 0],
+      [0.5, 0],
+      [1, 0],
+    ]).geometry;
+
+    // road_flags covers [0, 0.4], level_rules covers [0.3, 1.0] — union is [0, 1]
+    const roads = classifyOvertureRoad(
+      'r-lr3',
+      {
+        class: 'primary',
+        road_flags: '[{"values":["is_tunnel"],"between":[0.0,0.4]}]',
+        level_rules: [{ level: -1, between: [0.3, 1.0] }],
+      },
+      geom
+    );
+
+    expect(roads).toHaveLength(0);
+  });
+
+  it('returns empty array for fully-underground railway (level_rules)', () => {
+    const geom = lineString([
+      [0, 0],
+      [1, 0],
+    ]).geometry;
+
+    const railways = classifyOvertureRailway(
+      'rw-lr1',
+      { class: 'rail', level_rules: [{ level: -2 }] },
+      geom
+    );
+
+    expect(railways).toHaveLength(0);
   });
 
   it('extracts is_intermittent for water', () => {
