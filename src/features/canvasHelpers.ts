@@ -1,10 +1,10 @@
 import type { LineString, Polygon } from 'geojson';
-import type { MercatorBounds } from '../gis/types';
+import type { GeoBounds } from '../gis/GeoCoordinates';
 
 export function drawPolygon(
   ctx: CanvasRenderingContext2D,
   geometry: Polygon,
-  bounds: MercatorBounds,
+  bounds: GeoBounds,
   scaleX: number,
   scaleY: number
 ): void {
@@ -13,9 +13,9 @@ export function drawPolygon(
   ctx.beginPath();
   for (const ring of rings) {
     let first = true;
-    for (const [x, y] of ring) {
-      const canvasX = (x - bounds.minX) * scaleX;
-      const canvasY = (bounds.maxY - y) * scaleY;
+    for (const [lng, lat] of ring) {
+      const canvasX = (lng - bounds.minLng) * scaleX;
+      const canvasY = (bounds.maxLat - lat) * scaleY;
       if (first) {
         ctx.moveTo(canvasX, canvasY);
         first = false;
@@ -32,7 +32,7 @@ export function drawPolygon(
 export function drawLineString(
   ctx: CanvasRenderingContext2D,
   geometry: LineString,
-  bounds: MercatorBounds,
+  bounds: GeoBounds,
   scaleX: number,
   scaleY: number
 ): void {
@@ -41,9 +41,9 @@ export function drawLineString(
   ctx.beginPath();
   let firstPoint = true;
 
-  for (const [x, y] of coordinates) {
-    const canvasX = (x - bounds.minX) * scaleX;
-    const canvasY = (bounds.maxY - y) * scaleY;
+  for (const [lng, lat] of coordinates) {
+    const canvasX = (lng - bounds.minLng) * scaleX;
+    const canvasY = (bounds.maxLat - lat) * scaleY;
 
     if (firstPoint) {
       ctx.moveTo(canvasX, canvasY);

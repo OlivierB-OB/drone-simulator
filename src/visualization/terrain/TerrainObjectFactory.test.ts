@@ -15,14 +15,19 @@ describe('TerrainObjectFactory', () => {
   let geometryResource: TileResource<BufferGeometry>;
   let geometry: BufferGeometry;
   const tileKey = '9:261:168';
-  const mercatorBounds = { minX: 0, maxX: 1000, minY: 0, maxY: 1000 };
+  const geoBounds = {
+    minLat: 48.85,
+    maxLat: 48.86,
+    minLng: 2.34,
+    maxLng: 2.35,
+  };
 
   beforeEach(() => {
     geometry = new BufferGeometry();
     geometryResource = {
       tileKey,
       resource: geometry,
-      bounds: mercatorBounds,
+      bounds: geoBounds,
       dispose: vi.fn(),
     };
   });
@@ -71,7 +76,7 @@ describe('TerrainObjectFactory', () => {
         textureResource = {
           tileKey,
           resource: texture,
-          bounds: mercatorBounds,
+          bounds: geoBounds,
           dispose: vi.fn(),
         };
       });
@@ -116,20 +121,20 @@ describe('TerrainObjectFactory', () => {
       expect(resource1.resource.material).not.toBe(resource2.resource.material);
     });
 
-    it('should position mesh at tile center in Mercator space', () => {
+    it('should position mesh at origin when no origin provided', () => {
       const terrainResource = factory.createTerrainObject(geometryResource);
       const mesh = terrainResource.resource;
 
-      // Expected center: (0+1000)/2 = 500 for X, -500 for Z (negated Mercator Y)
-      expect(mesh.position.x).toBe(500);
-      expect(mesh.position.y).toBe(0);
-      expect(mesh.position.z).toBe(-500);
+      // When no origin is provided, the tile center becomes the origin (0, 0, 0)
+      expect(mesh.position.x).toBeCloseTo(0, 10);
+      expect(mesh.position.y).toBeCloseTo(0, 10);
+      expect(mesh.position.z).toBeCloseTo(0, 10);
     });
 
     it('should propagate bounds from geometry resource', () => {
       const terrainResource = factory.createTerrainObject(geometryResource);
 
-      expect(terrainResource.bounds).toBe(mercatorBounds);
+      expect(terrainResource.bounds).toBe(geoBounds);
     });
 
     describe('debug wireframe mode', () => {

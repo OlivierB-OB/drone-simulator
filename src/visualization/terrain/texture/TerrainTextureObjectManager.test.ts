@@ -11,7 +11,7 @@ function makeTextureResource(tileKey: string): TileResource<THREE.Texture> {
   return {
     tileKey,
     resource: texture,
-    bounds: { minX: 0, maxX: 1000, minY: 0, maxY: 1000 },
+    bounds: { minLat: 48.85, maxLat: 48.86, minLng: 2.34, maxLng: 2.35 },
     dispose: vi.fn(),
   };
 }
@@ -232,11 +232,11 @@ function createMockContextTile(tileKey: string): ContextDataTile {
 
   return {
     coordinates: { z, x, y },
-    mercatorBounds: {
-      minX: 0,
-      maxX: 1000,
-      minY: 0,
-      maxY: 1000,
+    geoBounds: {
+      minLat: 48.85,
+      maxLat: 48.86,
+      minLng: 2.34,
+      maxLng: 2.35,
     },
     zoomLevel: z,
     features: {

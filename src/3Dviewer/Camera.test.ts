@@ -9,7 +9,7 @@ describe('Camera', () => {
   let drone: Drone;
 
   beforeEach(() => {
-    drone = new Drone({ x: 0, y: 0 });
+    drone = new Drone({ lat: 0, lng: 0 });
     camera = new Camera(1920, 1080, drone);
   });
 

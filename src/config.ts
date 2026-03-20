@@ -12,11 +12,8 @@ export const droneConfig = {
   // Initial azimuth in degrees (0 = North, 90 = East, 180 = South, 270 = West)
   initialAzimuth: 0,
 
-  // Movement speed in Mercator coordinate units per second
-  // (Not realistic m/s; game speed allows faster exploration)
-  // Realistic drone: 10-15 m/s. Mercator units at zoom 15: ~300 units/meter
-  // So 1200 units/sec ≈ 4 m/s in real world, but appears fast in viewport
-  movementSpeed: 300,
+  // Movement speed in meters per second
+  movementSpeed: 15,
 
   // Mouse sensitivity for azimuth control (degrees per pixel of mouse movement)
   mouseSensitivity: 0.15,

@@ -35,7 +35,7 @@ export class TerrainGeometryObjectManager extends TileObjectManager<
     return {
       tileKey: key as TileKey,
       resource: geometry,
-      bounds: tile.mercatorBounds,
+      bounds: tile.geoBounds,
       dispose: () => geometry.dispose(),
     };
   }

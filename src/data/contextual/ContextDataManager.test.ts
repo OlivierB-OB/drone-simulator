@@ -8,7 +8,7 @@ import type { TileCoordinates } from '../elevation/types';
 function makeTile(coords: TileCoordinates): ContextDataTile {
   return {
     coordinates: coords,
-    mercatorBounds: { minX: 0, maxX: 1, minY: 0, maxY: 1 },
+    geoBounds: { minLat: 48.85, maxLat: 48.86, minLng: 2.34, maxLng: 2.35 },
     zoomLevel: coords.z,
     features: {
       buildings: [],
@@ -86,7 +86,7 @@ describe('ContextDataManager', () => {
   describe('ring updates', () => {
     it('updates ring when moving to a different tile', () => {
       const ringBefore = contextManager.getRingTiles();
-      contextManager.setLocation({ x: 1000000, y: 1000000 });
+      contextManager.setLocation({ lat: 48.9, lng: 2.5 });
       const ringAfter = contextManager.getRingTiles();
       expect(ringAfter).not.toEqual(ringBefore);
     });
@@ -109,7 +109,7 @@ describe('ContextDataManager', () => {
       (contextManager as any).tileCache.set(staleKey, makeTile(staleCoords));
 
       // Move to a completely different location
-      contextManager.setLocation({ x: 1000000, y: 1000000 });
+      contextManager.setLocation({ lat: 48.9, lng: 2.5 });
 
       expect(removedKeys).toContain(staleKey);
     });
@@ -121,7 +121,7 @@ describe('ContextDataManager', () => {
       (contextManager as any).pendingLoads.set(evictKey, Promise.resolve(null));
 
       // Move far away — evictKey is outside desired ring
-      contextManager.setLocation({ x: 1000000, y: 1000000 });
+      contextManager.setLocation({ lat: 48.9, lng: 2.5 });
 
       expect((contextManager as any).pendingQueue).not.toContain(evictKey);
     });
@@ -181,7 +181,7 @@ describe('ContextDataManager', () => {
         makeTile({ z: 15, x: 999, y: 999 })
       );
 
-      contextManager.setLocation({ x: 1000000, y: 1000000 });
+      contextManager.setLocation({ lat: 48.9, lng: 2.5 });
 
       expect(removedKeys).toContain(staleKey);
     });

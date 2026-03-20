@@ -1,6 +1,7 @@
 import type { Object3D } from 'three';
 import type { CanvasDrawContext } from './types';
 import type { ElevationSampler } from '../visualization/mesh/util/ElevationSampler';
+import type { GeoCoordinates } from '../gis/GeoCoordinates';
 import type { ModulesFeatures } from './registrationTypes';
 import { MODULES } from './registration';
 
@@ -32,11 +33,12 @@ export class FeatureModuleRegistry {
 
   createAllMeshes(
     features: ModulesFeatures,
-    elevationSampler: ElevationSampler
+    elevationSampler: ElevationSampler,
+    origin: GeoCoordinates
   ): Object3D[] {
     const meshes: Object3D[] = [];
     for (const mod of this.getMeshModules()) {
-      meshes.push(...mod.createMeshes!(features, elevationSampler));
+      meshes.push(...mod.createMeshes!(features, elevationSampler, origin));
     }
     return meshes;
   }

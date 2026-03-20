@@ -1,5 +1,8 @@
 import { BufferGeometry, BufferAttribute } from 'three';
 import type { ElevationDataTile } from '../../../data/elevation/types';
+import { EARTH_RADIUS } from '../../../gis/GeoCoordinates';
+
+const TO_RAD = Math.PI / 180;
 
 /**
  * Factory for creating Three.js terrain geometry from elevation tiles.
@@ -26,17 +29,23 @@ export class TerrainGeometryFactory {
   private createBufferGeometry(
     elevationTile: ElevationDataTile
   ): BufferGeometry {
-    const { data, tileSize, mercatorBounds } = elevationTile;
+    const { data, tileSize, geoBounds } = elevationTile;
     const geometry = new BufferGeometry();
 
-    // Calculate dimensions
-    const width = mercatorBounds.maxX - mercatorBounds.minX;
-    const height = mercatorBounds.maxY - mercatorBounds.minY;
+    // Calculate tile physical dimensions in meters from GeoBounds
+    const centerLat = (geoBounds.minLat + geoBounds.maxLat) / 2;
+    const latRange = geoBounds.maxLat - geoBounds.minLat;
+    const lngRange = geoBounds.maxLng - geoBounds.minLng;
+
+    const width =
+      lngRange * TO_RAD * EARTH_RADIUS * Math.cos(centerLat * TO_RAD); // east-west meters
+    const height = latRange * TO_RAD * EARTH_RADIUS; // north-south meters
+
     const cellWidth = width / (tileSize - 1);
     const cellHeight = height / (tileSize - 1);
 
     // Create vertices array (X, Y, Z coordinates)
-    // Y-axis is vertical (elevation), Z-axis is tile Y coordinate
+    // X = east from center, Y = elevation, Z = south from center (row 0 = north)
     const vertices: number[] = [];
     for (let y = 0; y < tileSize; y++) {
       for (let x = 0; x < tileSize; x++) {

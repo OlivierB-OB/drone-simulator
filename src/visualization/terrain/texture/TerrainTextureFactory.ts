@@ -48,11 +48,7 @@ export class TerrainTextureFactory {
     canvas.height = textureConfig.groundCanvasSize;
 
     // Render features onto canvas
-    this.canvasRenderer.renderTile(
-      canvas,
-      contextTile,
-      contextTile.mercatorBounds
-    );
+    this.canvasRenderer.renderTile(canvas, contextTile, contextTile.geoBounds);
 
     // Create Three.js texture from canvas
     const texture = new this.textureConstructor(canvas);
@@ -66,7 +62,7 @@ export class TerrainTextureFactory {
     return {
       tileKey,
       resource: texture,
-      bounds: contextTile.mercatorBounds,
+      bounds: contextTile.geoBounds,
       dispose: () => texture.dispose(),
     };
   }

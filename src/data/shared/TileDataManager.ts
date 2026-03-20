@@ -1,4 +1,4 @@
-import type { MercatorCoordinates } from '../../gis/types';
+import type { GeoCoordinates } from '../../gis/GeoCoordinates';
 import type { TileCoordinates } from '../elevation/types';
 import { TypedEventEmitter } from '../../core/TypedEventEmitter';
 import type { Drone } from '../../drone/Drone';
@@ -38,7 +38,7 @@ export abstract class TileDataManager<TileType> extends TypedEventEmitter<
   protected loadingCount: number = 0;
   protected abortController: AbortController = new AbortController();
 
-  private readonly onDroneLocationChanged = (location: MercatorCoordinates) => {
+  private readonly onDroneLocationChanged = (location: GeoCoordinates) => {
     this.setLocation(location);
   };
 
@@ -51,7 +51,7 @@ export abstract class TileDataManager<TileType> extends TypedEventEmitter<
   /**
    * Updates the manager's location and loads/unloads tiles as needed.
    */
-  setLocation(location: MercatorCoordinates): void {
+  setLocation(location: GeoCoordinates): void {
     const { zoomLevel } = this.getConfig();
     const newTileCenter = this.getTileCoordinates(location, zoomLevel);
 
@@ -114,7 +114,7 @@ export abstract class TileDataManager<TileType> extends TypedEventEmitter<
 
   protected abstract getConfig(): TileManagerConfig;
   protected abstract getTileCoordinates(
-    loc: MercatorCoordinates,
+    loc: GeoCoordinates,
     zoom: number
   ): TileCoordinates;
   protected abstract loadTileAsync(key: string): void;

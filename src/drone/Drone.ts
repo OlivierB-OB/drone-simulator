@@ -1,9 +1,12 @@
 import { droneConfig } from '../config';
-import type { MercatorCoordinates } from '../gis/types';
+import type { GeoCoordinates } from '../gis/GeoCoordinates';
+import { EARTH_RADIUS } from '../gis/GeoCoordinates';
 import { TypedEventEmitter } from '../core/TypedEventEmitter';
 
+const TO_RAD = Math.PI / 180;
+
 export type DroneEvents = {
-  locationChanged: MercatorCoordinates;
+  locationChanged: GeoCoordinates;
   azimuthChanged: number;
   elevationChanged: number;
   movingChanged: boolean;
@@ -17,7 +20,7 @@ export class Drone {
   private readonly emitter = new TypedEventEmitter<DroneEvents>();
 
   constructor(
-    private readonly location: MercatorCoordinates,
+    private readonly location: GeoCoordinates,
     private azimuth: number = 0,
     private elevation: number = 0
   ) {}
@@ -44,7 +47,7 @@ export class Drone {
     this.removeAllListeners();
   }
 
-  getLocation(): MercatorCoordinates {
+  getLocation(): GeoCoordinates {
     return { ...this.location };
   }
 
@@ -148,59 +151,41 @@ export class Drone {
     const netForward = forwardComponent + backwardComponent;
     const netRight = rightComponent + leftComponent;
 
-    // If all movements cancel out, do nothing
     if (netForward === 0 && netRight === 0) {
       return;
     }
 
-    // Generate movement vector based on azimuth and net movement
-    const azimuthRad = (this.azimuth * Math.PI) / 180;
-    const speed = droneConfig.movementSpeed;
-    const displacement = speed * deltaTime;
+    const azimuthRad = this.azimuth * TO_RAD;
+    const displacement = droneConfig.movementSpeed * deltaTime; // meters
 
-    // Forward/backward component (along drone's heading)
-    // Mercator Y increases northward: North (azimuth 0) = +Y, East (azimuth 90) = +X
-    const forwardVector = {
-      x: Math.sin(azimuthRad) * netForward * displacement,
-      y: Math.cos(azimuthRad) * netForward * displacement,
-    };
-
-    // Left/right component (perpendicular to drone's heading)
+    // Forward direction: azimuth 0 = North (+lat), azimuth 90 = East (+lng)
     const rightAzimuthRad = azimuthRad + Math.PI / 2;
-    const rightVector = {
-      x: Math.sin(rightAzimuthRad) * netRight * displacement,
-      y: Math.cos(rightAzimuthRad) * netRight * displacement,
-    };
 
-    // Apply movement to location
-    this.location.x += forwardVector.x + rightVector.x;
-    this.location.y += forwardVector.y + rightVector.y;
+    // Combined displacement in meters
+    const dNorth =
+      (Math.cos(azimuthRad) * netForward +
+        Math.cos(rightAzimuthRad) * netRight) *
+      displacement;
+    const dEast =
+      (Math.sin(azimuthRad) * netForward +
+        Math.sin(rightAzimuthRad) * netRight) *
+      displacement;
+
+    // Convert meters to degree deltas
+    this.location.lat += dNorth / EARTH_RADIUS / TO_RAD;
+    this.location.lng +=
+      dEast / (EARTH_RADIUS * Math.cos(this.location.lat * TO_RAD)) / TO_RAD;
 
     this.emitter.emit('locationChanged', this.getLocation());
   }
-
-  /**
-   * Convert latitude/longitude to Web Mercator coordinates
-   * @param lat Latitude in degrees (-85.051129 to 85.051129)
-   * @param lon Longitude in degrees (-180 to 180)
-   * @returns Mercator coordinates
-   */
-  public static latLonToMercator(
-    lat: number,
-    lon: number
-  ): MercatorCoordinates {
-    const earthRadius = 6378137; // in meters
-    const x = ((lon * Math.PI) / 180) * earthRadius;
-    const y = Math.log(Math.tan(((90 + lat) * Math.PI) / 360)) * earthRadius;
-    return { x, y };
-  }
 }
 
-const mercatorCoords = Drone.latLonToMercator(
-  droneConfig.initialCoordinates.latitude,
-  droneConfig.initialCoordinates.longitude
-);
-
 export function createDrone(): Drone {
-  return new Drone(mercatorCoords, droneConfig.initialAzimuth);
+  return new Drone(
+    {
+      lat: droneConfig.initialCoordinates.latitude,
+      lng: droneConfig.initialCoordinates.longitude,
+    },
+    droneConfig.initialAzimuth
+  );
 }

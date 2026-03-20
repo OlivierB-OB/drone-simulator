@@ -1,9 +1,9 @@
 import type { TileKey } from './geometry/types';
-import type { MercatorBounds } from '../../gis/types';
+import type { GeoBounds } from '../../gis/GeoCoordinates';
 
 export type TileResource<T> = {
   tileKey: TileKey;
   resource: T;
-  bounds: MercatorBounds;
+  bounds: GeoBounds;
   dispose(): void;
 };

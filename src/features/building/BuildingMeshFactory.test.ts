@@ -36,22 +36,29 @@ function makeBuilding(overrides: Partial<BuildingVisual> = {}): BuildingVisual {
 
 describe('BuildingMeshFactory', () => {
   const factory = new BuildingMeshFactory(mockElevation);
+  const origin = { lat: 48.853, lng: 2.3499 };
 
   it('creates a single Mesh for flat roof (default)', () => {
-    const result = factory.create([makeBuilding()]);
+    const result = factory.create([makeBuilding()], origin);
     expect(result).toHaveLength(1);
     expect(result[0]).toBeInstanceOf(Mesh);
     expect(result[0]).not.toBeInstanceOf(Group);
   });
 
   it('creates a single Mesh for explicit flat roof', () => {
-    const result = factory.create([makeBuilding({ roofShape: 'flat' })]);
+    const result = factory.create(
+      [makeBuilding({ roofShape: 'flat' })],
+      origin
+    );
     expect(result).toHaveLength(1);
     expect(result[0]).toBeInstanceOf(Mesh);
   });
 
   it('creates a Group for gabled roof', () => {
-    const result = factory.create([makeBuilding({ roofShape: 'gabled' })]);
+    const result = factory.create(
+      [makeBuilding({ roofShape: 'gabled' })],
+      origin
+    );
     expect(result).toHaveLength(1);
     expect(result[0]).toBeInstanceOf(Group);
     const group = result[0] as Group;
@@ -59,19 +66,28 @@ describe('BuildingMeshFactory', () => {
   });
 
   it('creates a Group for hipped roof', () => {
-    const result = factory.create([makeBuilding({ roofShape: 'hipped' })]);
+    const result = factory.create(
+      [makeBuilding({ roofShape: 'hipped' })],
+      origin
+    );
     expect(result).toHaveLength(1);
     expect(result[0]).toBeInstanceOf(Group);
   });
 
   it('creates a Group for pyramidal roof', () => {
-    const result = factory.create([makeBuilding({ roofShape: 'pyramidal' })]);
+    const result = factory.create(
+      [makeBuilding({ roofShape: 'pyramidal' })],
+      origin
+    );
     expect(result).toHaveLength(1);
     expect(result[0]).toBeInstanceOf(Group);
   });
 
   it('creates a Group for dome roof', () => {
-    const result = factory.create([makeBuilding({ roofShape: 'dome' })]);
+    const result = factory.create(
+      [makeBuilding({ roofShape: 'dome' })],
+      origin
+    );
     expect(result).toHaveLength(1);
     expect(result[0]).toBeInstanceOf(Group);
   });
@@ -82,7 +98,7 @@ describe('BuildingMeshFactory', () => {
       roofHeight: 3,
       roofShape: 'gabled',
     });
-    const result = factory.create([building]);
+    const result = factory.create([building], origin);
     expect(result).toHaveLength(1);
     const group = result[0] as Group;
     // Roof mesh should be positioned at wallHeight = 10 - 3 = 7
@@ -96,7 +112,7 @@ describe('BuildingMeshFactory', () => {
       roofHeight: 6, // more than total height
       roofShape: 'gabled',
     });
-    const result = factory.create([building]);
+    const result = factory.create([building], origin);
     expect(result).toHaveLength(1);
     const group = result[0] as Group;
     // roofHeight should be clamped so wall is at least 1m
@@ -111,13 +127,13 @@ describe('BuildingMeshFactory', () => {
       isPart: false,
       hasParts: true,
     });
-    const result = factory.create([parent]);
+    const result = factory.create([parent], origin);
     expect(result).toHaveLength(0);
   });
 
   it('renders building parts regardless of hasParts on other buildings', () => {
     const part = makeBuilding({ id: 'part-1', isPart: true });
-    const result = factory.create([part]);
+    const result = factory.create([part], origin);
     expect(result).toHaveLength(1);
   });
 
@@ -127,7 +143,7 @@ describe('BuildingMeshFactory', () => {
       roofShape: 'gabled',
       // no roofHeight
     });
-    const result = factory.create([building]);
+    const result = factory.create([building], origin);
     expect(result).toHaveLength(1);
     expect(result[0]).toBeInstanceOf(Group);
     const group = result[0] as Group;

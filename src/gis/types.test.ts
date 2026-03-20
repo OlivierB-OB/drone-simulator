@@ -1,274 +1,174 @@
 import { describe, it, expect } from 'vitest';
-import { mercatorToThreeJs, type MercatorCoordinates } from './types';
+import { geoToLocal, EARTH_RADIUS } from './GeoCoordinates';
 
-describe('mercatorToThreeJs', () => {
+const TO_RAD = Math.PI / 180;
+
+describe('geoToLocal', () => {
   describe('direct mapping validation', () => {
-    it('should map Mercator X directly to Three.js X', () => {
-      const location: MercatorCoordinates = { x: 1000, y: 2000 };
-      const elevation = 500;
+    it('should map east offset to positive Three.js X', () => {
+      const origin = { lat: 0, lng: 0 };
+      const result = geoToLocal(0, 1, 0, origin);
 
-      const result = mercatorToThreeJs(location, elevation);
-
-      expect(result.x).toBe(1000);
+      expect(result.x).toBeGreaterThan(0);
     });
 
     it('should map elevation directly to Three.js Y', () => {
-      const location: MercatorCoordinates = { x: 1000, y: 2000 };
-      const elevation = 500;
-
-      const result = mercatorToThreeJs(location, elevation);
+      const origin = { lat: 0, lng: 0 };
+      const result = geoToLocal(0, 0, 500, origin);
 
       expect(result.y).toBe(500);
     });
 
-    it('should negate Mercator Y to Three.js Z', () => {
-      const location: MercatorCoordinates = { x: 1000, y: 2000 };
-      const elevation = 500;
+    it('should map north offset to negative Three.js Z (Z = south)', () => {
+      const origin = { lat: 0, lng: 0 };
+      const result = geoToLocal(1, 0, 0, origin);
 
-      const result = mercatorToThreeJs(location, elevation);
-
-      expect(result.z).toBe(-2000);
+      expect(result.z).toBeLessThan(0);
     });
   });
 
-  describe('ground truth: known Mercator coordinates', () => {
-    it('should convert origin (0,0) with elevation to expected Three.js position', () => {
-      const location: MercatorCoordinates = { x: 0, y: 0 };
-      const elevation = 100;
+  describe('ground truth: known coordinates', () => {
+    it('should convert origin point to (0, elevation, 0)', () => {
+      const origin = { lat: 48.853, lng: 2.3499 };
+      const result = geoToLocal(48.853, 2.3499, 100, origin);
 
-      const result = mercatorToThreeJs(location, elevation);
-
-      // JavaScript -0 === 0, but Object.is distinguishes them; use toStrictEqual for fuzzy match
-      expect(result.x).toBe(0);
+      expect(result.x).toBeCloseTo(0, 5);
       expect(result.y).toBe(100);
-      expect(result.z).toBe(-0); // Negating 0 gives -0 in JavaScript
+      expect(result.z).toBeCloseTo(0, 5);
     });
 
-    it('should convert Paris coordinates correctly', () => {
-      // Paris Île de la Cité in Web Mercator
-      const parisLocation: MercatorCoordinates = { x: 261763, y: 6250047 };
-      const elevation = 35; // Approximate elevation at Paris
+    it('should compute correct east distance at equator', () => {
+      const origin = { lat: 0, lng: 0 };
+      const result = geoToLocal(0, 1, 0, origin);
 
-      const result = mercatorToThreeJs(parisLocation, elevation);
-
-      // X should be unchanged
-      expect(result.x).toBe(261763);
-      // Y should be elevation
-      expect(result.y).toBe(35);
-      // Z should be negated Y
-      expect(result.z).toBe(-6250047);
+      const expectedX = 1 * TO_RAD * EARTH_RADIUS * Math.cos(0);
+      expect(result.x).toBeCloseTo(expectedX, 0);
     });
 
-    it('should handle southern hemisphere coordinates (negative Mercator Y → positive Z)', () => {
-      // Southern hemisphere has negative Y in Web Mercator
-      const southLocation: MercatorCoordinates = { x: 1000000, y: -4000000 };
-      const elevation = 200;
+    it('should compute correct north distance', () => {
+      const origin = { lat: 0, lng: 0 };
+      const result = geoToLocal(1, 0, 0, origin);
 
-      const result = mercatorToThreeJs(southLocation, elevation);
-
-      // When Mercator Y is negative, -Y becomes positive Z
-      expect(result.z).toBe(4000000);
-      expect(result.x).toBe(1000000);
-      expect(result.y).toBe(200);
+      const expectedZ = -(1 * TO_RAD * EARTH_RADIUS);
+      expect(result.z).toBeCloseTo(expectedZ, 0);
     });
 
-    it('should handle equatorial region coordinates', () => {
-      // Near the equator, Y ≈ 0 in Web Mercator
-      const equatorialLocation: MercatorCoordinates = { x: 5000000, y: 100 };
-      const elevation = 150;
+    it('should handle southern hemisphere (positive Z for south of origin)', () => {
+      const origin = { lat: 0, lng: 0 };
+      const result = geoToLocal(-1, 0, 0, origin);
 
-      const result = mercatorToThreeJs(equatorialLocation, elevation);
-
-      expect(result).toEqual({ x: 5000000, y: 150, z: -100 });
+      expect(result.z).toBeGreaterThan(0);
     });
   });
 
-  describe('precision: large coordinate values', () => {
-    it('should handle large coordinate values without precision loss (global scale)', () => {
-      // Web Mercator coordinates at zoom 15 can reach ~20M meters
-      const largeLocation: MercatorCoordinates = {
-        x: 20000000,
-        y: 20000000,
-      };
-      const elevation = 5000;
+  describe('precision: distance values', () => {
+    it('should produce accurate east distance at Paris latitude', () => {
+      const origin = { lat: 48.853, lng: 2.3499 };
+      const result = geoToLocal(48.853, 2.3599, 0, origin);
 
-      const result = mercatorToThreeJs(largeLocation, elevation);
-
-      // Should preserve large numbers exactly (JavaScript number precision)
-      expect(result.x).toBe(20000000);
-      expect(result.y).toBe(5000);
-      expect(result.z).toBe(-20000000);
+      const dLng = 0.01;
+      const expectedX =
+        dLng * TO_RAD * EARTH_RADIUS * Math.cos(48.853 * TO_RAD);
+      expect(result.x).toBeCloseTo(expectedX, 0);
     });
 
-    it('should handle negative large coordinates', () => {
-      const negativeLocation: MercatorCoordinates = {
-        x: -10000000,
-        y: -10000000,
-      };
-      const elevation = 1000;
+    it('should produce accurate north distance at Paris latitude', () => {
+      const origin = { lat: 48.853, lng: 2.3499 };
+      const result = geoToLocal(48.863, 2.3499, 0, origin);
 
-      const result = mercatorToThreeJs(negativeLocation, elevation);
-
-      expect(result.x).toBe(-10000000);
-      expect(result.y).toBe(1000);
-      expect(result.z).toBe(10000000); // Negative Y becomes positive Z
+      const dLat = 0.01;
+      const expectedZ = -(dLat * TO_RAD * EARTH_RADIUS);
+      expect(result.z).toBeCloseTo(expectedZ, 0);
     });
 
-    it('should handle fractional Mercator coordinates', () => {
-      const fractionalLocation: MercatorCoordinates = {
-        x: 261763.5,
-        y: 6250047.25,
-      };
-      const elevation = 35.75;
+    it('should handle fractional degrees', () => {
+      const origin = { lat: 48.853, lng: 2.3499 };
+      const result = geoToLocal(48.8535, 2.3504, 35.75, origin);
 
-      const result = mercatorToThreeJs(fractionalLocation, elevation);
-
-      expect(result.x).toBe(261763.5);
       expect(result.y).toBe(35.75);
-      expect(result.z).toBe(-6250047.25);
+      expect(result.x).toBeGreaterThan(0); // slightly east
+      expect(result.z).toBeLessThan(0); // slightly north
     });
   });
 
-  describe('azimuth alignment: Z-negation strategy', () => {
-    it('should align azimuth 0° (North) with -Z direction', () => {
-      // When moving North (increasing Y in Mercator), Z should decrease
-      // This proves Z = -Y maps North to -Z direction (Three.js camera default)
-      const baseLocation: MercatorCoordinates = { x: 0, y: 0 };
-      const northLocation: MercatorCoordinates = { x: 0, y: 1000 };
+  describe('azimuth alignment: direction verification', () => {
+    it('north movement should decrease Z', () => {
+      const origin = { lat: 48.853, lng: 2.3499 };
+      const base = geoToLocal(48.853, 2.3499, 0, origin);
+      const north = geoToLocal(48.854, 2.3499, 0, origin);
 
-      const baseResult = mercatorToThreeJs(baseLocation, 0);
-      const northResult = mercatorToThreeJs(northLocation, 0);
-
-      // Moving North (Y increases) should decrease Z (move in -Z direction)
-      expect(northResult.z).toBeLessThan(baseResult.z);
-      expect(northResult.z - baseResult.z).toBe(-1000);
+      expect(north.z).toBeLessThan(base.z);
     });
 
-    it('should align azimuth 90° (East) with +X direction', () => {
-      // When moving East (increasing X in Mercator), X should increase
-      const baseLocation: MercatorCoordinates = { x: 0, y: 0 };
-      const eastLocation: MercatorCoordinates = { x: 1000, y: 0 };
+    it('east movement should increase X', () => {
+      const origin = { lat: 48.853, lng: 2.3499 };
+      const base = geoToLocal(48.853, 2.3499, 0, origin);
+      const east = geoToLocal(48.853, 2.3509, 0, origin);
 
-      const baseResult = mercatorToThreeJs(baseLocation, 0);
-      const eastResult = mercatorToThreeJs(eastLocation, 0);
-
-      // Moving East (X increases) should increase X
-      expect(eastResult.x).toBeGreaterThan(baseResult.x);
-      expect(eastResult.x - baseResult.x).toBe(1000);
+      expect(east.x).toBeGreaterThan(base.x);
     });
 
-    it('should align azimuth 180° (South) with +Z direction', () => {
-      // When moving South (decreasing Y in Mercator), Z should increase
-      const baseLocation: MercatorCoordinates = { x: 0, y: 1000 };
-      const southLocation: MercatorCoordinates = { x: 0, y: 0 };
+    it('south movement should increase Z', () => {
+      const origin = { lat: 48.853, lng: 2.3499 };
+      const base = geoToLocal(48.853, 2.3499, 0, origin);
+      const south = geoToLocal(48.852, 2.3499, 0, origin);
 
-      const baseResult = mercatorToThreeJs(baseLocation, 0);
-      const southResult = mercatorToThreeJs(southLocation, 0);
-
-      // Moving South (Y decreases) should increase Z (move in +Z direction)
-      expect(southResult.z).toBeGreaterThan(baseResult.z);
-      expect(southResult.z - baseResult.z).toBe(1000);
+      expect(south.z).toBeGreaterThan(base.z);
     });
 
-    it('should align azimuth 270° (West) with -X direction', () => {
-      // When moving West (decreasing X in Mercator), X should decrease
-      const baseLocation: MercatorCoordinates = { x: 1000, y: 0 };
-      const westLocation: MercatorCoordinates = { x: 0, y: 0 };
+    it('west movement should decrease X', () => {
+      const origin = { lat: 48.853, lng: 2.3499 };
+      const base = geoToLocal(48.853, 2.3499, 0, origin);
+      const west = geoToLocal(48.853, 2.3489, 0, origin);
 
-      const baseResult = mercatorToThreeJs(baseLocation, 0);
-      const westResult = mercatorToThreeJs(westLocation, 0);
-
-      // Moving West (X decreases) should decrease X
-      expect(westResult.x).toBeLessThan(baseResult.x);
-      expect(westResult.x - baseResult.x).toBe(-1000);
+      expect(west.x).toBeLessThan(base.x);
     });
   });
 
   describe('elevation handling', () => {
     it('should handle zero elevation', () => {
-      const location: MercatorCoordinates = { x: 100, y: 200 };
-      const elevation = 0;
-
-      const result = mercatorToThreeJs(location, elevation);
+      const origin = { lat: 48.853, lng: 2.3499 };
+      const result = geoToLocal(48.853, 2.3499, 0, origin);
 
       expect(result.y).toBe(0);
     });
 
     it('should handle negative elevation (below sea level)', () => {
-      const location: MercatorCoordinates = { x: 100, y: 200 };
-      const elevation = -100;
-
-      const result = mercatorToThreeJs(location, elevation);
+      const origin = { lat: 48.853, lng: 2.3499 };
+      const result = geoToLocal(48.853, 2.3499, -100, origin);
 
       expect(result.y).toBe(-100);
     });
 
     it('should handle large positive elevation', () => {
-      const location: MercatorCoordinates = { x: 100, y: 200 };
-      const elevation = 8848; // Mount Everest
-
-      const result = mercatorToThreeJs(location, elevation);
+      const origin = { lat: 48.853, lng: 2.3499 };
+      const result = geoToLocal(48.853, 2.3499, 8848, origin);
 
       expect(result.y).toBe(8848);
-    });
-
-    it('should handle fractional elevation', () => {
-      const location: MercatorCoordinates = { x: 100, y: 200 };
-      const elevation = 123.456;
-
-      const result = mercatorToThreeJs(location, elevation);
-
-      expect(result.y).toBe(123.456);
     });
   });
 
   describe('mathematical properties', () => {
-    it('should maintain linearity: scaling coordinates should scale result proportionally', () => {
-      const location: MercatorCoordinates = { x: 100, y: 200 };
-      const elevation = 50;
+    it('should be anti-symmetric for horizontal components', () => {
+      const a = { lat: 48.853, lng: 2.3499 };
+      const b = { lat: 48.86, lng: 2.36 };
 
-      const result1 = mercatorToThreeJs(location, elevation);
+      const aToB = geoToLocal(b.lat, b.lng, 0, a);
+      const bToA = geoToLocal(a.lat, a.lng, 0, b);
 
-      const scaledLocation: MercatorCoordinates = {
-        x: location.x * 2,
-        y: location.y * 2,
-      };
-      const result2 = mercatorToThreeJs(scaledLocation, elevation * 2);
-
-      // Scaling should be proportional
-      expect(result2.x).toBe(result1.x * 2);
-      expect(result2.y).toBe(result1.y * 2);
-      expect(result2.z).toBe(result1.z * 2);
+      expect(aToB.x).toBeCloseTo(-bToA.x, 0);
+      expect(aToB.z).toBeCloseTo(-bToA.z, 0);
     });
 
-    it('should be invertible: reversing Y should negate Z', () => {
-      const location: MercatorCoordinates = { x: 100, y: 200 };
-      const elevation = 50;
+    it('elevation should be independent of horizontal position', () => {
+      const origin = { lat: 48.853, lng: 2.3499 };
 
-      const result = mercatorToThreeJs(location, elevation);
-      const negatedLocation: MercatorCoordinates = {
-        x: location.x,
-        y: -location.y,
-      };
-      const negatedResult = mercatorToThreeJs(negatedLocation, elevation);
+      const result1 = geoToLocal(48.853, 2.3499, 50, origin);
+      const result2 = geoToLocal(48.853, 2.3499, 100, origin);
 
-      // Negating Y should negate Z
-      expect(negatedResult.z).toBe(-result.z);
-      // X and Y should remain the same
-      expect(negatedResult.x).toBe(result.x);
-      expect(negatedResult.y).toBe(result.y);
-    });
-
-    it('should compose with elevation independently', () => {
-      const location: MercatorCoordinates = { x: 100, y: 200 };
-
-      const result1 = mercatorToThreeJs(location, 50);
-      const result2 = mercatorToThreeJs(location, 100);
-
-      // Only Y should differ when elevation changes
-      expect(result2.x).toBe(result1.x);
-      expect(result2.z).toBe(result1.z);
-      expect(result2.y).toBe(result1.y + 50);
+      expect(result2.y - result1.y).toBe(50);
+      expect(result2.x).toBeCloseTo(result1.x, 5);
+      expect(result2.z).toBeCloseTo(result1.z, 5);
     });
   });
 });

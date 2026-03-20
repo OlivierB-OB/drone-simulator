@@ -9,7 +9,7 @@ import {
 } from 'three';
 import type { VegetationVisual } from '../types';
 import type { ElevationSampler } from '../../../visualization/mesh/util/ElevationSampler';
-import { mercatorToThreeJs } from '../../../gis/types';
+import { geoToLocal, type GeoCoordinates } from '../../../gis/GeoCoordinates';
 import type { IVegetationStrategy } from './types';
 import {
   TRUNK_COLOR,
@@ -20,10 +20,11 @@ import {
 export class SingleTreeStrategy implements IVegetationStrategy {
   constructor(private readonly elevation: ElevationSampler) {}
 
-  create(veg: VegetationVisual): Object3D[] {
+  create(veg: VegetationVisual, origin: GeoCoordinates): Object3D[] {
     if (veg.geometry.type !== 'Point') return [];
-    const [x, y] = veg.geometry.coordinates as [number, number];
-    const terrainY = this.elevation.sampleAt(x, y);
+    // GeoJSON: [lng, lat]
+    const [lng, lat] = veg.geometry.coordinates as [number, number];
+    const terrainY = this.elevation.sampleAt(lat, lng);
 
     const isNeedle = veg.leafType === 'needleleaved';
     const treeHeight = veg.height ?? 10;
@@ -58,7 +59,7 @@ export class SingleTreeStrategy implements IVegetationStrategy {
       trunkHeight + (isNeedle ? (treeHeight - trunkHeight) / 2 : crownRadius);
     group.add(canopy);
 
-    const pos = mercatorToThreeJs({ x, y }, terrainY);
+    const pos = geoToLocal(lat, lng, terrainY, origin);
     group.position.set(pos.x, pos.y, pos.z);
     return [group];
   }

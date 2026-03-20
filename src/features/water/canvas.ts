@@ -32,7 +32,7 @@ export function drawWater(
     if (water.geometry.type !== 'LineString') continue;
     ctx.setLineDash(water.intermittent ? [4, 4] : []);
     ctx.strokeStyle = water.color;
-    ctx.lineWidth = water.widthMeters * scaleX;
+    ctx.lineWidth = water.widthMeters * draw.pixelsPerMeter;
     drawLineString(ctx, water.geometry, bounds, scaleX, scaleY);
   }
 }

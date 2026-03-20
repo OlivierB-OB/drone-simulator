@@ -48,7 +48,7 @@ describe('TerrainTextureFactory', () => {
       expect(mockCanvasRenderer.renderTile).toHaveBeenCalledOnce();
       const callArgs = mockCanvasRenderer.renderTile.mock.calls[0];
       expect(callArgs[1]).toBe(mockTile);
-      expect(callArgs[2]).toBe(mockTile.mercatorBounds);
+      expect(callArgs[2]).toBe(mockTile.geoBounds);
     });
 
     it('should create canvas with configured groundCanvasSize dimensions', () => {
@@ -69,12 +69,12 @@ describe('TerrainTextureFactory', () => {
       expect(result?.resource).toBeInstanceOf(THREE.Texture);
     });
 
-    it('should store mercator bounds in resource', () => {
+    it('should store geographic bounds in resource', () => {
       const mockTile = createMockContextTile('9:261:168');
 
       const result = factory.createTexture(mockTile, '9:261:168');
 
-      expect(result?.bounds).toEqual(mockTile.mercatorBounds);
+      expect(result?.bounds).toEqual(mockTile.geoBounds);
     });
 
     it('should set texture properties (filters and needsUpdate)', () => {
@@ -124,11 +124,11 @@ function createMockContextTile(tileKey: string): ContextDataTile {
 
   return {
     coordinates: { z, x, y },
-    mercatorBounds: {
-      minX: 1000000,
-      maxX: 2000000,
-      minY: 3000000,
-      maxY: 4000000,
+    geoBounds: {
+      minLat: 48.85,
+      maxLat: 48.86,
+      minLng: 2.34,
+      maxLng: 2.35,
     },
     zoomLevel: z,
     features: {
@@ -137,7 +137,7 @@ function createMockContextTile(tileKey: string): ContextDataTile {
           id: 'building-1',
           geometry: {
             type: 'Polygon' as const,
-            coordinates: [[[1000000, 3000000]]],
+            coordinates: [[[2.34, 48.85]]],
           },
           type: 'residential',
           color: '#c4b8a0',

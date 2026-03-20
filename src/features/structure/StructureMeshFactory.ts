@@ -2,6 +2,7 @@ import type { Object3D } from 'three';
 import centroid from '@turf/centroid';
 import type { StructureVisual } from './types';
 import type { ElevationSampler } from '../../visualization/mesh/util/ElevationSampler';
+import { geoToLocal, type GeoCoordinates } from '../../gis/GeoCoordinates';
 import { structureDefaults } from '../../config';
 import type { IStructureStrategy } from './meshStrategies/types';
 import { CylinderStrategy } from './meshStrategies/CylinderStrategy';
@@ -13,6 +14,8 @@ import { CraneStrategy } from './meshStrategies/CraneStrategy';
 /**
  * Creates 3D meshes for man-made structures (towers, chimneys, masts, etc.)
  * using parametric shapes from config defaults.
+ *
+ * Coordinates are [lng, lat] in degrees (GeoJSON convention).
  */
 const cylinderStrategy = new CylinderStrategy();
 
@@ -27,16 +30,19 @@ export class StructureMeshFactory {
 
   constructor(private readonly elevation: ElevationSampler) {}
 
-  create(structures: StructureVisual[]): Object3D[] {
+  create(structures: StructureVisual[], origin: GeoCoordinates): Object3D[] {
     const meshes: Object3D[] = [];
     for (const structure of structures) {
-      const mesh = this.createStructureMesh(structure);
+      const mesh = this.createStructureMesh(structure, origin);
       if (mesh) meshes.push(mesh);
     }
     return meshes;
   }
 
-  private createStructureMesh(structure: StructureVisual): Object3D | null {
+  private createStructureMesh(
+    structure: StructureVisual,
+    origin: GeoCoordinates
+  ): Object3D | null {
     const defaults = structureDefaults[structure.type];
     if (!defaults) return null;
 
@@ -46,12 +52,14 @@ export class StructureMeshFactory {
       : defaults.radius;
     const color = structure.color;
 
-    const [mx, my] = this.getPosition(structure);
-    const terrainY = this.elevation.sampleAt(mx, my);
+    // getPosition returns [lng, lat]
+    const [lng, lat] = this.getPosition(structure);
+    const terrainY = this.elevation.sampleAt(lat, lng);
 
     const strategy = this.strategies.get(defaults.shape) ?? cylinderStrategy;
     const obj = strategy.create({ radius, height, color });
-    obj.position.set(mx, terrainY + height / 2, -my);
+    const pos = geoToLocal(lat, lng, terrainY + height / 2, origin);
+    obj.position.set(pos.x, pos.y, pos.z);
     return obj;
   }
 

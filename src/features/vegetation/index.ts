@@ -1,6 +1,7 @@
 import type { CanvasDrawContext, FeatureModule } from '../types';
 import type { Object3D } from 'three';
 import type { ElevationSampler } from '../../visualization/mesh/util/ElevationSampler';
+import type { GeoCoordinates } from '../../gis/GeoCoordinates';
 import { drawVegetation } from './canvas';
 import { VegetationMeshFactory } from './VegetationMeshFactory';
 import type { ModuleFeatures } from './types';
@@ -19,9 +20,10 @@ export const vegetationModule: FeatureModule<ModuleFeatures> = {
 
   createMeshes(
     features: ModuleFeatures,
-    elevationSampler: ElevationSampler
+    elevationSampler: ElevationSampler,
+    origin: GeoCoordinates
   ): Object3D[] {
     const factory = new VegetationMeshFactory(elevationSampler);
-    return factory.create(features.vegetation);
+    return factory.create(features.vegetation, origin);
   },
 };

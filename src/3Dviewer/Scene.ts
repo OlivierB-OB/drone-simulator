@@ -7,8 +7,7 @@ import {
   AxesHelper,
   Fog,
 } from 'three';
-import { sceneConfig, debugConfig, droneConfig } from '../config';
-import { Drone } from '../drone/Drone';
+import { sceneConfig, debugConfig } from '../config';
 
 export class Scene {
   private readonly object: ThreeScene;
@@ -45,14 +44,10 @@ export class Scene {
     this.object.add(this.directionalLight);
 
     // Debug axes helper: red=X, green=Y, blue=Z
-    // Position at the drone's initial location in Mercator coordinates
+    // Position at the origin (drone is always at origin in local tangent plane)
     if (debugConfig.showAxisHelper) {
       this.axisHelper = new AxesHelper(debugConfig.axesHelperSize);
-      const mercatorCoords = Drone.latLonToMercator(
-        droneConfig.initialCoordinates.latitude,
-        droneConfig.initialCoordinates.longitude
-      );
-      this.axisHelper.position.set(mercatorCoords.x, 0, -mercatorCoords.y);
+      this.axisHelper.position.set(0, 0, 0);
       this.object.add(this.axisHelper);
     }
   }

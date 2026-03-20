@@ -40,17 +40,6 @@ export class PMTilesReader {
       const url = `${config.baseUrl}/${config.version}/${theme}.pmtiles`;
       this.archives.set(theme, new PMTiles(new FetchSource(url)));
     }
-    this.logZoomRanges();
-  }
-
-  private logZoomRanges(): void {
-    for (const [theme, archive] of this.archives) {
-      archive.getHeader().then((h) => {
-        console.log(
-          `[PMTiles] ${theme}: minZoom=${h.minZoom} maxZoom=${h.maxZoom}`
-        );
-      });
-    }
   }
 
   /**

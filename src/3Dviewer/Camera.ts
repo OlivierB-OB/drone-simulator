@@ -1,7 +1,6 @@
 import { PerspectiveCamera } from 'three';
 import { cameraConfig } from '../config';
 import type { Drone } from '../drone/Drone';
-import { mercatorToThreeJs } from '../gis/types';
 
 export class Camera {
   private readonly object: PerspectiveCamera;
@@ -40,18 +39,11 @@ export class Camera {
   }
 
   private updateFromDroneState(): void {
-    const droneLocation = this.drone.getLocation();
     const droneElevation = this.drone.getElevation();
     const droneAzimuth = this.drone.getAzimuth();
 
-    const threeCoords = mercatorToThreeJs(droneLocation, droneElevation);
-
-    this.updateChaseCamera(
-      threeCoords.x,
-      threeCoords.y,
-      threeCoords.z,
-      droneAzimuth
-    );
+    // Drone is always at origin (0, elevation, 0) in local tangent plane
+    this.updateChaseCamera(0, droneElevation, 0, droneAzimuth);
   }
 
   /**

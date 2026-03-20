@@ -1,0 +1,675 @@
+$ vitest
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mC:/perso/drone-simulator[39m
+
+ [32m✓[39m src/data/elevation/ElevationDataTileParser.test.ts [2m([22m[2m26 tests[22m[2m)[22m[33m 367[2mms[22m[39m
+[90mstderr[2m | src/data/elevation/ElevationDataTileLoader.test.ts[2m > [22m[2mElevationDataTileLoader[2m > [22m[2mloadTileWithRetry[2m > [22m[2mreturns null after max retries
+[22m[39mFailed to load tile 13/4520/3102: Error loading tile 13/4520/3102: Network error
+
+ [32m✓[39m src/config.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 269[2mms[22m[39m
+ [32m✓[39m src/gis/types.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 268[2mms[22m[39m
+ [32m✓[39m src/drone/DroneController.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 286[2mms[22m[39m
+ [32m✓[39m src/data/shared/TilePersistenceCache.test.ts [2m([22m[2m30 tests[22m[2m)[22m[33m 518[2mms[22m[39m
+ [32m✓[39m src/3Dviewer/Camera.test.ts [2m([22m[2m27 tests[22m[2m)[22m[33m 398[2mms[22m[39m
+ [32m✓[39m src/gis/GeoCoordinates.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 264[2mms[22m[39m
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts[2m > [22m[2mElevationDataManager[2m > [22m[2medge cases[2m > [22m[2mshould have getTileAt method for querying cached tiles
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+ [32m✓[39m src/data/shared/TileDataManager.test.ts [2m([22m[2m22 tests[22m[2m)[22m[33m 355[2mms[22m[39m
+ [32m✓[39m src/3Dviewer/Scene.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 288[2mms[22m[39m
+[90mstderr[2m | src/data/elevation/ElevationDataTileLoader.test.ts[2m > [22m[2mElevationDataTileLoader[2m > [22m[2mloadTileWithRetry[2m > [22m[2mimplements exponential backoff (can verify with spy)
+[22m[39mFailed to load tile 13/4520/3102: Error loading tile 13/4520/3102: Network error
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts[2m > [22m[2mElevationDataManager[2m > [22m[2medge cases[2m > [22m[2mshould have getTileAt method for querying cached tiles
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+ [32m✓[39m src/visualization/drone/DroneObject.test.ts [2m([22m[2m26 tests[22m[2m)[22m[33m 429[2mms[22m[39m
+ [32m✓[39m src/features/flagRuleUtils.test.ts [2m([22m[2m45 tests[22m[2m)[22m[33m 690[2mms[22m[39m
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts[2m > [22m[2mElevationDataManager[2m > [22m[2medge cases[2m > [22m[2mshould have getTileAt method for querying cached tiles
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+ [32m✓[39m src/visualization/terrain/geometry/TerrainGeometryFactory.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 653[2mms[22m[39m
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts[2m > [22m[2mElevationDataManager[2m > [22m[2mintegration: multiple operations[2m > [22m[2mshould coordinate load, emit, queue, and process in sequence
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+ [32m✓[39m src/drone/Drone.test.ts [2m([22m[2m51 tests[22m[2m)[22m[33m 759[2mms[22m[39m
+ [32m✓[39m src/data/elevation/ElevationDataTileLoader.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 501[2mms[22m[39m
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts[2m > [22m[2mElevationDataManager[2m > [22m[2mintegration: multiple operations[2m > [22m[2mshould coordinate load, emit, queue, and process in sequence
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts[2m > [22m[2mElevationDataManager[2m > [22m[2mintegration: multiple operations[2m > [22m[2mshould coordinate load, emit, queue, and process in sequence
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | src/data/elevation/ElevationDataManager.test.ts
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+ [32m✓[39m src/data/elevation/ElevationDataManager.test.ts [2m([22m[2m30 tests[22m[2m)[22m[33m 599[2mms[22m[39m
+[90mstderr[2m | Function.loadTileWithRetry (C:\perso\drone-simulator\src\data\elevation\ElevationDataTileLoader.ts:101:13)
+[22m[39mFailed to load tile 15/16596/11272: Error loading tile 15/16596/11272: signal is aborted without reason
+
+[90mstderr[2m | Function.loadTileWithRetry (C:\perso\drone-simulator\src\data\elevation\ElevationDataTileLoader.ts:101:13)
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+[90mstderr[2m | Function.loadTileWithRetry (C:\perso\drone-simulator\src\data\elevation\ElevationDataTileLoader.ts:101:13)
+[22m[39mFailed to load tile 15/16596/11274: Error loading tile 15/16596/11274: signal is aborted without reason
+
+[90mstderr[2m | Function.loadTileWithRetry (C:\perso\drone-simulator\src\data\elevation\ElevationDataTileLoader.ts:101:13)
+[22m[39mFailed to load tile 15/16597/11272: Error loading tile 15/16597/11272: signal is aborted without reason
+
+[90mstderr[2m | Function.loadTileWithRetry (C:\perso\drone-simulator\src\data\elevation\ElevationDataTileLoader.ts:101:13)
+[22m[39mFailed to load tile 15/16596/11273: Error loading tile 15/16596/11273: signal is aborted without reason
+
+ [32m✓[39m src/3Dviewer/Viewer3D.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 247[2mms[22m[39m
+ [32m✓[39m src/visualization/TileObjectManager.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 270[2mms[22m[39m
+ [32m✓[39m src/data/contextual/ContextDataTileLoader.test.ts [2m([22m[2m33 tests[22m[2m)[22m[33m 523[2mms[22m[39m
+ [32m✓[39m src/core/TypedEventEmitter.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 120[2mms[22m[39m
+ [32m✓[39m src/data/contextual/pmtiles/mvtGeometry.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 163[2mms[22m[39m
+ [32m✓[39m src/gis/webMercator.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 176[2mms[22m[39m
+ [32m✓[39m src/gis/coordinateConsistency.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 187[2mms[22m[39m
+ [32m✓[39m src/visualization/terrain/geometry/TerrainGeometryObjectManager.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 178[2mms[22m[39m
+ [32m✓[39m src/features/building/RoofGeometryFactory.test.ts [2m([22m[2m40 tests[22m[2m)[22m[33m 647[2mms[22m[39m
+ [32m✓[39m src/visualization/terrain/TerrainObjectFactory.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 232[2mms[22m[39m
+ [32m✓[39m src/features/building/BuildingMeshFactory.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 170[2mms[22m[39m
+ [32m✓[39m src/visualization/mesh/MeshObjectManager.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 176[2mms[22m[39m
+ [32m✓[39m src/drone/AnimationLoop.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 367[2mms[22m[39m
+ [32m✓[39m src/3Dviewer/Renderer.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 135[2mms[22m[39m
+ [32m✓[39m src/data/elevation/ElevationTilePersistenceCache.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 87[2mms[22m[39m
+ [32m✓[39m src/features/vegetation/overtureClassify.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 103[2mms[22m[39m
+ [32m✓[39m src/visualization/terrain/texture/TerrainTextureFactory.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 160[2mms[22m[39m
+ [32m✓[39m src/data/contextual/pmtiles/OvertureParser.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 255[2mms[22m[39m
+ [32m✓[39m src/visualization/terrain/texture/TerrainTextureObjectManager.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 261[2mms[22m[39m
+ [32m✓[39m src/visualization/terrain/TerrainObjectManager.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 269[2mms[22m[39m
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+ [32m✓[39m src/features/building/buildingStrategy.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 51[2mms[22m[39m
+ [32m✓[39m src/data/contextual/ContextTilePersistenceCache.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 74[2mms[22m[39m
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+[90mstderr[2m | src/data/contextual/ContextDataManager.test.ts[2m > [22m[2mContextDataManager[2m > [22m[2mdispose and cleanup[2m > [22m[2mclears tileCache
+[22m[39mFailed to load context tile 15/16596/11272: Aborted
+
+[90mstderr[2m | src/data/contextual/ContextDataManager.test.ts[2m > [22m[2mContextDataManager[2m > [22m[2mdispose and cleanup[2m > [22m[2mclears tileCache
+[22m[39mFailed to load context tile 15/16596/11273: Aborted
+
+[90mstderr[2m | src/data/contextual/ContextDataManager.test.ts[2m > [22m[2mContextDataManager[2m > [22m[2mdispose and cleanup[2m > [22m[2mclears tileCache
+[22m[39mFailed to load context tile 15/16596/11274: Aborted
+
+[90mstderr[2m | src/data/contextual/ContextDataManager.test.ts[2m > [22m[2mContextDataManager[2m > [22m[2mdispose and cleanup[2m > [22m[2mclears tileCache
+[22m[39mFailed to load context tile 15/16597/11272: Aborted
+
+[90mstderr[2m | src/data/contextual/ContextDataManager.test.ts[2m > [22m[2mContextDataManager[2m > [22m[2mdispose and cleanup[2m > [22m[2mclears tileCache
+[22m[39mFailed to load context tile 15/16597/11273: Aborted
+
+[90mstderr[2m | src/data/contextual/ContextDataManager.test.ts[2m > [22m[2mContextDataManager[2m > [22m[2mdispose and cleanup[2m > [22m[2mclears tileCache
+[22m[39mFailed to load context tile 15/16597/11274: Aborted
+
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/buildings.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/base.pmtiles".
+OPTIONS https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles 403 (Forbidden)
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at "https://tiles.overturemaps.org/2026-02-18.0/transportation.pmtiles".
+ [32m✓[39m src/data/contextual/ContextDataManager.test.ts [2m([22m[2m23 tests[22m[2m)[22m[33m 598[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m38 passed[39m[22m[90m (38)[39m
+[2m      Tests [22m [1m[32m696 passed[39m[22m[90m (696)[39m
+[2m   Start at [22m 14:38:46
+[2m   Duration [22m 13.30s[2m (transform 44.78s, setup 10.31s, import 56.24s, tests 12.09s, environment 90.78s)[22m
+
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)
+DOMException [AbortError]: The operation was aborted.
+    at Fetch.onAsyncTaskManagerAbort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:546:23)
+    at Object.<anonymous> (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/fetch/Fetch.js:416:101)
+    at AsyncTaskManager.abortAll (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:292:30)
+    at AsyncTaskManager.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/async-task-manager/AsyncTaskManager.js:52:21)
+    at DetachedBrowserFrame.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/browser/detached-browser/DetachedBrowserFrame.js:112:58)
+    at DetachedWindowAPI.abort (file:///C:/perso/drone-simulator/node_modules/happy-dom/lib/window/DetachedWindowAPI.js:51:35)
+    at teardownWindow (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:331:22)
+    at Object.teardown (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/index.CyBMJtT7.js:392:10)
+    at file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/base.CJ0Y4ePK.js:130:65
+    at Traces.$ (file:///C:/perso/drone-simulator/node_modules/vitest/dist/chunks/traces.CCmnQaNT.js:142:27)

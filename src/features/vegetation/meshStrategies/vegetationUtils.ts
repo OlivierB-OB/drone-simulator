@@ -12,6 +12,13 @@ import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { point } from '@turf/helpers';
 import type { Polygon } from 'geojson';
 import type { ElevationSampler } from '../../../visualization/mesh/util/ElevationSampler';
+import {
+  geoToLocal,
+  EARTH_RADIUS,
+  type GeoCoordinates,
+} from '../../../gis/GeoCoordinates';
+
+const TO_RAD = Math.PI / 180;
 
 export const TRUNK_COLOR = '#6b4226';
 export const BROADLEAF_COLORS = ['#2d6b1e', '#3a7a30', '#357a28', '#408030'];
@@ -29,6 +36,11 @@ export function seededRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
+/**
+ * Distributes points in a polygon using density-based spacing.
+ * Polygon coordinates are [lng, lat] in degrees.
+ * Spacing is converted from meters to degree increments.
+ */
 export function distributePointsInPolygon(
   polygon: Polygon,
   densityPer100m2: number
@@ -40,6 +52,11 @@ export function distributePointsInPolygon(
   return distributeGridInPolygon(polygon, spacing, spacing, true);
 }
 
+/**
+ * Distributes points in a grid pattern within a polygon.
+ * Polygon coordinates are [lng, lat] in degrees.
+ * spacingX/spacingY are in meters, converted to degrees internally.
+ */
 export function distributeGridInPolygon(
   polygon: Polygon,
   spacingX: number,
@@ -49,40 +66,47 @@ export function distributeGridInPolygon(
   const ring = polygon.coordinates[0];
   if (!ring || ring.length < 4) return [];
 
-  let minX = Infinity,
-    maxX = -Infinity;
-  let minY = Infinity,
-    maxY = -Infinity;
-  for (const [x, y] of ring as [number, number][]) {
-    if (x < minX) minX = x;
-    if (x > maxX) maxX = x;
-    if (y < minY) minY = y;
-    if (y > maxY) maxY = y;
+  // Find bounding box in [lng, lat]
+  let minLng = Infinity,
+    maxLng = -Infinity;
+  let minLat = Infinity,
+    maxLat = -Infinity;
+  for (const [lng, lat] of ring as [number, number][]) {
+    if (lng < minLng) minLng = lng;
+    if (lng > maxLng) maxLng = lng;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
   }
+
+  // Convert meter spacing to degree increments
+  const centerLat = (minLat + maxLat) / 2;
+  const cosLat = Math.cos(centerLat * TO_RAD);
+  const spacingLng = spacingX / (TO_RAD * EARTH_RADIUS * cosLat);
+  const spacingLat = spacingY / (TO_RAD * EARTH_RADIUS);
 
   const maxPoints = 2000;
   const estimatedCount =
-    ((maxX - minX) / spacingX) * ((maxY - minY) / spacingY);
-  const effectiveSpacingX =
+    ((maxLng - minLng) / spacingLng) * ((maxLat - minLat) / spacingLat);
+  const effectiveSpacingLng =
     estimatedCount > maxPoints
-      ? spacingX * Math.sqrt(estimatedCount / maxPoints)
-      : spacingX;
-  const effectiveSpacingY =
+      ? spacingLng * Math.sqrt(estimatedCount / maxPoints)
+      : spacingLng;
+  const effectiveSpacingLat =
     estimatedCount > maxPoints
-      ? spacingY * Math.sqrt(estimatedCount / maxPoints)
-      : spacingY;
+      ? spacingLat * Math.sqrt(estimatedCount / maxPoints)
+      : spacingLat;
 
   const points: [number, number][] = [];
 
-  for (let x = minX; x <= maxX; x += effectiveSpacingX) {
-    for (let y = minY; y <= maxY; y += effectiveSpacingY) {
-      let px = x;
-      let py = y;
+  for (let lng = minLng; lng <= maxLng; lng += effectiveSpacingLng) {
+    for (let lat = minLat; lat <= maxLat; lat += effectiveSpacingLat) {
+      let px = lng;
+      let py = lat;
 
       if (jitter) {
-        const seed = hash(x, y);
-        px += (seededRandom(seed + 2) - 0.5) * effectiveSpacingX * 0.8;
-        py += (seededRandom(seed + 3) - 0.5) * effectiveSpacingY * 0.8;
+        const seed = hash(lng, lat);
+        px += (seededRandom(seed + 2) - 0.5) * effectiveSpacingLng * 0.8;
+        py += (seededRandom(seed + 3) - 0.5) * effectiveSpacingLat * 0.8;
       }
 
       if (booleanPointInPolygon(point([px, py]), polygon)) {
@@ -94,6 +118,9 @@ export function distributeGridInPolygon(
   return points;
 }
 
+/**
+ * Creates instanced tree meshes from [lng, lat] points.
+ */
 export function createInstancedTrees(
   points: [number, number][],
   trunkHeightMin: number,
@@ -102,7 +129,8 @@ export function createInstancedTrees(
   crownRadiusMax: number,
   isNeedle: boolean,
   colors: string[],
-  elevation: ElevationSampler
+  elevation: ElevationSampler,
+  origin: GeoCoordinates
 ): Object3D[] {
   const count = points.length;
   if (count === 0) return [];
@@ -122,27 +150,33 @@ export function createInstancedTrees(
   const color = new Color();
 
   for (let i = 0; i < count; i++) {
-    const [x, y] = points[i]!;
-    const seed = hash(x, y);
+    const [lng, lat] = points[i]!;
+    const seed = hash(lng, lat);
     const t = seededRandom(seed);
 
     const treeHeight = trunkHeightMin + t * (trunkHeightMax - trunkHeightMin);
     const crownRadius = crownRadiusMin + t * (crownRadiusMax - crownRadiusMin);
     const trunkHeight = treeHeight * 0.4;
     const trunkRadius = crownRadius * 0.15;
-    const terrainY = elevation.sampleAt(x, y);
+    const terrainY = elevation.sampleAt(lat, lng);
+
+    const pos = geoToLocal(lat, lng, 0, origin);
 
     matrix.makeScale(trunkRadius / 0.15, trunkHeight, trunkRadius / 0.15);
-    matrix.setPosition(x, terrainY + trunkHeight / 2, -y);
+    matrix.setPosition(pos.x, terrainY + trunkHeight / 2, pos.z);
     trunkMesh.setMatrixAt(i, matrix);
 
     const canopyHeight = treeHeight - trunkHeight;
     if (isNeedle) {
       matrix.makeScale(crownRadius, canopyHeight, crownRadius);
-      matrix.setPosition(x, terrainY + trunkHeight + canopyHeight / 2, -y);
+      matrix.setPosition(
+        pos.x,
+        terrainY + trunkHeight + canopyHeight / 2,
+        pos.z
+      );
     } else {
       matrix.makeScale(crownRadius, crownRadius, crownRadius);
-      matrix.setPosition(x, terrainY + trunkHeight + crownRadius, -y);
+      matrix.setPosition(pos.x, terrainY + trunkHeight + crownRadius, pos.z);
     }
     canopyMesh.setMatrixAt(i, matrix);
 
@@ -158,12 +192,16 @@ export function createInstancedTrees(
   return [trunkMesh, canopyMesh];
 }
 
+/**
+ * Creates instanced bush meshes from [lng, lat] points.
+ */
 export function createInstancedBushes(
   points: [number, number][],
   radiusMin: number,
   radiusMax: number,
   colors: string[],
-  elevation: ElevationSampler
+  elevation: ElevationSampler,
+  origin: GeoCoordinates
 ): Object3D[] {
   const count = points.length;
   if (count === 0) return [];
@@ -176,15 +214,17 @@ export function createInstancedBushes(
   const color = new Color();
 
   for (let i = 0; i < count; i++) {
-    const [x, y] = points[i]!;
-    const seed = hash(x, y);
+    const [lng, lat] = points[i]!;
+    const seed = hash(lng, lat);
     const t = seededRandom(seed);
 
     const radius = radiusMin + t * (radiusMax - radiusMin);
-    const terrainY = elevation.sampleAt(x, y);
+    const terrainY = elevation.sampleAt(lat, lng);
+
+    const pos = geoToLocal(lat, lng, 0, origin);
 
     matrix.makeScale(radius, radius * 0.6, radius);
-    matrix.setPosition(x, terrainY + radius * 0.6, -y);
+    matrix.setPosition(pos.x, terrainY + radius * 0.6, pos.z);
     bushMesh.setMatrixAt(i, matrix);
 
     const colorIdx = Math.floor(seededRandom(seed + 1) * colors.length);

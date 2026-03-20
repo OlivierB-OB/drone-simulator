@@ -12,13 +12,19 @@ import centroid from '@turf/centroid';
 import type { Polygon } from 'geojson';
 import type { BuildingVisual } from './types';
 import type { ElevationSampler } from '../../visualization/mesh/util/ElevationSampler';
-import { mercatorToThreeJs } from '../../gis/types';
+import {
+  geoToLocal,
+  EARTH_RADIUS,
+  type GeoCoordinates,
+} from '../../gis/GeoCoordinates';
 import { buildingHeightDefaults, roofColorDefaults } from '../../config';
 import {
   RoofGeometryFactory,
   computeOBB,
   resolveRidgeAngle,
 } from './RoofGeometryFactory';
+
+const TO_RAD = Math.PI / 180;
 
 const PITCHED_SHAPES = new Set([
   'gabled',
@@ -37,10 +43,10 @@ const PITCHED_SHAPES = new Set([
 /**
  * Creates 3D building meshes from BuildingVisual data using Three.js ExtrudeGeometry.
  * Builds geometry in local coordinates (relative to polygon centroid) to avoid
- * float32 precision issues at large Mercator coordinate values.
+ * float32 precision issues at large coordinate values.
  *
- * For non-flat roof shapes, a separate roof geometry is created by RoofGeometryFactory
- * and combined with the wall extrusion in a Group.
+ * Coordinates are [lng, lat] in degrees (GeoJSON convention).
+ * Local ring converts degree offsets to meters for correct geometry.
  */
 export class BuildingMeshFactory {
   private readonly roofFactory = new RoofGeometryFactory();
@@ -50,15 +56,15 @@ export class BuildingMeshFactory {
   /**
    * Creates Object3D[] for all buildings in a tile.
    * @param buildings - Parsed building visuals (hasParts flag set by the data parser)
+   * @param origin - Current origin for coordinate conversion
    */
-  create(buildings: BuildingVisual[]): Object3D[] {
+  create(buildings: BuildingVisual[], origin: GeoCoordinates): Object3D[] {
     const meshes: Object3D[] = [];
     for (const building of buildings) {
       if (building.geometry.type !== 'Polygon') continue;
-      // Skip parent outlines when child parts exist (detected spatially during parsing)
       if (!building.isPart && building.hasParts) continue;
 
-      const mesh = this.createBuildingMesh(building, building.geometry);
+      const mesh = this.createBuildingMesh(building, building.geometry, origin);
       if (mesh) meshes.push(mesh);
     }
     return meshes;
@@ -66,18 +72,22 @@ export class BuildingMeshFactory {
 
   private createBuildingMesh(
     building: BuildingVisual,
-    polygon: Polygon
+    polygon: Polygon,
+    origin: GeoCoordinates
   ): Object3D | null {
     try {
       const outerRing = polygon.coordinates[0] as [number, number][];
 
-      // Compute centroid for local coordinate space
+      // Compute centroid [lng, lat]
       const center = centroid(polygon).geometry.coordinates as [number, number];
+      const centerLng = center[0];
+      const centerLat = center[1];
+      const cosLat = Math.cos(centerLat * TO_RAD);
 
-      // Build local ring (relative to centroid)
+      // Build local ring: convert degree offsets to meters
       const localRing: [number, number][] = outerRing.map((pt) => [
-        pt[0] - center[0],
-        pt[1] - center[1],
+        (pt[0] - centerLng) * TO_RAD * EARTH_RADIUS * cosLat,
+        (pt[1] - centerLat) * TO_RAD * EARTH_RADIUS,
       ]);
 
       // Resolve heights
@@ -93,7 +103,6 @@ export class BuildingMeshFactory {
       let roofHeight = 0;
       if (isPitched) {
         roofHeight = building.roofHeight ?? this.defaultRoofHeight(localRing);
-        // Ensure wall height is at least 1m
         roofHeight = Math.min(roofHeight, totalHeight - minHeight - 1);
         if (roofHeight < 0) roofHeight = 0;
       }
@@ -101,7 +110,7 @@ export class BuildingMeshFactory {
       const extrudeDepth = wallHeight - minHeight;
       if (extrudeDepth <= 0) return null;
 
-      // Build Three.js Shape from outer ring (local coords)
+      // Build Three.js Shape from outer ring (local coords in meters)
       const shape = new Shape();
       shape.moveTo(localRing[0]![0], localRing[0]![1]);
       for (let i = 1; i < localRing.length; i++) {
@@ -114,10 +123,16 @@ export class BuildingMeshFactory {
         if (!innerRing || innerRing.length < 4) continue;
         const hole = new Path();
         const hFirst = innerRing[0] as [number, number];
-        hole.moveTo(hFirst[0] - center[0], hFirst[1] - center[1]);
+        hole.moveTo(
+          (hFirst[0] - centerLng) * TO_RAD * EARTH_RADIUS * cosLat,
+          (hFirst[1] - centerLat) * TO_RAD * EARTH_RADIUS
+        );
         for (let i = 1; i < innerRing.length; i++) {
           const pt = innerRing[i] as [number, number];
-          hole.lineTo(pt[0] - center[0], pt[1] - center[1]);
+          hole.lineTo(
+            (pt[0] - centerLng) * TO_RAD * EARTH_RADIUS * cosLat,
+            (pt[1] - centerLat) * TO_RAD * EARTH_RADIUS
+          );
         }
         shape.holes.push(hole);
       }
@@ -127,10 +142,8 @@ export class BuildingMeshFactory {
         depth: extrudeDepth,
         bevelEnabled: false,
       });
-      // ExtrudeGeometry extrudes along +Z; rotate so extrusion goes along +Y (up)
       geometry.rotateX(-Math.PI / 2);
 
-      // Resolve roof color per spec defaults
       const wallColor = building.color;
       const roofColor =
         building.roofColor ??
@@ -142,18 +155,16 @@ export class BuildingMeshFactory {
       });
       const roofMaterial = new MeshLambertMaterial({ color: roofColor });
 
-      // ExtrudeGeometry groups: 0 = sides (walls), 1 = top cap (roof/ceiling), 2 = bottom cap
       const wallMesh = new Mesh(geometry, [
         wallMaterial,
-        isPitched ? wallMaterial : roofMaterial, // Top cap: wall color if roof sits on top
+        isPitched ? wallMaterial : roofMaterial,
         wallMaterial,
       ]);
 
-      // World position
-      const terrainElevation = this.elevation.sampleAt(center[0], center[1]);
+      // World position: sample elevation at centroid
+      const terrainElevation = this.elevation.sampleAt(centerLat, centerLng);
       const worldY = terrainElevation + minHeight;
 
-      // For pitched roofs, add roof geometry
       if (isPitched && roofHeight > 0) {
         const obb = computeOBB(localRing);
         let ridgeAngle = resolveRidgeAngle(
@@ -161,8 +172,6 @@ export class BuildingMeshFactory {
           building.roofDirection,
           building.roofOrientation
         );
-        // Skillion roof:direction is the downslope direction (OSM convention),
-        // not the ridge direction. Adjust by +π/2 to align the slope correctly.
         if (roofShape === 'skillion' && building.roofDirection !== undefined) {
           ridgeAngle += Math.PI / 2;
         }
@@ -175,23 +184,21 @@ export class BuildingMeshFactory {
 
         if (roofGeom) {
           const roofMesh = new Mesh(roofGeom, roofMaterial);
-          roofMesh.position.y = extrudeDepth; // Sit on top of walls
+          roofMesh.position.y = extrudeDepth;
 
           const group = new Group();
           group.add(wallMesh);
           group.add(roofMesh);
-          const pos = mercatorToThreeJs({ x: center[0], y: center[1] }, worldY);
+          const pos = geoToLocal(centerLat, centerLng, worldY, origin);
           group.position.set(pos.x, pos.y, pos.z);
           return group;
         }
       }
 
-      // Flat roof or roof geometry failed — return single mesh
-      const pos = mercatorToThreeJs({ x: center[0], y: center[1] }, worldY);
+      const pos = geoToLocal(centerLat, centerLng, worldY, origin);
       wallMesh.position.set(pos.x, pos.y, pos.z);
       return wallMesh;
     } catch {
-      // Skip degenerate polygons (self-intersecting, etc.)
       return null;
     }
   }
@@ -207,25 +214,9 @@ export class BuildingMeshFactory {
     );
   }
 
-  /**
-   * Computes a default roof height based on the minor OBB axis (building width).
-   * Uses 30% of the minor axis, clamped to [1m, 8m].
-   */
   private defaultRoofHeight(localRing: [number, number][]): number {
     const obb = computeOBB(localRing);
     const minorAxis = Math.min(obb.halfLength, obb.halfWidth) * 2;
     return Math.max(1, Math.min(8, minorAxis * 0.3));
-  }
-
-  private computeCentroid(ring: [number, number][]): [number, number] {
-    let sumX = 0;
-    let sumY = 0;
-    // Exclude closing point (last === first)
-    const count = ring.length - 1;
-    for (let i = 0; i < count; i++) {
-      sumX += ring[i]![0];
-      sumY += ring[i]![1];
-    }
-    return [sumX / count, sumY / count];
   }
 }

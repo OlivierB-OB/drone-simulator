@@ -10,7 +10,7 @@ import type { ContextDataTile } from './types';
 
 const sampleTile = (): ContextDataTile => ({
   coordinates: { z: 15, x: 10, y: 20 },
-  mercatorBounds: { minX: 0, maxX: 1000, minY: 0, maxY: 1000 },
+  geoBounds: { minLat: 48.85, maxLat: 48.86, minLng: 2.34, maxLng: 2.35 },
   zoomLevel: 15,
   features: {
     buildings: [],

@@ -4,6 +4,7 @@ import type { Scene } from '../../3Dviewer/Scene';
 import type { ElevationSampler } from './util/ElevationSampler';
 import type { ContextDataManager } from '../../data/contextual/ContextDataManager';
 import type { Object3D } from 'three';
+import { OriginManager } from '../../gis/OriginManager';
 
 // Mock the registry module
 const mockCreateAllMeshes = vi.fn((): Object3D[] => []);
@@ -56,7 +57,7 @@ function makeTile(key: string): ContextDataTile {
   const [z, x, y] = key.split(':').map(Number);
   return {
     coordinates: { z: z!, x: x!, y: y! },
-    mercatorBounds: { minX: 0, maxX: 1000, minY: 0, maxY: 1000 },
+    geoBounds: { minLat: 0, maxLat: 1, minLng: 0, maxLng: 1 },
     zoomLevel: z!,
     features: {
       buildings: [],
@@ -102,11 +103,13 @@ describe('MeshObjectManager', () => {
   function buildManager(
     elevationSource = makeElevationDataSource()
   ): InstanceType<typeof MeshObjectManager> {
+    const originManager = new OriginManager({ lat: 48.853, lng: 2.3499 });
     return new MeshObjectManager(
       scene,
       dataSource as unknown as ContextDataManager,
       {} as ElevationSampler,
-      elevationSource as unknown as import('../../data/elevation/ElevationDataManager').ElevationDataManager
+      elevationSource as unknown as import('../../data/elevation/ElevationDataManager').ElevationDataManager,
+      originManager
     );
   }
 

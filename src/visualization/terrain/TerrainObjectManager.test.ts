@@ -212,7 +212,7 @@ describe('TerrainObjectManager', () => {
       const mockTextureResource: TileResource<any> = {
         tileKey: '9:261:168',
         resource: {},
-        bounds: { minX: 0, maxX: 1000, minY: 0, maxY: 1000 },
+        bounds: { minLat: 48.85, maxLat: 48.86, minLng: 2.34, maxLng: 2.35 },
         dispose: vi.fn(),
       };
 
@@ -229,7 +229,7 @@ describe('TerrainObjectManager', () => {
       const mockTextureResource: TileResource<any> = {
         tileKey: '9:261:168',
         resource: {},
-        bounds: { minX: 0, maxX: 1000, minY: 0, maxY: 1000 },
+        bounds: { minLat: 48.85, maxLat: 48.86, minLng: 2.34, maxLng: 2.35 },
         dispose: vi.fn(),
       };
 
@@ -356,11 +356,11 @@ function createMockElevationTile(tileKey: string): ElevationDataTile {
       .map(() => Array(256).fill(100)),
     tileSize: 256,
     zoomLevel: z,
-    mercatorBounds: {
-      minX: 0,
-      maxX: 1000,
-      minY: 0,
-      maxY: 1000,
+    geoBounds: {
+      minLat: 48.85,
+      maxLat: 48.86,
+      minLng: 2.34,
+      maxLng: 2.35,
     },
   };
 }

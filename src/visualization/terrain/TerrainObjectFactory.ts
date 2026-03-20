@@ -1,7 +1,7 @@
 import { Mesh, MeshPhongMaterial, MeshBasicMaterial } from 'three';
 import type * as THREE from 'three';
 import { debugConfig } from '../../config';
-import { mercatorToThreeJs } from '../../gis/types';
+import { geoToLocal, type GeoCoordinates } from '../../gis/GeoCoordinates';
 import type { TileResource } from './types';
 import type { BufferGeometry } from 'three';
 
@@ -20,14 +20,16 @@ export class TerrainObjectFactory {
    *
    * @param geometryResource - The geometry resource to create mesh from
    * @param textureResource - Optional texture resource; if provided, texture is applied to material
+   * @param origin - Current origin for coordinate conversion
    *
    * Creates a new mesh with a MeshPhongMaterial (or MeshBasicMaterial in debug mode).
    * If texture provided, applies it to the material's map property.
-   * Positions the mesh at the tile's Mercator coordinates.
+   * Positions the mesh using geoToLocal from tile center to origin.
    */
   createTerrainObject(
     geometryResource: TileResource<BufferGeometry>,
-    textureResource?: TileResource<THREE.Texture> | null
+    textureResource?: TileResource<THREE.Texture> | null,
+    origin?: GeoCoordinates
   ): TileResource<Mesh> {
     const texture = textureResource?.resource;
     const material =
@@ -43,9 +45,10 @@ export class TerrainObjectFactory {
     const mesh = new this.meshConstructor(geometryResource.resource, material);
 
     const bounds = geometryResource.bounds;
-    const centerX = (bounds.minX + bounds.maxX) / 2;
-    const centerY = (bounds.minY + bounds.maxY) / 2;
-    const pos = mercatorToThreeJs({ x: centerX, y: centerY }, 0);
+    const centerLat = (bounds.minLat + bounds.maxLat) / 2;
+    const centerLng = (bounds.minLng + bounds.maxLng) / 2;
+    const effectiveOrigin = origin ?? { lat: centerLat, lng: centerLng };
+    const pos = geoToLocal(centerLat, centerLng, 0, effectiveOrigin);
     mesh.position.set(pos.x, pos.y, pos.z);
 
     return {

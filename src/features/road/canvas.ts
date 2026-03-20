@@ -16,7 +16,7 @@ export function drawRoads(
   for (const road of sorted) {
     ctx.setLineDash(road.type === 'steps' ? [2, 2] : []);
     ctx.strokeStyle = road.surfaceColor ?? road.color;
-    ctx.lineWidth = road.widthMeters * scaleX;
+    ctx.lineWidth = road.widthMeters * draw.pixelsPerMeter;
     drawLineString(ctx, road.geometry, bounds, scaleX, scaleY);
   }
   ctx.setLineDash([]);

@@ -13,7 +13,7 @@ const sampleTile = (): ElevationDataTile => ({
   data: Array.from({ length: 4 }, () => [100, 200, 300, 400]),
   tileSize: 4,
   zoomLevel: 15,
-  mercatorBounds: { minX: 0, maxX: 1000, minY: 0, maxY: 1000 },
+  geoBounds: { minLat: 48.85, maxLat: 48.86, minLng: 2.34, maxLng: 2.35 },
 });
 
 describe('ElevationTilePersistenceCache', () => {

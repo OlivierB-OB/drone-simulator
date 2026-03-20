@@ -1,11 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Drone, createDrone } from './Drone';
 import { droneConfig } from '../config';
-import type { MercatorCoordinates } from '../gis/types';
+import type { GeoCoordinates } from '../gis/GeoCoordinates';
+import { EARTH_RADIUS } from '../gis/GeoCoordinates';
+
+const TO_RAD = Math.PI / 180;
 
 describe('Drone', () => {
   let drone: Drone;
-  const testLocation: MercatorCoordinates = { x: 261763, y: 6250047 };
+  // Paris coordinates from config
+  const testLocation: GeoCoordinates = { lat: 48.853, lng: 2.3499 };
 
   beforeEach(() => {
     drone = new Drone(testLocation, 0);
@@ -13,7 +17,7 @@ describe('Drone', () => {
 
   describe('constructor', () => {
     it('should initialize with given location and azimuth', () => {
-      const location: MercatorCoordinates = { x: 100, y: 200 };
+      const location: GeoCoordinates = { lat: 48.5, lng: 2.0 };
       const azimuth = 45;
       const testDrone = new Drone(location, azimuth);
 
@@ -22,14 +26,14 @@ describe('Drone', () => {
     });
 
     it('should default azimuth to 0', () => {
-      const location: MercatorCoordinates = { x: 100, y: 200 };
+      const location: GeoCoordinates = { lat: 48.5, lng: 2.0 };
       const testDrone = new Drone(location);
 
       expect(testDrone.getAzimuth()).toEqual(0);
     });
 
     it('should initialize with given elevation', () => {
-      const location: MercatorCoordinates = { x: 100, y: 200 };
+      const location: GeoCoordinates = { lat: 48.5, lng: 2.0 };
       const azimuth = 45;
       const elevation = 10;
       const testDrone = new Drone(location, azimuth, elevation);
@@ -38,7 +42,7 @@ describe('Drone', () => {
     });
 
     it('should default elevation to 0', () => {
-      const location: MercatorCoordinates = { x: 100, y: 200 };
+      const location: GeoCoordinates = { lat: 48.5, lng: 2.0 };
       const testDrone = new Drone(location);
 
       expect(testDrone.getElevation()).toEqual(0);
@@ -48,9 +52,9 @@ describe('Drone', () => {
   describe('getLocation', () => {
     it('should return a copy of location', () => {
       const location = drone.getLocation();
-      location.x = 999;
+      location.lat = 999;
 
-      expect(drone.getLocation().x).not.toEqual(999);
+      expect(drone.getLocation().lat).not.toEqual(999);
     });
 
     it('should return correct coordinates', () => {
@@ -176,8 +180,8 @@ describe('Drone', () => {
         drone.applyMove(1);
 
         const newLocation = drone.getLocation();
-        // Forward at azimuth 0° moves in +Y direction (Mercator Y increases northward)
-        expect(newLocation.y).toBeGreaterThan(initialLocation.y);
+        // Forward at azimuth 0° moves North (increases lat)
+        expect(newLocation.lat).toBeGreaterThan(initialLocation.lat);
       });
 
       it('should stop moving forward', () => {
@@ -201,8 +205,8 @@ describe('Drone', () => {
         drone.applyMove(1);
 
         const newLocation = drone.getLocation();
-        // Backward at azimuth 0° moves in -Y direction (opposite of forward)
-        expect(newLocation.y).toBeLessThan(initialLocation.y);
+        // Backward at azimuth 0° moves South (decreases lat)
+        expect(newLocation.lat).toBeLessThan(initialLocation.lat);
       });
 
       it('should stop moving backward', () => {
@@ -226,7 +230,8 @@ describe('Drone', () => {
         drone.applyMove(1);
 
         const newLocation = drone.getLocation();
-        expect(newLocation.x).toBeLessThan(initialLocation.x);
+        // Left at azimuth 0° moves West (decreases lng)
+        expect(newLocation.lng).toBeLessThan(initialLocation.lng);
       });
 
       it('should stop moving left', () => {
@@ -250,7 +255,8 @@ describe('Drone', () => {
         drone.applyMove(1);
 
         const newLocation = drone.getLocation();
-        expect(newLocation.x).toBeGreaterThan(initialLocation.x);
+        // Right at azimuth 0° moves East (increases lng)
+        expect(newLocation.lng).toBeGreaterThan(initialLocation.lng);
       });
 
       it('should stop moving right', () => {
@@ -283,8 +289,8 @@ describe('Drone', () => {
       drone.applyMove(1);
       const locationAfter1s = drone.getLocation();
       const displacement1s = {
-        x: locationAfter1s.x - initialLocation.x,
-        y: locationAfter1s.y - initialLocation.y,
+        lat: locationAfter1s.lat - initialLocation.lat,
+        lng: locationAfter1s.lng - initialLocation.lng,
       };
 
       drone.stopMovingForward();
@@ -294,12 +300,12 @@ describe('Drone', () => {
       drone.applyMove(0.5);
       const locationAfter0_5s = drone.getLocation();
       const displacement0_5s = {
-        x: locationAfter0_5s.x - newInitialLocation.x,
-        y: locationAfter0_5s.y - newInitialLocation.y,
+        lat: locationAfter0_5s.lat - newInitialLocation.lat,
+        lng: locationAfter0_5s.lng - newInitialLocation.lng,
       };
 
-      expect(displacement0_5s.x).toBeCloseTo(displacement1s.x / 2, 5);
-      expect(displacement0_5s.y).toBeCloseTo(displacement1s.y / 2, 5);
+      expect(displacement0_5s.lat).toBeCloseTo(displacement1s.lat / 2, 10);
+      expect(displacement0_5s.lng).toBeCloseTo(displacement1s.lng / 2, 10);
     });
 
     it('should apply movement speed from config', () => {
@@ -310,24 +316,38 @@ describe('Drone', () => {
       drone.applyMove(deltaTime);
 
       const newLocation = drone.getLocation();
-      const displacement = Math.sqrt(
-        Math.pow(newLocation.x - initialLocation.x, 2) +
-          Math.pow(newLocation.y - initialLocation.y, 2)
+
+      // Convert lat/lng displacement to meters for verification
+      const dLat = newLocation.lat - initialLocation.lat;
+      const dLng = newLocation.lng - initialLocation.lng;
+
+      const dNorthMeters = dLat * TO_RAD * EARTH_RADIUS;
+      const dEastMeters =
+        dLng * TO_RAD * EARTH_RADIUS * Math.cos(initialLocation.lat * TO_RAD);
+
+      const displacementMeters = Math.sqrt(
+        Math.pow(dNorthMeters, 2) + Math.pow(dEastMeters, 2)
       );
 
       const expectedDisplacement = droneConfig.movementSpeed * deltaTime;
-      expect(displacement).toBeCloseTo(expectedDisplacement, 5);
+      expect(displacementMeters).toBeCloseTo(expectedDisplacement, 3);
     });
 
     it('should move in direction of azimuth', () => {
-      const northDrone = new Drone({ x: testLocation.x, y: testLocation.y }, 0);
-      const eastDrone = new Drone({ x: testLocation.x, y: testLocation.y }, 90);
+      const northDrone = new Drone(
+        { lat: testLocation.lat, lng: testLocation.lng },
+        0
+      );
+      const eastDrone = new Drone(
+        { lat: testLocation.lat, lng: testLocation.lng },
+        90
+      );
       const southDrone = new Drone(
-        { x: testLocation.x, y: testLocation.y },
+        { lat: testLocation.lat, lng: testLocation.lng },
         180
       );
       const westDrone = new Drone(
-        { x: testLocation.x, y: testLocation.y },
+        { lat: testLocation.lat, lng: testLocation.lng },
         270
       );
 
@@ -352,21 +372,29 @@ describe('Drone', () => {
       const southLocation = southDrone.getLocation();
       const westLocation = westDrone.getLocation();
 
-      // North: moving in positive Y (Mercator Y increases northward)
-      expect(northLocation.y).toBeGreaterThan(northInitial.y);
-      expect(Math.abs(northLocation.x - northInitial.x)).toBeLessThan(5);
+      // North: moving in positive lat (northward)
+      expect(northLocation.lat).toBeGreaterThan(northInitial.lat);
+      expect(Math.abs(northLocation.lng - northInitial.lng)).toBeLessThan(
+        0.00001
+      );
 
-      // East: moving mostly in positive X
-      expect(eastLocation.x).toBeGreaterThan(eastInitial.x);
-      expect(Math.abs(eastLocation.y - eastInitial.y)).toBeLessThan(5);
+      // East: moving in positive lng (eastward)
+      expect(eastLocation.lng).toBeGreaterThan(eastInitial.lng);
+      expect(Math.abs(eastLocation.lat - eastInitial.lat)).toBeLessThan(
+        0.00001
+      );
 
-      // South: moving in negative Y (Mercator Y increases northward, so south = decreasing Y)
-      expect(southLocation.y).toBeLessThan(southInitial.y);
-      expect(Math.abs(southLocation.x - southInitial.x)).toBeLessThan(5);
+      // South: moving in negative lat (southward)
+      expect(southLocation.lat).toBeLessThan(southInitial.lat);
+      expect(Math.abs(southLocation.lng - southInitial.lng)).toBeLessThan(
+        0.00001
+      );
 
-      // West: moving mostly in negative X
-      expect(westLocation.x).toBeLessThan(westInitial.x);
-      expect(Math.abs(westLocation.y - westInitial.y)).toBeLessThan(5);
+      // West: moving in negative lng (westward)
+      expect(westLocation.lng).toBeLessThan(westInitial.lng);
+      expect(Math.abs(westLocation.lat - westInitial.lat)).toBeLessThan(
+        0.00001
+      );
     });
 
     it('should cancel opposite directions (forward and backward)', () => {
@@ -397,8 +425,8 @@ describe('Drone', () => {
       drone.applyMove(1);
 
       const newLocation = drone.getLocation();
-      expect(newLocation.x).toBeGreaterThan(initialLocation.x); // Right increases X
-      expect(newLocation.y).toBeGreaterThan(initialLocation.y); // Forward increases Y (north)
+      expect(newLocation.lng).toBeGreaterThan(initialLocation.lng); // Right increases lng (East)
+      expect(newLocation.lat).toBeGreaterThan(initialLocation.lat); // Forward increases lat (North)
     });
 
     it('should combine forward and left movements', () => {
@@ -409,8 +437,8 @@ describe('Drone', () => {
       drone.applyMove(1);
 
       const newLocation = drone.getLocation();
-      expect(newLocation.x).toBeLessThan(initialLocation.x); // Left decreases X
-      expect(newLocation.y).toBeGreaterThan(initialLocation.y); // Forward increases Y (north)
+      expect(newLocation.lng).toBeLessThan(initialLocation.lng); // Left decreases lng (West)
+      expect(newLocation.lat).toBeGreaterThan(initialLocation.lat); // Forward increases lat (North)
     });
 
     it('should combine backward and right movements', () => {
@@ -421,8 +449,8 @@ describe('Drone', () => {
       drone.applyMove(1);
 
       const newLocation = drone.getLocation();
-      expect(newLocation.x).toBeGreaterThan(initialLocation.x); // Right increases X
-      expect(newLocation.y).toBeLessThan(initialLocation.y); // Backward decreases Y (south)
+      expect(newLocation.lng).toBeGreaterThan(initialLocation.lng); // Right increases lng (East)
+      expect(newLocation.lat).toBeLessThan(initialLocation.lat); // Backward decreases lat (South)
     });
 
     it('should combine backward and left movements', () => {
@@ -433,8 +461,8 @@ describe('Drone', () => {
       drone.applyMove(1);
 
       const newLocation = drone.getLocation();
-      expect(newLocation.x).toBeLessThan(initialLocation.x); // Left decreases X
-      expect(newLocation.y).toBeLessThan(initialLocation.y); // Backward decreases Y (south)
+      expect(newLocation.lng).toBeLessThan(initialLocation.lng); // Left decreases lng (West)
+      expect(newLocation.lat).toBeLessThan(initialLocation.lat); // Backward decreases lat (South)
     });
   });
 
@@ -477,10 +505,10 @@ describe('Drone', () => {
       drone.startMovingForward();
       drone.applyMove(1);
 
-      const emittedLocation = handler.mock.calls[0]![0] as MercatorCoordinates;
-      emittedLocation.x = 999999;
+      const emittedLocation = handler.mock.calls[0]![0] as GeoCoordinates;
+      emittedLocation.lat = 999999;
 
-      expect(drone.getLocation().x).not.toEqual(999999);
+      expect(drone.getLocation().lat).not.toEqual(999999);
     });
 
     it('should stop receiving events after off()', () => {
@@ -505,65 +533,16 @@ describe('Drone', () => {
       expect(handler).not.toHaveBeenCalled();
     });
   });
-
-  describe('latLonToMercator', () => {
-    it('should convert Paris coordinates correctly', () => {
-      // Paris Île de la Cité: 48.8530°N, 2.3499°E
-      const result = Drone.latLonToMercator(48.853, 2.3499);
-
-      // Verify the result is reasonable (within expected range for Web Mercator)
-      expect(result.x).toBeGreaterThan(260000);
-      expect(result.x).toBeLessThan(263000);
-      expect(result.y).toBeGreaterThan(6249000);
-      expect(result.y).toBeLessThan(6251000);
-    });
-
-    it('should handle equator coordinates', () => {
-      const result = Drone.latLonToMercator(0, 0);
-
-      expect(result.x).toBeCloseTo(0, 5);
-      expect(result.y).toBeCloseTo(0, 5);
-    });
-
-    it('should handle prime meridian with latitude', () => {
-      const result = Drone.latLonToMercator(45, 0);
-
-      expect(result.x).toBeCloseTo(0, 5);
-      expect(result.y).toBeGreaterThan(0);
-    });
-
-    it('should handle negative longitude', () => {
-      const result = Drone.latLonToMercator(40, -74); // New York
-
-      expect(result.x).toBeLessThan(0);
-      expect(result.y).toBeGreaterThan(0);
-    });
-
-    it('should handle southern hemisphere', () => {
-      const result = Drone.latLonToMercator(-33.8688, 151.2093); // Sydney
-
-      expect(result.x).toBeGreaterThan(0);
-      expect(result.y).toBeLessThan(0);
-    });
-
-    it('should return new object each time', () => {
-      const result1 = Drone.latLonToMercator(48.853, 2.3499);
-      const result2 = Drone.latLonToMercator(48.853, 2.3499);
-
-      expect(result1).toEqual(result2);
-      expect(result1).not.toBe(result2);
-    });
-  });
 });
 
 describe('createDrone', () => {
   it('should create a drone with initial config coordinates', () => {
     const drone = createDrone();
 
-    const expectedLocation = Drone.latLonToMercator(
-      droneConfig.initialCoordinates.latitude,
-      droneConfig.initialCoordinates.longitude
-    );
+    const expectedLocation: GeoCoordinates = {
+      lat: droneConfig.initialCoordinates.latitude,
+      lng: droneConfig.initialCoordinates.longitude,
+    };
 
     expect(drone.getLocation()).toEqual(expectedLocation);
   });

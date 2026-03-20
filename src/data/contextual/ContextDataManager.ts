@@ -1,9 +1,9 @@
-import type { MercatorCoordinates } from '../../gis/types';
+import type { GeoCoordinates } from '../../gis/GeoCoordinates';
+import { getTileCoordinatesFromGeo } from '../../gis/GeoCoordinates';
 import type { TileCoordinates } from '../elevation/types';
 import type { ContextDataTile } from './types';
 import { contextDataConfig } from '../../config';
 import { ContextDataTileLoader } from './ContextDataTileLoader';
-import { getTileCoordinates } from '../../gis/webMercator';
 import {
   TileDataManager,
   type TileManagerConfig,
@@ -63,10 +63,10 @@ export class ContextDataManager extends TileDataManager<ContextDataTile> {
   }
 
   protected getTileCoordinates(
-    loc: MercatorCoordinates,
+    loc: GeoCoordinates,
     zoom: number
   ): TileCoordinates {
-    return getTileCoordinates(loc, zoom);
+    return getTileCoordinatesFromGeo(loc, zoom);
   }
 
   protected override onTileEvicted(key: string): void {

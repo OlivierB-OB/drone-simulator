@@ -1,6 +1,6 @@
 import type { ModulesFeatures } from '../../features/registrationTypes';
 import type { ColorPalette } from '../../features/sharedTypes';
-import type { TileCoordinates, MercatorBounds } from '../elevation/types';
+import type { TileCoordinates, GeoBounds } from '../elevation/types';
 
 /**
  * Context data tile containing all visual OSM features for a tile
@@ -9,8 +9,8 @@ export interface ContextDataTile {
   /** Position of this tile in the Web Mercator system */
   coordinates: TileCoordinates;
 
-  /** Geographic bounds of this tile in Mercator coordinates (meters) */
-  mercatorBounds: MercatorBounds;
+  /** Geographic bounds of this tile in degrees */
+  geoBounds: GeoBounds;
 
   /** Zoom level of this tile */
   zoomLevel: number;

@@ -2,6 +2,8 @@ import type { Object3D } from 'three';
 import type { VegetationVisual } from '../types';
 import type { ElevationSampler } from '../../../visualization/mesh/util/ElevationSampler';
 import { vegetationMeshConfig } from '../../../config';
+import type { GeoCoordinates } from '../../../gis/GeoCoordinates';
+import { EARTH_RADIUS } from '../../../gis/GeoCoordinates';
 import type { IVegetationStrategy } from './types';
 import {
   BROADLEAF_COLORS,
@@ -9,10 +11,12 @@ import {
   createInstancedTrees,
 } from './vegetationUtils';
 
+const TO_RAD = Math.PI / 180;
+
 export class TreeRowStrategy implements IVegetationStrategy {
   constructor(private readonly elevation: ElevationSampler) {}
 
-  create(veg: VegetationVisual): Object3D[] {
+  create(veg: VegetationVisual, origin: GeoCoordinates): Object3D[] {
     if (veg.geometry.type !== 'LineString') return [];
     const coords = veg.geometry.coordinates as [number, number][];
     if (coords.length < 2) return [];
@@ -26,19 +30,25 @@ export class TreeRowStrategy implements IVegetationStrategy {
     let accumulated = 0;
 
     for (let i = 0; i < coords.length - 1; i++) {
-      const [x1, y1] = coords[i]!;
-      const [x2, y2] = coords[i + 1]!;
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const segLen = Math.sqrt(dx * dx + dy * dy);
+      const [lng1, lat1] = coords[i]!;
+      const [lng2, lat2] = coords[i + 1]!;
+
+      // Compute segment length in meters
+      const midLat = (lat1 + lat2) / 2;
+      const cosLat = Math.cos(midLat * TO_RAD);
+      const dEast = (lng2 - lng1) * TO_RAD * EARTH_RADIUS * cosLat;
+      const dNorth = (lat2 - lat1) * TO_RAD * EARTH_RADIUS;
+      const segLen = Math.sqrt(dEast * dEast + dNorth * dNorth);
       if (segLen < 0.1) continue;
 
-      const nx = dx / segLen;
-      const ny = dy / segLen;
+      // Interpolate along segment in degree space
+      const dLng = lng2 - lng1;
+      const dLat = lat2 - lat1;
 
       while (accumulated < segLen) {
-        const px = x1 + nx * accumulated;
-        const py = y1 + ny * accumulated;
+        const t = accumulated / segLen;
+        const px = lng1 + dLng * t;
+        const py = lat1 + dLat * t;
         points.push([px, py]);
         accumulated += interval;
       }
@@ -55,7 +65,8 @@ export class TreeRowStrategy implements IVegetationStrategy {
       config.crownRadiusMax,
       isNeedle,
       colors,
-      this.elevation
+      this.elevation,
+      origin
     );
   }
 }

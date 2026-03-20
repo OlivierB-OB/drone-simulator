@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { OvertureParser } from './OvertureParser';
 import type { VectorTileLayer, VectorTileFeature } from '@mapbox/vector-tile';
 import type { DecodedTile } from './PMTilesReader';
-import type { MercatorBounds, TileCoordinates } from '../../elevation/types';
+import type { GeoBounds, TileCoordinates } from '../../elevation/types';
 
-const bounds: MercatorBounds = { minX: 0, maxX: 100, minY: 0, maxY: 100 };
+const bounds: GeoBounds = { minLat: 0, maxLat: 100, minLng: 0, maxLng: 100 };
 const coords: TileCoordinates = { z: 15, x: 100, y: 100 };
 
 function mockFeature(

@@ -2,6 +2,7 @@ import type { Object3D } from 'three';
 import type { VegetationVisual } from '..//types';
 import type { ElevationSampler } from '../../../visualization/mesh/util/ElevationSampler';
 import { vegetationMeshConfig } from '../../../config';
+import type { GeoCoordinates } from '../../../gis/GeoCoordinates';
 import type { IVegetationStrategy } from './types';
 import {
   BROADLEAF_COLORS,
@@ -13,7 +14,7 @@ import {
 export class ForestStrategy implements IVegetationStrategy {
   constructor(private readonly elevation: ElevationSampler) {}
 
-  create(veg: VegetationVisual): Object3D[] {
+  create(veg: VegetationVisual, origin: GeoCoordinates): Object3D[] {
     if (veg.geometry.type !== 'Polygon') return [];
     const config = vegetationMeshConfig.forest;
     const points = distributePointsInPolygon(
@@ -33,7 +34,8 @@ export class ForestStrategy implements IVegetationStrategy {
       config.crownRadiusMax,
       isNeedle,
       colors,
-      this.elevation
+      this.elevation,
+      origin
     );
   }
 }

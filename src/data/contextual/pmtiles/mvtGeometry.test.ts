@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mvtToMercatorGeometry } from './mvtGeometry';
+import { mvtToGeoGeometry } from './mvtGeometry';
 import type { VectorTileFeature } from '@mapbox/vector-tile';
 
 function mockFeature(
@@ -15,13 +15,13 @@ function mockFeature(
   } as unknown as VectorTileFeature;
 }
 
-const bounds = { minX: 100, maxX: 200, minY: 300, maxY: 400 };
+const bounds = { minLat: 300, maxLat: 400, minLng: 100, maxLng: 200 };
 
-describe('mvtToMercatorGeometry', () => {
+describe('mvtToGeoGeometry', () => {
   describe('Point (type 1)', () => {
     it('converts a point at tile origin to maxY corner', () => {
       const f = mockFeature(1, [[{ x: 0, y: 0 }]]);
-      const geom = mvtToMercatorGeometry(f, bounds);
+      const geom = mvtToGeoGeometry(f, bounds);
 
       expect(geom).not.toBeNull();
       expect(geom!.type).toBe('Point');
@@ -31,7 +31,7 @@ describe('mvtToMercatorGeometry', () => {
 
     it('converts a point at tile center', () => {
       const f = mockFeature(1, [[{ x: 2048, y: 2048 }]]);
-      const geom = mvtToMercatorGeometry(f, bounds);
+      const geom = mvtToGeoGeometry(f, bounds);
 
       expect(geom).not.toBeNull();
       expect((geom as any).coordinates[0]).toBeCloseTo(150); // midX
@@ -40,7 +40,7 @@ describe('mvtToMercatorGeometry', () => {
 
     it('converts a point at tile max to minY corner', () => {
       const f = mockFeature(1, [[{ x: 4096, y: 4096 }]]);
-      const geom = mvtToMercatorGeometry(f, bounds);
+      const geom = mvtToGeoGeometry(f, bounds);
 
       expect(geom).not.toBeNull();
       expect((geom as any).coordinates[0]).toBeCloseTo(200); // maxX
@@ -49,7 +49,7 @@ describe('mvtToMercatorGeometry', () => {
 
     it('returns null for empty geometry', () => {
       const f = mockFeature(1, []);
-      expect(mvtToMercatorGeometry(f, bounds)).toBeNull();
+      expect(mvtToGeoGeometry(f, bounds)).toBeNull();
     });
   });
 
@@ -61,7 +61,7 @@ describe('mvtToMercatorGeometry', () => {
           { x: 4096, y: 4096 },
         ],
       ]);
-      const geom = mvtToMercatorGeometry(f, bounds);
+      const geom = mvtToGeoGeometry(f, bounds);
 
       expect(geom).not.toBeNull();
       expect(geom!.type).toBe('LineString');
@@ -75,12 +75,12 @@ describe('mvtToMercatorGeometry', () => {
 
     it('returns null for single-point line', () => {
       const f = mockFeature(2, [[{ x: 0, y: 0 }]]);
-      expect(mvtToMercatorGeometry(f, bounds)).toBeNull();
+      expect(mvtToGeoGeometry(f, bounds)).toBeNull();
     });
 
     it('returns null for empty geometry', () => {
       const f = mockFeature(2, []);
-      expect(mvtToMercatorGeometry(f, bounds)).toBeNull();
+      expect(mvtToGeoGeometry(f, bounds)).toBeNull();
     });
   });
 
@@ -95,7 +95,7 @@ describe('mvtToMercatorGeometry', () => {
           { x: 0, y: 0 },
         ],
       ]);
-      const geom = mvtToMercatorGeometry(f, bounds);
+      const geom = mvtToGeoGeometry(f, bounds);
 
       expect(geom).not.toBeNull();
       expect(geom!.type).toBe('Polygon');
@@ -114,7 +114,7 @@ describe('mvtToMercatorGeometry', () => {
           // not closed
         ],
       ]);
-      const geom = mvtToMercatorGeometry(f, bounds);
+      const geom = mvtToGeoGeometry(f, bounds);
 
       expect(geom).not.toBeNull();
       const coords = (geom as any).coordinates[0];
@@ -131,14 +131,14 @@ describe('mvtToMercatorGeometry', () => {
           { x: 4096, y: 0 },
         ],
       ]);
-      expect(mvtToMercatorGeometry(f, bounds)).toBeNull();
+      expect(mvtToGeoGeometry(f, bounds)).toBeNull();
     });
   });
 
   describe('custom extent', () => {
     it('works with non-default extent', () => {
       const f = mockFeature(1, [[{ x: 256, y: 256 }]], 512);
-      const geom = mvtToMercatorGeometry(f, bounds);
+      const geom = mvtToGeoGeometry(f, bounds);
 
       expect(geom).not.toBeNull();
       expect((geom as any).coordinates[0]).toBeCloseTo(150); // midX
@@ -149,7 +149,7 @@ describe('mvtToMercatorGeometry', () => {
   describe('unknown geometry type', () => {
     it('returns null for unsupported type', () => {
       const f = mockFeature(0 as any, []);
-      expect(mvtToMercatorGeometry(f, bounds)).toBeNull();
+      expect(mvtToGeoGeometry(f, bounds)).toBeNull();
     });
   });
 });

@@ -11,13 +11,13 @@ export interface TileCoordinates {
 }
 
 /**
- * Mercator coordinate bounds (rectangle in meters)
+ * Geographic coordinate bounds (rectangle in degrees)
  */
-export interface MercatorBounds {
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
+export interface GeoBounds {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
 }
 
 /**
@@ -37,8 +37,8 @@ export interface ElevationDataTile {
   /** Zoom level of this tile */
   zoomLevel: number;
 
-  /** Geographic bounds of this tile in Mercator coordinates (meters) */
-  mercatorBounds: MercatorBounds;
+  /** Geographic bounds of this tile in degrees */
+  geoBounds: GeoBounds;
 }
 
 /**

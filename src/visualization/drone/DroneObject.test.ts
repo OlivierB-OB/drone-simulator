@@ -12,7 +12,7 @@ describe('DroneObject', () => {
   };
 
   beforeEach(() => {
-    drone = new Drone({ x: 0, y: 0 });
+    drone = new Drone({ lat: 0, lng: 0 });
     mockViewer3D = { getScene: () => ({ add: vi.fn() }), render: vi.fn() };
     droneObject = new DroneObject(drone, mockViewer3D as any);
   });
@@ -150,15 +150,15 @@ describe('DroneObject', () => {
 
   describe('event subscription', () => {
     it('should respond to locationChanged events', () => {
-      const initialPosition = droneObject.getMesh().position.clone();
+      mockViewer3D.render.mockClear();
 
-      // Simulate drone movement
+      // Simulate drone movement (changes geographic location)
       drone.startMovingForward();
       drone.applyMove(0.1);
       drone.stopMovingForward();
 
-      // Position should have changed
-      expect(droneObject.getMesh().position).not.toEqual(initialPosition);
+      // Render should be called (even though Three.js position stays at origin)
+      expect(mockViewer3D.render).toHaveBeenCalled();
     });
 
     it('should respond to azimuthChanged events', () => {
@@ -247,17 +247,16 @@ describe('DroneObject', () => {
     });
 
     it('should stop responding to location changes after disposal', () => {
-      const initialPosition = droneObject.getMesh().position.clone();
-
       droneObject.dispose();
+      mockViewer3D.render.mockClear();
 
       // Try to move drone
       drone.startMovingForward();
       drone.applyMove(0.1);
       drone.stopMovingForward();
 
-      // Position should not have changed
-      expect(droneObject.getMesh().position).toEqual(initialPosition);
+      // Render should not be called after disposal
+      expect(mockViewer3D.render).not.toHaveBeenCalled();
     });
 
     it('should stop responding to azimuth changes after disposal', () => {

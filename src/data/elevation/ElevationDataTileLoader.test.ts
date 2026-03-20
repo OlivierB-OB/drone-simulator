@@ -106,7 +106,7 @@ describe('ElevationDataTileLoader', () => {
       expect(tile.zoomLevel).toBe(13);
       expect(tile.data).toHaveLength(256);
       expect(tile.data[0]).toHaveLength(256);
-      expect(tile.mercatorBounds).toBeDefined();
+      expect(tile.geoBounds).toBeDefined();
     });
 
     it('correctly decodes elevation from RGBA values', async () => {

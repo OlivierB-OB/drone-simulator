@@ -7,6 +7,7 @@ import type { ElevationSampler } from './util/ElevationSampler';
 import { featureRegistry } from '../../features/registry';
 import '../../features/registration';
 import { TileObjectManager } from '../TileObjectManager';
+import type { OriginManager } from '../../gis/OriginManager';
 
 /**
  * Manages 3D mesh objects (buildings, vegetation, structures, barriers, bridges)
@@ -23,7 +24,8 @@ export class MeshObjectManager extends TileObjectManager<
     private readonly scene: Scene,
     contextData: ContextDataManager,
     private readonly elevationSampler: ElevationSampler,
-    elevationData: ElevationDataManager
+    elevationData: ElevationDataManager,
+    private readonly originManager: OriginManager
   ) {
     super(contextData, [elevationData]);
   }
@@ -34,7 +36,8 @@ export class MeshObjectManager extends TileObjectManager<
   ): Object3D[] {
     const meshes = featureRegistry.createAllMeshes(
       tile.features,
-      this.elevationSampler
+      this.elevationSampler,
+      this.originManager.getOrigin()
     );
 
     for (const mesh of meshes) {

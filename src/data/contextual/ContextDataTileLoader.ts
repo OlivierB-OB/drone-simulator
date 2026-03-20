@@ -2,12 +2,12 @@ import type { ContextDataTile } from './types';
 import type { TileCoordinates } from '../elevation/types';
 import { colorPalette } from '../../config';
 import { ContextTilePersistenceCache } from './ContextTilePersistenceCache';
-import { getTileMercatorBounds } from '../../gis/webMercator';
+import { getTileGeoBounds } from '../../gis/GeoCoordinates';
 import { loadWithPersistenceCache } from '../shared/tileLoaderUtils';
 import { OvertureParser } from './pmtiles/OvertureParser';
 import type { PMTilesReader, ArchiveGroup } from './pmtiles/PMTilesReader';
 import type { ModulesFeatures } from '../../features/registrationTypes';
-import type { MercatorBounds } from '../../gis/types';
+import type { GeoBounds } from '../elevation/types';
 import { filterFeaturesByBounds } from './pmtiles/featureBoundsFilter';
 import { featureRegistry } from '../../features/registry';
 
@@ -52,11 +52,11 @@ export class ContextDataTileLoader {
 
   private static parseAndMergeGroups(
     groups: ArchiveGroup[],
-    clampBounds: MercatorBounds
+    clampBounds: GeoBounds
   ): ModulesFeatures {
     const merged = featureRegistry.modulesFeaturesFactory();
     for (const { tile, fetchCoords } of groups) {
-      const bounds = getTileMercatorBounds(fetchCoords);
+      const bounds = getTileGeoBounds(fetchCoords);
       const parsed = OvertureParser.parse(tile, bounds, fetchCoords);
       for (const key of Object.keys(parsed) as (keyof ModulesFeatures)[]) {
         const src = parsed[key] as unknown[];
@@ -71,12 +71,12 @@ export class ContextDataTileLoader {
     coordinates: TileCoordinates,
     reader: PMTilesReader
   ): Promise<ContextDataTile> {
-    const bounds = getTileMercatorBounds(coordinates);
+    const bounds = getTileGeoBounds(coordinates);
     const { groups } = await reader.getTile(coordinates);
     const features = this.parseAndMergeGroups(groups, bounds);
     return {
       coordinates,
-      mercatorBounds: bounds,
+      geoBounds: bounds,
       zoomLevel: coordinates.z,
       features,
       colorPalette,
@@ -126,7 +126,7 @@ export class ContextDataTileLoader {
     targetZ: number,
     reader: PMTilesReader
   ): Promise<ContextDataTile[]> {
-    const parentBounds = getTileMercatorBounds(parentCoords);
+    const parentBounds = getTileGeoBounds(parentCoords);
     const { groups } = await reader.getTile(parentCoords);
     const allFeatures = this.parseAndMergeGroups(groups, parentBounds);
 
@@ -143,11 +143,11 @@ export class ContextDataTileLoader {
           x: baseX + dx,
           y: baseY + dy,
         };
-        const subBounds = getTileMercatorBounds(subCoords);
+        const subBounds = getTileGeoBounds(subCoords);
         const subFeatures = filterFeaturesByBounds(allFeatures, subBounds);
         const subTile: ContextDataTile = {
           coordinates: subCoords,
-          mercatorBounds: subBounds,
+          geoBounds: subBounds,
           zoomLevel: targetZ,
           features: subFeatures,
           colorPalette,
@@ -164,7 +164,7 @@ export class ContextDataTileLoader {
   private static emptyTile(coordinates: TileCoordinates): ContextDataTile {
     return {
       coordinates,
-      mercatorBounds: getTileMercatorBounds(coordinates),
+      geoBounds: getTileGeoBounds(coordinates),
       zoomLevel: coordinates.z,
       features: featureRegistry.modulesFeaturesFactory(),
       colorPalette,

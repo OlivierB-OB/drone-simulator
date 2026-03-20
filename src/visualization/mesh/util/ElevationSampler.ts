@@ -1,24 +1,24 @@
 import type { ElevationDataManager } from '../../../data/elevation/ElevationDataManager';
 
 /**
- * Samples terrain elevation at arbitrary Mercator (x, y) coordinates by
+ * Samples terrain elevation at arbitrary (lat, lng) coordinates by
  * looking up the covering elevation tile and bilinearly interpolating.
  * Returns 0 if no tile covers the point (tiles may not yet be loaded).
  */
 export class ElevationSampler {
   constructor(private readonly elevationData: ElevationDataManager) {}
 
-  sampleAt(mercatorX: number, mercatorY: number): number {
-    const tile = this.elevationData.getTileAt(mercatorX, mercatorY);
+  sampleAt(lat: number, lng: number): number {
+    const tile = this.elevationData.getTileAt(lat, lng);
     if (!tile) return 0;
 
-    const { minX, maxX, minY, maxY } = tile.mercatorBounds;
+    const { minLat, maxLat, minLng, maxLng } = tile.geoBounds;
     const n = tile.tileSize; // 256
 
     // Fractional position within the tile [0, 1]
-    const fracX = (mercatorX - minX) / (maxX - minX);
-    // Tile row 0 is north (maxY); rows increase southward → invert Mercator Y
-    const fracY = 1 - (mercatorY - minY) / (maxY - minY);
+    const fracX = (lng - minLng) / (maxLng - minLng);
+    // Tile row 0 is north (maxLat); rows increase southward
+    const fracY = (maxLat - lat) / (maxLat - minLat);
 
     // Pixel coordinates clamped to valid range
     const px = Math.max(0, Math.min(n - 1, fracX * (n - 1)));

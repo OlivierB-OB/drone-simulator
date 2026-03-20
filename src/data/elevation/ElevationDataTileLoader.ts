@@ -1,7 +1,7 @@
 import type { TileCoordinates, ElevationDataTile } from './types';
 import { ElevationTilePersistenceCache } from './ElevationTilePersistenceCache';
 import { ElevationDataTileParser } from './ElevationDataTileParser';
-import { getTileMercatorBounds } from '../../gis/webMercator';
+import { getTileGeoBounds } from '../../gis/GeoCoordinates';
 import { loadWithPersistenceCache } from '../shared/tileLoaderUtils';
 
 /**
@@ -43,14 +43,14 @@ export class ElevationDataTileLoader {
       const tileSize = 256;
       const data = await ElevationDataTileParser.parsePNG(uint8Array, tileSize);
 
-      const mercatorBounds = getTileMercatorBounds(coordinates);
+      const geoBounds = getTileGeoBounds(coordinates);
 
       return {
         coordinates,
         data,
         tileSize,
         zoomLevel: z,
-        mercatorBounds,
+        geoBounds,
       };
     } catch (error) {
       if (error instanceof Error) {

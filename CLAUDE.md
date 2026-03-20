@@ -54,42 +54,49 @@ Full docs in `docs/`. See `docs/README.md` for the complete index.
 
 **Core Components:**
 
-- `src/App.tsx` - Orchestrates Viewer3D, AnimationLoop, DroneController, Drone, DroneObject (all initialized in onMount, disposed in cleanup)
+- `src/App.tsx` - Orchestrates Viewer3D, AnimationLoop, DroneController, Drone, DroneObject, OriginManager (all initialized in onMount, disposed in cleanup)
 - `src/3Dviewer/` - Wrapper pattern around Three.js (Camera, Scene, Renderer) with constructor injection for testing
 - `src/core/AnimationLoop.ts` - requestAnimationFrame loop, delta time (seconds), frame synchronization
-- `src/drone/` - Drone physics (Mercator coordinates), DroneController (keyboard input, arrow keys)
-- `src/gis/webMercator.ts` - Shared Web Mercator math: `getTileCoordinates`, `getTileMercatorBounds`, `EARTH_RADIUS`, `MAX_EXTENT`
-- `src/data/` - ElevationDataManager (tile caching, Web Mercator zoom, z:x:y keys, AWS Terrarium PNG), ContextDataManager; `src/data/shared/tileLoaderUtils.ts` for cache-then-load pattern
+- `src/drone/` - Drone physics (GeoCoordinates {lat, lng}), DroneController (keyboard input, arrow keys)
+- `src/gis/GeoCoordinates.ts` - Core geo math: `geoToLocal`, `getTileCoordinatesFromGeo`, `getTileGeoBounds`, `EARTH_RADIUS`
+- `src/gis/OriginManager.ts` - Holds the current Three.js origin (drone position) for coordinate conversion
+- `src/data/` - ElevationDataManager (tile caching, z:x:y keys, AWS Terrarium PNG), ContextDataManager; `src/data/shared/tileLoaderUtils.ts` for cache-then-load pattern
 - `src/visualization/terrain/` - TerrainGeometryObjectManager + TerrainTextureObjectManager → TerrainObjectManager → TerrainObjectFactory → Three.js meshes (orchestrated pipeline)
 - `src/visualization/DroneObject.ts` - Cone mesh representing the drone in the scene
 - `src/config.ts` - Centralized config: drone position/speed, camera chase distance/height, elevation zoom/ring/concurrency
 
 **Animation Frame Timing:** `AnimationLoop` (`src/core/AnimationLoop.ts`) manages `requestAnimationFrame` timing and calls `drone.applyMove(deltaTime)` each frame. Subsequent data loading, mesh creation, and rendering are orchestrated via event subscriptions in `App.tsx` and triggered by drone movement—not controlled by AnimationLoop itself.
 
-## Coordinate System: World → Three.js Conversion
+## Coordinate System: Geographic → Three.js (Local Tangent Plane)
 
 See `docs/coordinate-system.md` for the full strategy document.
 
-**Mercator → Three.js Position:**
+**Geographic → Three.js Position via `geoToLocal(lat, lng, elevation, origin)`:**
+
+All positions are stored as `GeoCoordinates {lat, lng}` (WGS84 degrees). The drone is always at the Three.js origin. All scene objects are positioned relative to the drone using a local tangent plane:
 
 ```
-threeX = mercator.x       // Direct
-threeY = elevation         // Direct
-threeZ = -mercator.y       // Negated (Mercator Y northward → Three.js -Z northward)
+X = east     → (lng - origin.lng) × cos(lat) × EARTH_RADIUS × π/180
+Y = up       → elevation (direct)
+Z = south    → -(lat - origin.lat) × EARTH_RADIUS × π/180
 ```
+
+**Origin Rebasing**: `OriginManager` holds the drone's current `{lat, lng}`. On each frame, `geoToLocal()` converts all geo positions to local Three.js space relative to this origin. The drone mesh is always at `(0, elevation, 0)`.
 
 **Coordinate Consistency** — all components must use the same convention:
 
-1. **Position Z**: `-mercator.y` (camera, terrain meshes, axes helper, drone object)
-2. **Movement Y**: `+cos(azimuthRad)` (no negation, Mercator Y increases northward)
+1. **Position**: Use `geoToLocal(lat, lng, elevation, origin)` for all positioning
+2. **Drone movement**: Great-circle displacement — `dLat = dNorth / EARTH_RADIUS / TO_RAD`, `dLng = dEast / (EARTH_RADIUS × cos(lat)) / TO_RAD`
 3. **Object rotation.y**: `-azimuthRad` (clockwise azimuth → counterclockwise Three.js)
 4. **Camera**: `lookAt` handles rotation automatically (no manual Euler angles)
+5. **GeoJSON coordinates**: Always `[longitude, latitude]` order — destructure as `[lng, lat]`
+6. **ElevationSampler**: `sampleAt(lat, lng)` — lat first, not GeoJSON order
 
 **Key Patterns:**
 
 - Constructor injection: 3D wrappers accept constructor functions (not instances) for DI
 - Frame-rate independent physics: delta time in seconds
-- Mercator projection for GPS coordinates
+- Geographic coordinates with local tangent plane projection
 - Factory pattern: `createDrone()`, TerrainGeometryFactory, TerrainObjectFactory
 - Resource cleanup: all components have `dispose()`
 
@@ -99,6 +106,6 @@ threeZ = -mercator.y       // Negated (Mercator Y northward → Three.js -Z nort
 - Constructor injection: Pass mock constructor **classes** extending real Three.js classes
 - Example: Camera verifies call with `(75, width/height, 0.1, 1000)`
 - 3D Viewer: wrapper initialization & injection
-- Drone: physics, movement, Mercator edge cases, controller cleanup
+- Drone: physics, movement, geographic coordinate edge cases, controller cleanup
 - AnimationLoop: frame timing, delta time, integration
 - Terrain: geometry creation, tile sync, lifecycle

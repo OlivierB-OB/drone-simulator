@@ -2,6 +2,7 @@ import type { Object3D } from 'three';
 import type { VegetationVisual } from '../types';
 import type { ElevationSampler } from '../../../visualization/mesh/util/ElevationSampler';
 import { vegetationMeshConfig } from '../../../config';
+import type { GeoCoordinates } from '../../../gis/GeoCoordinates';
 import type { IVegetationStrategy } from './types';
 import {
   SCRUB_COLORS,
@@ -12,7 +13,7 @@ import {
 export class ScrubStrategy implements IVegetationStrategy {
   constructor(private readonly elevation: ElevationSampler) {}
 
-  create(veg: VegetationVisual): Object3D[] {
+  create(veg: VegetationVisual, origin: GeoCoordinates): Object3D[] {
     if (veg.geometry.type !== 'Polygon') return [];
     const config = vegetationMeshConfig.scrub;
     const points = distributePointsInPolygon(
@@ -26,7 +27,8 @@ export class ScrubStrategy implements IVegetationStrategy {
       config.crownRadiusMin,
       config.crownRadiusMax,
       SCRUB_COLORS,
-      this.elevation
+      this.elevation,
+      origin
     );
   }
 }

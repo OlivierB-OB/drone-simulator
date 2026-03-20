@@ -1,25 +1,36 @@
 import { BoxGeometry, MeshLambertMaterial, Mesh, type Object3D } from 'three';
 import type { ElevationSampler } from '../../visualization/mesh/util/ElevationSampler';
-import { mercatorToThreeJs } from '../../gis/types';
+import {
+  geoToLocal,
+  EARTH_RADIUS,
+  type GeoCoordinates,
+} from '../../gis/GeoCoordinates';
 import { barrierDefaults, barrierMaterialColors } from '../../config';
 import type { BarrierVisual } from './types';
+
+const TO_RAD = Math.PI / 180;
 
 /**
  * Creates 3D meshes for barriers (walls, city walls, retaining walls, hedges)
  * by extruding BoxGeometry segments along LineString paths.
+ *
+ * Coordinates are [lng, lat] in degrees (GeoJSON convention).
  */
 export class BarrierMeshFactory {
   constructor(private readonly elevation: ElevationSampler) {}
 
-  create(barriers: BarrierVisual[]): Object3D[] {
+  create(barriers: BarrierVisual[], origin: GeoCoordinates): Object3D[] {
     const meshes: Object3D[] = [];
     for (const barrier of barriers) {
-      meshes.push(...this.createBarrierMeshes(barrier));
+      meshes.push(...this.createBarrierMeshes(barrier, origin));
     }
     return meshes;
   }
 
-  private createBarrierMeshes(barrier: BarrierVisual): Mesh[] {
+  private createBarrierMeshes(
+    barrier: BarrierVisual,
+    origin: GeoCoordinates
+  ): Mesh[] {
     const coords = barrier.geometry.coordinates as [number, number][];
     if (coords.length < 2) return [];
 
@@ -32,25 +43,25 @@ export class BarrierMeshFactory {
     const segments: Mesh[] = [];
 
     for (let i = 0; i < coords.length - 1; i++) {
-      const [x1, y1] = coords[i]!;
-      const [x2, y2] = coords[i + 1]!;
+      const [lng1, lat1] = coords[i]!;
+      const [lng2, lat2] = coords[i + 1]!;
 
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const segmentLength = Math.sqrt(dx * dx + dy * dy);
+      const midLat = (lat1 + lat2) / 2;
+      const cosLat = Math.cos(midLat * TO_RAD);
+
+      // Convert degree deltas to meters
+      const dEast = (lng2 - lng1) * TO_RAD * EARTH_RADIUS * cosLat;
+      const dNorth = (lat2 - lat1) * TO_RAD * EARTH_RADIUS;
+      const segmentLength = Math.sqrt(dEast * dEast + dNorth * dNorth);
       if (segmentLength < 0.1) continue;
 
-      const midX = (x1 + x2) / 2;
-      const midY = (y1 + y2) / 2;
-      const terrainY = this.elevation.sampleAt(midX, midY);
-      const angle = Math.atan2(dx, dy); // rotation around Y axis
+      const midLng = (lng1 + lng2) / 2;
+      const terrainY = this.elevation.sampleAt(midLat, midLng);
+      const angle = Math.atan2(dEast, dNorth); // rotation around Y axis
 
       const geometry = new BoxGeometry(width, height, segmentLength);
       const mesh = new Mesh(geometry, material);
-      const pos = mercatorToThreeJs(
-        { x: midX, y: midY },
-        terrainY + height / 2
-      );
+      const pos = geoToLocal(midLat, midLng, terrainY + height / 2, origin);
       mesh.position.set(pos.x, pos.y, pos.z);
       mesh.rotation.y = -angle;
       segments.push(mesh);

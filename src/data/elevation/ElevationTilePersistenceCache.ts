@@ -3,7 +3,7 @@ import { TilePersistenceCache } from '../shared/TilePersistenceCache';
 
 const _cache = new TilePersistenceCache<ElevationDataTile>({
   dbName: 'drone-simulator-elevation',
-  dbVersion: 1,
+  dbVersion: 2,
   storeName: 'elevationTiles',
   clearOnUpgrade: false, // Preserve cache across schema versions
 });

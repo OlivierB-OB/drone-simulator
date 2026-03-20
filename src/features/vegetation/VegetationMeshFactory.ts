@@ -1,6 +1,7 @@
 import type { Object3D } from 'three';
 import type { VegetationVisual } from './types';
 import type { ElevationSampler } from '../../visualization/mesh/util/ElevationSampler';
+import type { GeoCoordinates } from '../../gis/GeoCoordinates';
 import type { IVegetationStrategy } from './meshStrategies/types';
 import { ForestStrategy } from './meshStrategies/ForestStrategy';
 import { ScrubStrategy } from './meshStrategies/ScrubStrategy';
@@ -31,11 +32,13 @@ export class VegetationMeshFactory {
     ]);
   }
 
-  create(vegetation: VegetationVisual[]): Object3D[] {
+  create(vegetation: VegetationVisual[], origin: GeoCoordinates): Object3D[] {
     const meshes: Object3D[] = [];
     for (const veg of vegetation) {
       try {
-        meshes.push(...(this.strategies.get(veg.type)?.create(veg) ?? []));
+        meshes.push(
+          ...(this.strategies.get(veg.type)?.create(veg, origin) ?? [])
+        );
       } catch {
         // Skip problematic vegetation features
       }

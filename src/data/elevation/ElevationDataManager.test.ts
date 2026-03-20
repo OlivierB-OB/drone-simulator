@@ -16,16 +16,16 @@ describe('ElevationDataManager', () => {
       .map(() => Array(256).fill(100)),
     tileSize: 256,
     zoomLevel: coords.z,
-    mercatorBounds: {
-      minX: coords.x * 1000,
-      maxX: (coords.x + 1) * 1000,
-      minY: coords.y * 1000,
-      maxY: (coords.y + 1) * 1000,
+    geoBounds: {
+      minLat: 48.85,
+      maxLat: 48.86,
+      minLng: 2.34,
+      maxLng: 2.35,
     },
   });
 
   beforeEach(() => {
-    drone = new Drone({ x: 100000, y: 6250000 }, 0);
+    drone = new Drone({ lat: 48.853, lng: 2.3499 }, 0);
     manager = new ElevationDataManager(drone);
   });
 
@@ -37,7 +37,7 @@ describe('ElevationDataManager', () => {
   describe('lifecycle and initialization', () => {
     it('should initialize with drone location', () => {
       // Manager should be created successfully
-      const testDrone = new Drone({ x: 100000, y: 6250000 }, 0);
+      const testDrone = new Drone({ lat: 48.853, lng: 2.3499 }, 0);
       const testManager = new ElevationDataManager(testDrone);
 
       expect(testManager).toBeDefined();
@@ -47,7 +47,7 @@ describe('ElevationDataManager', () => {
     });
 
     it('should subscribe to drone locationChanged events', () => {
-      const testDrone = new Drone({ x: 100000, y: 6250000 }, 0);
+      const testDrone = new Drone({ lat: 48.853, lng: 2.3499 }, 0);
       const droneEventsSpy = vi.spyOn(testDrone, 'on');
       const testManager = new ElevationDataManager(testDrone);
 
@@ -77,7 +77,8 @@ describe('ElevationDataManager', () => {
       const updateTileRingSpy = vi.spyOn(manager as any, 'updateTileRing');
 
       // Trigger location change through drone event
-      const newLocation = { x: 105000, y: 6250000 };
+      // Move to a different tile to ensure updateTileRing is called
+      const newLocation = { lat: 48.86, lng: 2.36 };
       manager.setLocation(newLocation);
 
       expect(updateTileRingSpy).toHaveBeenCalled();
@@ -109,11 +110,10 @@ describe('ElevationDataManager', () => {
       const testKey = '15:100:100';
       cacheMap.set(testKey, createMockTile(testCoords));
 
-      // Move far enough to change center tile
-      const currentTile = (manager as any).currentTileCenter as TileCoordinates;
+      // Move far enough to change center tile (far away in Paris area)
       const farLocation = {
-        x: currentTile.x * 100000 + 100000 * 10, // Far beyond ring radius
-        y: currentTile.y * 100000,
+        lat: 48.9, // Significantly north
+        lng: 2.5, // Significantly east
       };
 
       manager.setLocation(farLocation);
@@ -376,7 +376,7 @@ describe('ElevationDataManager', () => {
     });
 
     it('should handle getTileAt for unloaded tiles (return null)', () => {
-      const result = manager.getTileAt(100000, 6250000);
+      const result = manager.getTileAt(48.853, 2.3499);
 
       // Should return null for tiles not in cache
       expect(result).toBeNull();
@@ -387,7 +387,7 @@ describe('ElevationDataManager', () => {
       expect(typeof manager.getTileAt).toBe('function');
 
       // Should return null for unloaded coordinates
-      const result = manager.getTileAt(100000, 6250000);
+      const result = manager.getTileAt(48.853, 2.3499);
       expect(
         result === null || result === undefined || result instanceof Object
       ).toBe(true);
@@ -404,9 +404,9 @@ describe('ElevationDataManager', () => {
 
       // Simulate rapid position changes
       const positions = [
-        { x: 100000 + 50000, y: 6250000 },
-        { x: 100000 + 100000, y: 6250000 }, // Different location
-        { x: 100000 + 200000, y: 6250000 }, // Another location
+        { lat: 48.854, lng: 2.35 },
+        { lat: 48.855, lng: 2.36 }, // Different location
+        { lat: 48.857, lng: 2.38 }, // Another location
       ];
 
       for (const pos of positions) {

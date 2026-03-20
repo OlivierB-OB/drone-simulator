@@ -17,11 +17,11 @@ describe('TerrainGeometryFactory', () => {
         data: createFlatElevationData(256),
         tileSize: 256,
         zoomLevel: 9,
-        mercatorBounds: {
-          minX: 0,
-          maxX: 1000,
-          minY: 0,
-          maxY: 1000,
+        geoBounds: {
+          minLat: 48.85,
+          maxLat: 48.86,
+          minLng: 2.34,
+          maxLng: 2.35,
         },
       };
 
@@ -37,11 +37,11 @@ describe('TerrainGeometryFactory', () => {
         data: createFlatElevationData(256),
         tileSize: 256,
         zoomLevel: 9,
-        mercatorBounds: {
-          minX: 0,
-          maxX: 1000,
-          minY: 0,
-          maxY: 1000,
+        geoBounds: {
+          minLat: 48.85,
+          maxLat: 48.86,
+          minLng: 2.34,
+          maxLng: 2.35,
         },
       };
 
@@ -58,11 +58,11 @@ describe('TerrainGeometryFactory', () => {
         data: createFlatElevationData(256),
         tileSize: 256,
         zoomLevel: 9,
-        mercatorBounds: {
-          minX: 0,
-          maxX: 1000,
-          minY: 0,
-          maxY: 1000,
+        geoBounds: {
+          minLat: 48.85,
+          maxLat: 48.86,
+          minLng: 2.34,
+          maxLng: 2.35,
         },
       };
 
@@ -80,11 +80,11 @@ describe('TerrainGeometryFactory', () => {
         data: createFlatElevationData(256),
         tileSize: 256,
         zoomLevel: 9,
-        mercatorBounds: {
-          minX: 0,
-          maxX: 1000,
-          minY: 0,
-          maxY: 1000,
+        geoBounds: {
+          minLat: 48.85,
+          maxLat: 48.86,
+          minLng: 2.34,
+          maxLng: 2.35,
         },
       };
 
@@ -101,11 +101,11 @@ describe('TerrainGeometryFactory', () => {
         data: createFlatElevationData(256),
         tileSize: 256,
         zoomLevel: 9,
-        mercatorBounds: {
-          minX: 0,
-          maxX: 1000,
-          minY: 0,
-          maxY: 1000,
+        geoBounds: {
+          minLat: 48.85,
+          maxLat: 48.86,
+          minLng: 2.34,
+          maxLng: 2.35,
         },
       };
 
@@ -123,11 +123,11 @@ describe('TerrainGeometryFactory', () => {
         data: createFlatElevationData(256),
         tileSize: 256,
         zoomLevel: 9,
-        mercatorBounds: {
-          minX: 0,
-          maxX: 1000,
-          minY: 0,
-          maxY: 1000,
+        geoBounds: {
+          minLat: 48.85,
+          maxLat: 48.86,
+          minLng: 2.34,
+          maxLng: 2.35,
         },
       };
 
@@ -152,11 +152,11 @@ describe('TerrainGeometryFactory', () => {
         data: createFlatElevationData(256),
         tileSize: 256,
         zoomLevel: 9,
-        mercatorBounds: {
-          minX: 0,
-          maxX: 1000,
-          minY: 0,
-          maxY: 1000,
+        geoBounds: {
+          minLat: 48.85,
+          maxLat: 48.86,
+          minLng: 2.34,
+          maxLng: 2.35,
         },
       };
 
@@ -187,11 +187,11 @@ describe('TerrainGeometryFactory', () => {
         data,
         tileSize: 256,
         zoomLevel: 9,
-        mercatorBounds: {
-          minX: 0,
-          maxX: 1000,
-          minY: 0,
-          maxY: 1000,
+        geoBounds: {
+          minLat: 48.85,
+          maxLat: 48.86,
+          minLng: 2.34,
+          maxLng: 2.35,
         },
       };
 
@@ -220,11 +220,11 @@ describe('TerrainGeometryFactory', () => {
         data: createFlatElevationData(256, 100),
         tileSize: 256,
         zoomLevel: 9,
-        mercatorBounds: {
-          minX: 0,
-          maxX: 1000,
-          minY: 0,
-          maxY: 1000,
+        geoBounds: {
+          minLat: 48.85,
+          maxLat: 48.86,
+          minLng: 2.34,
+          maxLng: 2.35,
         },
       };
 

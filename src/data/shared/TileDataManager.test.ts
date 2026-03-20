@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TileDataManager, type TileManagerConfig } from './TileDataManager';
 import type { TileCoordinates } from '../elevation/types';
-import type { MercatorCoordinates } from '../../gis/types';
+import type { GeoCoordinates } from '../../gis/GeoCoordinates';
 import { Drone } from '../../drone/Drone';
 
 // --- Test doubles --------------------------------------------------------
@@ -32,13 +32,14 @@ class TestTileManager extends TileDataManager<string> {
   }
 
   protected getTileCoordinates(
-    loc: MercatorCoordinates,
+    loc: GeoCoordinates,
     zoom: number
   ): TileCoordinates {
+    // Simple bucketing: divide lat/lng by 0.01 degrees
     return {
       z: zoom,
-      x: Math.floor(loc.x / 1000),
-      y: Math.floor(loc.y / 1000),
+      x: Math.floor(loc.lng * 100),
+      y: Math.floor(loc.lat * 100),
     };
   }
 
@@ -99,12 +100,12 @@ class SingleTileManager extends TestTileManager {
 
 // --- Helpers -------------------------------------------------------------
 
-// Drone at x=500,y=500 → tile (0,0) at zoom 10
-function makeDrone(x = 500, y = 500): Drone {
-  return new Drone({ x, y }, 0);
+// Drone at lat=48.853, lng=2.3499 → tile (234, 4885) at zoom 10
+function makeDrone(lat = 48.853, lng = 2.3499): Drone {
+  return new Drone({ lat, lng }, 0);
 }
 
-// A key that is neither in the initial ring (0±1, 0±1) nor in the far ring (999±1, 999±1)
+// A key that is neither in the initial ring nor in a far ring
 const STALE_KEY = '10:500:500';
 
 // --- Tests ---------------------------------------------------------------
@@ -166,33 +167,37 @@ describe('TileDataManager (base class)', () => {
   // -----------------------------------------------------------------------
   describe('setLocation', () => {
     it('same tile: does not trigger more loadTileAsync calls', () => {
-      // x=100 → Math.floor(100/1000)=0, same tile as x=500 (center=(0,0))
+      // lat=48.8531 → Math.floor(48.8531*100)=4885, same tile as lat=48.853
       const callsBefore = manager.loadTileAsyncCallKeys.length;
-      manager.setLocation({ x: 100, y: 100 });
+      manager.setLocation({ lat: 48.8531, lng: 2.3499 });
       expect(manager.loadTileAsyncCallKeys).toHaveLength(callsBefore);
     });
 
     it('new tile: triggers ring update and loads new tiles', () => {
       const callsBefore = manager.loadTileAsyncCallKeys.length;
-      manager.setLocation({ x: 999000, y: 999000 }); // center=(999,999)
+      manager.setLocation({ lat: 48.9, lng: 2.5 }); // Different tile
       expect(manager.loadTileAsyncCallKeys.length).toBeGreaterThan(callsBefore);
     });
 
     it('new tile: emits tileRemoved for keys no longer in ring', () => {
-      // STALE_KEY is in neither the initial ring (0±1) nor the new ring (999±1)
+      // STALE_KEY is in neither the initial ring nor the new ring
       (manager as any).tileCache.set(STALE_KEY, 'stale-tile');
 
       const removedKeys: string[] = [];
       manager.on('tileRemoved', ({ key }) => removedKeys.push(key));
 
-      manager.setLocation({ x: 999000, y: 999000 });
+      manager.setLocation({ lat: 48.9, lng: 2.5 });
 
       expect(removedKeys).toContain(STALE_KEY);
     });
 
     it('new tile: updates currentTileCenter correctly', () => {
-      manager.setLocation({ x: 999000, y: 999000 });
-      expect(manager.getCurrentTileCenter()).toEqual({ z: 10, x: 999, y: 999 });
+      manager.setLocation({ lat: 48.9, lng: 2.5 });
+      expect(manager.getCurrentTileCenter()).toEqual({
+        z: 10,
+        x: 250,
+        y: 4890,
+      });
     });
   });
 
@@ -201,7 +206,7 @@ describe('TileDataManager (base class)', () => {
     it('is called for each key evicted from tileCache', () => {
       (manager as any).tileCache.set(STALE_KEY, 'stale');
 
-      manager.setLocation({ x: 999000, y: 999000 });
+      manager.setLocation({ lat: 89, lng: 179 });
 
       expect(manager.evictedKeys).toContain(STALE_KEY);
     });
@@ -209,7 +214,7 @@ describe('TileDataManager (base class)', () => {
     it('is called for pendingLoads-only entries outside the ring', () => {
       (manager as any).pendingLoads.set(STALE_KEY, Promise.resolve(null));
 
-      manager.setLocation({ x: 999000, y: 999000 });
+      manager.setLocation({ lat: 89, lng: 179 });
 
       expect(manager.evictedKeys).toContain(STALE_KEY);
     });
@@ -218,7 +223,7 @@ describe('TileDataManager (base class)', () => {
       const center = manager.getCurrentTileCenter()!;
       const keepKey = manager.exposeGetTileKey(center);
 
-      manager.setLocation({ x: 100, y: 100 }); // same tile
+      manager.setLocation({ lat: 48.8531, lng: 2.3499 }); // same tile
       expect(manager.evictedKeys ?? []).not.toContain(keepKey);
     });
   });

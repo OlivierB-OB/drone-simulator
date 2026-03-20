@@ -55,7 +55,7 @@ describe('Viewer3D', () => {
     document.body.appendChild(container);
 
     // Create a drone instance
-    drone = new Drone({ x: 0, y: 0 });
+    drone = new Drone({ lat: 0, lng: 0 });
 
     // Create mock Three.js constructor classes
     const mockThreeCameraConstructor = class MockCamera

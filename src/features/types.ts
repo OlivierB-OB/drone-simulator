@@ -1,13 +1,15 @@
 import type { Object3D } from 'three';
-import type { MercatorBounds } from '../gis/types';
+import type { GeoBounds } from '../gis/GeoCoordinates';
+import type { GeoCoordinates } from '../gis/GeoCoordinates';
 import type { ElevationSampler } from '../visualization/mesh/util/ElevationSampler';
 import type { ModulesFeatures } from './registrationTypes';
 
 export interface CanvasDrawContext {
   ctx: CanvasRenderingContext2D;
-  bounds: MercatorBounds;
-  scaleX: number;
-  scaleY: number;
+  bounds: GeoBounds;
+  scaleX: number; // pixels per degree longitude
+  scaleY: number; // pixels per degree latitude
+  pixelsPerMeter: number; // for line width conversion (meters -> pixels)
 }
 
 export interface FeatureModule<T> {
@@ -22,6 +24,7 @@ export interface FeatureModule<T> {
 
   createMeshes?(
     features: ModulesFeatures,
-    elevationSampler: ElevationSampler
+    elevationSampler: ElevationSampler,
+    origin: GeoCoordinates
   ): Object3D[];
 }

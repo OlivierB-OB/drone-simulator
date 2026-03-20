@@ -15,6 +15,8 @@ import { TerrainCanvasRenderer } from './visualization/terrain/texture/TerrainCa
 import { DroneObject } from './visualization/drone/DroneObject';
 import { MeshObjectManager } from './visualization/mesh/MeshObjectManager';
 import { ElevationSampler } from './visualization/mesh/util/ElevationSampler';
+import { OriginManager } from './gis/OriginManager';
+import { droneConfig } from './config';
 
 export function App() {
   let viewer3D: Viewer3D | null = null;
@@ -47,6 +49,17 @@ export function App() {
     }
 
     drone = createDrone();
+
+    const originManager = new OriginManager({
+      lat: droneConfig.initialCoordinates.latitude,
+      lng: droneConfig.initialCoordinates.longitude,
+    });
+
+    // Update origin when drone moves
+    drone.on('locationChanged', (geo) => {
+      originManager.setOrigin(geo);
+    });
+
     elevationData = new ElevationDataManager(drone);
     contextData = new ContextDataManager(drone);
     viewer3D = new Viewer3D(containerRef, drone);
@@ -67,7 +80,8 @@ export function App() {
       viewer3D.getScene(),
       contextData,
       elevationSampler,
-      elevationData
+      elevationData,
+      originManager
     );
 
     droneObject = new DroneObject(drone, viewer3D);

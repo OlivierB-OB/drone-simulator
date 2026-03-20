@@ -1,16 +1,18 @@
 import type { Geometry, Position } from 'geojson';
 import type { ModulesFeatures } from '../../../features/registrationTypes';
-import type { MercatorBounds } from '../../elevation/types';
+import type { GeoBounds } from '../../elevation/types';
 
-function coordInBounds(c: Position, b: MercatorBounds): boolean {
-  const x = c[0] ?? 0;
-  const y = c[1] ?? 0;
-  return x >= b.minX && x <= b.maxX && y >= b.minY && y <= b.maxY;
+function coordInBounds(c: Position, b: GeoBounds): boolean {
+  const lng = c[0] ?? 0;
+  const lat = c[1] ?? 0;
+  return (
+    lng >= b.minLng && lng <= b.maxLng && lat >= b.minLat && lat <= b.maxLat
+  );
 }
 
 function geometryOverlapsBounds(
   geometry: Geometry,
-  bounds: MercatorBounds
+  bounds: GeoBounds
 ): boolean {
   switch (geometry.type) {
     case 'Point':
@@ -28,12 +30,12 @@ function geometryOverlapsBounds(
 
 /**
  * Returns a new ModulesFeatures containing only features whose geometry
- * has at least one coordinate within the given Mercator bounds.
- * Uses an approximate "any coordinate" check — sufficient for small sub-tiles.
+ * has at least one coordinate within the given geo bounds.
+ * Uses an approximate "any coordinate" check -- sufficient for small sub-tiles.
  */
 export function filterFeaturesByBounds(
   features: ModulesFeatures,
-  bounds: MercatorBounds
+  bounds: GeoBounds
 ): ModulesFeatures {
   const result: Record<string, unknown[]> = {};
   for (const key of Object.keys(features)) {

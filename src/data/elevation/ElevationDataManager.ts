@@ -1,8 +1,8 @@
-import type { MercatorCoordinates } from '../../gis/types';
+import type { GeoCoordinates } from '../../gis/GeoCoordinates';
+import { getTileCoordinatesFromGeo } from '../../gis/GeoCoordinates';
 import type { TileCoordinates, ElevationDataTile } from './types';
 import { elevationConfig } from '../../config';
 import { ElevationDataTileLoader } from './ElevationDataTileLoader';
-import { getTileCoordinates } from '../../gis/webMercator';
 import {
   TileDataManager,
   type TileManagerConfig,
@@ -34,10 +34,10 @@ export class ElevationDataManager extends TileDataManager<ElevationDataTile> {
   }
 
   protected getTileCoordinates(
-    loc: MercatorCoordinates,
+    loc: GeoCoordinates,
     zoom: number
   ): TileCoordinates {
-    return getTileCoordinates(loc, zoom);
+    return getTileCoordinatesFromGeo(loc, zoom);
   }
 
   /**
@@ -118,11 +118,11 @@ export class ElevationDataManager extends TileDataManager<ElevationDataTile> {
   }
 
   /**
-   * Returns the elevation tile covering the given Mercator coordinate, or null if not loaded.
+   * Returns the elevation tile covering the given lat/lng, or null if not loaded.
    */
-  getTileAt(mercatorX: number, mercatorY: number): ElevationDataTile | null {
-    const coords = getTileCoordinates(
-      { x: mercatorX, y: mercatorY },
+  getTileAt(lat: number, lng: number): ElevationDataTile | null {
+    const coords = getTileCoordinatesFromGeo(
+      { lat, lng },
       elevationConfig.zoomLevel
     );
     const key = `${coords.z}:${coords.x}:${coords.y}`;

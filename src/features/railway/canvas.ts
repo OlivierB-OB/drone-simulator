@@ -13,7 +13,7 @@ export function drawRailways(
 
   for (const railway of features) {
     ctx.strokeStyle = railway.color;
-    ctx.lineWidth = railway.widthMeters * scaleX;
+    ctx.lineWidth = railway.widthMeters * draw.pixelsPerMeter;
     ctx.setLineDash(railway.dash);
     drawLineString(ctx, railway.geometry, bounds, scaleX, scaleY);
   }

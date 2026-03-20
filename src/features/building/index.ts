@@ -1,6 +1,7 @@
 import type { FeatureModule } from '../types';
 import type { Object3D } from 'three';
 import type { ElevationSampler } from '../../visualization/mesh/util/ElevationSampler';
+import type { GeoCoordinates } from '../../gis/GeoCoordinates';
 import { BuildingMeshFactory } from './BuildingMeshFactory';
 import booleanContains from '@turf/boolean-contains';
 import type { BuildingVisual, ModuleFeatures } from './types';
@@ -36,9 +37,10 @@ export const buildingModule: FeatureModule<ModuleFeatures> = {
 
   createMeshes(
     features: ModuleFeatures,
-    elevationSampler: ElevationSampler
+    elevationSampler: ElevationSampler,
+    origin: GeoCoordinates
   ): Object3D[] {
     const factory = new BuildingMeshFactory(elevationSampler);
-    return factory.create(features.buildings);
+    return factory.create(features.buildings, origin);
   },
 };

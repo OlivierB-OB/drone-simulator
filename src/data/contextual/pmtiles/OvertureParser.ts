@@ -1,8 +1,8 @@
 import type { VectorTileLayer } from '@mapbox/vector-tile';
 import type { DecodedTile } from './PMTilesReader';
-import type { MercatorBounds, TileCoordinates } from '../../elevation/types';
+import type { GeoBounds, TileCoordinates } from '../../elevation/types';
 import type { ModulesFeatures } from '../../../features/registrationTypes';
-import { mvtToMercatorGeometry } from './mvtGeometry';
+import { mvtToGeoGeometry } from './mvtGeometry';
 import { classifyOvertureBuilding } from '../../../features/building/overtureClassify';
 import { classifyOvertureRoad } from '../../../features/road/overtureClassify';
 import { classifyOvertureRailway } from '../../../features/railway/overtureClassify';
@@ -41,7 +41,7 @@ const RAIL_CLASSES = new Set([
 export class OvertureParser {
   static parse(
     layers: DecodedTile,
-    bounds: MercatorBounds,
+    bounds: GeoBounds,
     _coordinates: TileCoordinates
   ): ModulesFeatures {
     const features = featureRegistry.modulesFeaturesFactory();
@@ -57,7 +57,7 @@ export class OvertureParser {
   private static processLayer(
     layerName: string,
     layer: VectorTileLayer,
-    bounds: MercatorBounds,
+    bounds: GeoBounds,
     features: ModulesFeatures
   ): void {
     switch (layerName) {
@@ -90,13 +90,13 @@ export class OvertureParser {
 
   private static processBuildings(
     layer: VectorTileLayer,
-    bounds: MercatorBounds,
+    bounds: GeoBounds,
     features: ModulesFeatures,
     isPart: boolean
   ): void {
     for (let i = 0; i < layer.length; i++) {
       const f = layer.feature(i);
-      const geometry = mvtToMercatorGeometry(f, bounds);
+      const geometry = mvtToGeoGeometry(f, bounds);
       if (!geometry) continue;
       const props = f.properties;
       const id = String(props.id ?? `building-${i}`);
@@ -108,12 +108,12 @@ export class OvertureParser {
 
   private static processTransportSegments(
     layer: VectorTileLayer,
-    bounds: MercatorBounds,
+    bounds: GeoBounds,
     features: ModulesFeatures
   ): void {
     for (let i = 0; i < layer.length; i++) {
       const f = layer.feature(i);
-      const geometry = mvtToMercatorGeometry(f, bounds);
+      const geometry = mvtToGeoGeometry(f, bounds);
       if (!geometry || geometry.type !== 'LineString') continue;
       const props = f.properties;
       const id = String(props.id ?? `segment-${i}`);
@@ -135,12 +135,12 @@ export class OvertureParser {
 
   private static processLandUse(
     layer: VectorTileLayer,
-    bounds: MercatorBounds,
+    bounds: GeoBounds,
     features: ModulesFeatures
   ): void {
     for (let i = 0; i < layer.length; i++) {
       const f = layer.feature(i);
-      const geometry = mvtToMercatorGeometry(f, bounds);
+      const geometry = mvtToGeoGeometry(f, bounds);
       if (!geometry || geometry.type !== 'Polygon') continue;
       const props = f.properties;
       const id = String(props.id ?? `landuse-${i}`);
@@ -152,12 +152,12 @@ export class OvertureParser {
 
   private static processLand(
     layer: VectorTileLayer,
-    bounds: MercatorBounds,
+    bounds: GeoBounds,
     features: ModulesFeatures
   ): void {
     for (let i = 0; i < layer.length; i++) {
       const f = layer.feature(i);
-      const geometry = mvtToMercatorGeometry(f, bounds);
+      const geometry = mvtToGeoGeometry(f, bounds);
       if (!geometry) continue;
       const props = f.properties;
       const id = String(props.id ?? `land-${i}`);
@@ -195,12 +195,12 @@ export class OvertureParser {
 
   private static processLandCover(
     layer: VectorTileLayer,
-    bounds: MercatorBounds,
+    bounds: GeoBounds,
     features: ModulesFeatures
   ): void {
     for (let i = 0; i < layer.length; i++) {
       const f = layer.feature(i);
-      const geometry = mvtToMercatorGeometry(f, bounds);
+      const geometry = mvtToGeoGeometry(f, bounds);
       if (!geometry) continue;
       const props = f.properties;
       const id = String(props.id ?? `landcover-${i}`);
@@ -210,12 +210,12 @@ export class OvertureParser {
 
   private static processInfrastructure(
     layer: VectorTileLayer,
-    bounds: MercatorBounds,
+    bounds: GeoBounds,
     features: ModulesFeatures
   ): void {
     for (let i = 0; i < layer.length; i++) {
       const f = layer.feature(i);
-      const geometry = mvtToMercatorGeometry(f, bounds);
+      const geometry = mvtToGeoGeometry(f, bounds);
       if (!geometry) continue;
       const props = f.properties;
       const id = String(props.id ?? `infra-${i}`);
@@ -254,12 +254,12 @@ export class OvertureParser {
 
   private static processWater(
     layer: VectorTileLayer,
-    bounds: MercatorBounds,
+    bounds: GeoBounds,
     features: ModulesFeatures
   ): void {
     for (let i = 0; i < layer.length; i++) {
       const f = layer.feature(i);
-      const geometry = mvtToMercatorGeometry(f, bounds);
+      const geometry = mvtToGeoGeometry(f, bounds);
       if (!geometry) continue;
       if (geometry.type !== 'Polygon' && geometry.type !== 'LineString')
         continue;

@@ -1,7 +1,6 @@
 import { type Object3D, Mesh, type MeshStandardMaterial } from 'three';
 import { DroneGeometryFactory } from './factory/DroneGeometryFactory';
 import type { Drone } from '../../drone/Drone';
-import { mercatorToThreeJs } from '../../gis/types';
 import type { Viewer3D } from '../../3Dviewer/Viewer3D';
 
 /**
@@ -37,10 +36,8 @@ export class DroneObject {
    * Called when location or elevation changes.
    */
   private updatePosition(): void {
-    const location = this.drone.getLocation();
-    const elevation = this.drone.getElevation();
-    const threeCoords = mercatorToThreeJs(location, elevation);
-    this.group.position.set(threeCoords.x, threeCoords.y, threeCoords.z);
+    // Drone is always at origin (0, elevation, 0) in local tangent plane
+    this.group.position.set(0, this.drone.getElevation(), 0);
     this.viewer3D.render();
   }
 

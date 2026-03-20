@@ -1,8 +1,11 @@
 import type { ContextDataTile } from '../../../data/contextual/types';
-import type { MercatorBounds } from '../../../gis/types';
+import type { GeoBounds } from '../../../data/elevation/types';
+import { EARTH_RADIUS } from '../../../gis/GeoCoordinates';
 import { groundColors } from '../../../config';
 import { featureRegistry } from '../../../features/registry';
 import '../../../features/registration';
+
+const TO_RAD = Math.PI / 180;
 
 /**
  * Renders context features (landuse, roads, water, vegetation, etc.) onto a canvas.
@@ -25,12 +28,12 @@ export class TerrainCanvasRenderer {
    *
    * @param canvas - HTMLCanvasElement to render onto
    * @param contextTile - Context data tile containing features
-   * @param mercatorBounds - Mercator coordinate bounds for the tile
+   * @param geoBounds - Geographic coordinate bounds for the tile
    */
   renderTile(
     canvas: HTMLCanvasElement,
     contextTile: ContextDataTile,
-    mercatorBounds: MercatorBounds
+    geoBounds: GeoBounds
   ): void {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -39,16 +42,23 @@ export class TerrainCanvasRenderer {
 
     this.clear(canvas);
 
-    const mercatorWidth = mercatorBounds.maxX - mercatorBounds.minX;
-    const mercatorHeight = mercatorBounds.maxY - mercatorBounds.minY;
-    const scaleX = width / mercatorWidth;
-    const scaleY = height / mercatorHeight;
+    const lngRange = geoBounds.maxLng - geoBounds.minLng;
+    const latRange = geoBounds.maxLat - geoBounds.minLat;
+    const scaleX = width / lngRange; // pixels per degree longitude
+    const scaleY = height / latRange; // pixels per degree latitude
+
+    // For line width conversion (meters -> pixels)
+    const centerLat = (geoBounds.minLat + geoBounds.maxLat) / 2;
+    const metersPerDegreeLng =
+      TO_RAD * EARTH_RADIUS * Math.cos(centerLat * TO_RAD);
+    const pixelsPerMeter = scaleX / metersPerDegreeLng;
 
     featureRegistry.drawAllCanvas(contextTile.features, {
       ctx,
-      bounds: mercatorBounds,
+      bounds: geoBounds,
       scaleX,
       scaleY,
+      pixelsPerMeter,
     });
   }
 
