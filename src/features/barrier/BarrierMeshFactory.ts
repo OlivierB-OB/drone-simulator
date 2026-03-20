@@ -1,10 +1,9 @@
 import { BoxGeometry, MeshLambertMaterial, Mesh, type Object3D } from 'three';
+import distance from '@turf/distance';
+import bearing from '@turf/bearing';
+import { point } from '@turf/helpers';
 import type { ElevationSampler } from '../../visualization/mesh/util/ElevationSampler';
-import {
-  geoToLocal,
-  EARTH_RADIUS,
-  type GeoCoordinates,
-} from '../../gis/GeoCoordinates';
+import { geoToLocal, type GeoCoordinates } from '../../gis/GeoCoordinates';
 import { barrierDefaults, barrierMaterialColors } from '../../config';
 import type { BarrierVisual } from './types';
 
@@ -46,18 +45,15 @@ export class BarrierMeshFactory {
       const [lng1, lat1] = coords[i]!;
       const [lng2, lat2] = coords[i + 1]!;
 
-      const midLat = (lat1 + lat2) / 2;
-      const cosLat = Math.cos(midLat * TO_RAD);
-
-      // Convert degree deltas to meters
-      const dEast = (lng2 - lng1) * TO_RAD * EARTH_RADIUS * cosLat;
-      const dNorth = (lat2 - lat1) * TO_RAD * EARTH_RADIUS;
-      const segmentLength = Math.sqrt(dEast * dEast + dNorth * dNorth);
+      const p1 = point([lng1, lat1]);
+      const p2 = point([lng2, lat2]);
+      const segmentLength = distance(p1, p2, { units: 'meters' });
       if (segmentLength < 0.1) continue;
 
+      const midLat = (lat1 + lat2) / 2;
       const midLng = (lng1 + lng2) / 2;
       const terrainY = this.elevation.sampleAt(midLat, midLng);
-      const angle = Math.atan2(dEast, dNorth); // rotation around Y axis
+      const angle = bearing(p1, p2) * TO_RAD;
 
       const geometry = new BoxGeometry(width, height, segmentLength);
       const mesh = new Mesh(geometry, material);

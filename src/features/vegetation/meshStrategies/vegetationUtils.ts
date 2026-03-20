@@ -9,7 +9,8 @@ import {
   type Object3D,
 } from 'three';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
-import { point } from '@turf/helpers';
+import { point, polygon as turfPolygon } from '@turf/helpers';
+import pointGrid from '@turf/point-grid';
 import type { Polygon } from 'geojson';
 import type { ElevationSampler } from '../../../visualization/mesh/util/ElevationSampler';
 import {
@@ -66,7 +67,6 @@ export function distributeGridInPolygon(
   const ring = polygon.coordinates[0];
   if (!ring || ring.length < 4) return [];
 
-  // Find bounding box in [lng, lat]
   let minLng = Infinity,
     maxLng = -Infinity;
   let minLat = Infinity,
@@ -78,43 +78,30 @@ export function distributeGridInPolygon(
     if (lat > maxLat) maxLat = lat;
   }
 
-  // Convert meter spacing to degree increments
+  const grid = pointGrid([minLng, minLat, maxLng, maxLat], spacingX, {
+    units: 'meters',
+    mask: turfPolygon(polygon.coordinates),
+  });
+
+  if (!jitter) {
+    return grid.features.map((f) => f.geometry.coordinates as [number, number]);
+  }
+
   const centerLat = (minLat + maxLat) / 2;
   const cosLat = Math.cos(centerLat * TO_RAD);
   const spacingLng = spacingX / (TO_RAD * EARTH_RADIUS * cosLat);
   const spacingLat = spacingY / (TO_RAD * EARTH_RADIUS);
 
-  const maxPoints = 2000;
-  const estimatedCount =
-    ((maxLng - minLng) / spacingLng) * ((maxLat - minLat) / spacingLat);
-  const effectiveSpacingLng =
-    estimatedCount > maxPoints
-      ? spacingLng * Math.sqrt(estimatedCount / maxPoints)
-      : spacingLng;
-  const effectiveSpacingLat =
-    estimatedCount > maxPoints
-      ? spacingLat * Math.sqrt(estimatedCount / maxPoints)
-      : spacingLat;
-
   const points: [number, number][] = [];
-
-  for (let lng = minLng; lng <= maxLng; lng += effectiveSpacingLng) {
-    for (let lat = minLat; lat <= maxLat; lat += effectiveSpacingLat) {
-      let px = lng;
-      let py = lat;
-
-      if (jitter) {
-        const seed = hash(lng, lat);
-        px += (seededRandom(seed + 2) - 0.5) * effectiveSpacingLng * 0.8;
-        py += (seededRandom(seed + 3) - 0.5) * effectiveSpacingLat * 0.8;
-      }
-
-      if (booleanPointInPolygon(point([px, py]), polygon)) {
-        points.push([px, py]);
-      }
+  for (const f of grid.features) {
+    const [lng, lat] = f.geometry.coordinates as [number, number];
+    const seed = hash(lng, lat);
+    const px = lng + (seededRandom(seed + 2) - 0.5) * spacingLng * 0.8;
+    const py = lat + (seededRandom(seed + 3) - 0.5) * spacingLat * 0.8;
+    if (booleanPointInPolygon(point([px, py]), polygon)) {
+      points.push([px, py]);
     }
   }
-
   return points;
 }
 

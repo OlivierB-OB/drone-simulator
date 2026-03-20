@@ -1,3 +1,6 @@
+import length from '@turf/length';
+import lineSliceAlong from '@turf/line-slice-along';
+import { lineString } from '@turf/helpers';
 import type { LineString } from 'geojson';
 
 interface FlagRule {
@@ -107,47 +110,10 @@ export function splitExcluding(
 ): LineString[] {
   if (excludeRanges.length === 0) return [line];
 
-  const coords = line.coordinates;
-
-  // Compute cumulative Euclidean distances along the coordinate array
-  const cumDist: number[] = [0];
-  for (let i = 1; i < coords.length; i++) {
-    const latRad =
-      ((coords[i]![1]! + coords[i - 1]![1]!) / 2) * (Math.PI / 180);
-    const dx = (coords[i]![0]! - coords[i - 1]![0]!) * Math.cos(latRad);
-    const dy = coords[i]![1]! - coords[i - 1]![1]!;
-    cumDist.push(cumDist[i - 1]! + Math.sqrt(dx * dx + dy * dy));
-  }
-  const totalLen = cumDist[cumDist.length - 1]!;
+  const feature = lineString(line.coordinates);
+  const totalLen = length(feature, { units: 'meters' });
   if (totalLen === 0) return [];
 
-  // Interpolate a point at distance d along the line
-  function pointAtDist(d: number): number[] {
-    d = Math.max(0, Math.min(d, totalLen));
-    for (let i = 1; i < cumDist.length; i++) {
-      if (cumDist[i]! >= d) {
-        const segLen = cumDist[i]! - cumDist[i - 1]!;
-        const t = segLen === 0 ? 0 : (d - cumDist[i - 1]!) / segLen;
-        const p0 = coords[i - 1]!;
-        const p1 = coords[i]!;
-        return [p0[0]! + t * (p1[0]! - p0[0]!), p0[1]! + t * (p1[1]! - p0[1]!)];
-      }
-    }
-    return [...coords[coords.length - 1]!];
-  }
-
-  // Collect coords strictly between startD and endD, plus interpolated endpoints
-  function sliceCoords(startD: number, endD: number): number[][] {
-    const result: number[][] = [pointAtDist(startD)];
-    for (let i = 0; i < coords.length; i++) {
-      const d = cumDist[i]!;
-      if (d > startD && d < endD) result.push([...coords[i]!]);
-    }
-    result.push(pointAtDist(endD));
-    return result;
-  }
-
-  // Build complement (non-excluded) ranges in [0,1]
   const complement: [number, number][] = [];
   let cursor = 0;
   for (const [a, b] of excludeRanges) {
@@ -159,12 +125,14 @@ export function splitExcluding(
   const result: LineString[] = [];
   for (const [a, b] of complement) {
     if (b <= a) continue;
-    const startD = a * totalLen;
-    const endD = b * totalLen;
-    if (endD - startD === 0) continue;
-    const sliced = sliceCoords(startD, endD);
-    if (sliced.length >= 2) {
-      result.push({ type: 'LineString', coordinates: sliced });
+    const startMeters = a * totalLen;
+    const endMeters = b * totalLen;
+    if (endMeters - startMeters === 0) continue;
+    const sliced = lineSliceAlong(feature, startMeters, endMeters, {
+      units: 'meters',
+    });
+    if (sliced.geometry.coordinates.length >= 2) {
+      result.push(sliced.geometry);
     }
   }
   return result;
