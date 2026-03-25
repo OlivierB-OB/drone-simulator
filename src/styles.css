@@ -29,8 +29,30 @@
 }
 
 #threejs-container {
+  position: relative;
   width: 100%;
   flex: 1;
   overflow: hidden;
   min-height: 0;
+}
+
+#threejs-container::before,
+#threejs-container::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 25px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+#threejs-container::before {
+  top: 0;
+  background: linear-gradient(to bottom, white, transparent);
+}
+
+#threejs-container::after {
+  bottom: 0;
+  background: linear-gradient(to top, white, transparent);
 }

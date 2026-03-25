@@ -31,7 +31,7 @@ export function LocationSearch(props: Props) {
       });
       const data: NominatimResult[] = await res.json();
       setOptions(data);
-    }, 200);
+    }, 800);
   }
 
   function onChange(result: NominatimResult | null) {

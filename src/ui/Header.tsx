@@ -51,7 +51,7 @@ export function Header(props: Props) {
         </Tooltip>
         <Tooltip content="View source on GitHub">
           <a
-            href="https://github.com/OlivierB-OB/drone-simulator"
+            href="https://github.com/OlivierB-OB/osm-drone-simulator"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="GitHub"

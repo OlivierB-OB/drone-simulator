@@ -24,7 +24,7 @@
   "peerDependencies": {
     "typescript": "^5.9.3"
   },
-  "description": "A static SolidJS web application for drone simulation",
+  "description": "Interactive 3D drone simulator — fly over real-world terrain with satellite elevation data and OpenStreetMap features",
   "license": "MIT",
   "private": true,
   "scripts": {

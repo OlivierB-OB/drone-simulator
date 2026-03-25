@@ -223,20 +223,21 @@ describe('BuildingMeshFactory', () => {
     expect(group.children[1]!.position.y).toBeGreaterThan(0);
   });
 
-  it('uses min contour elevation for standalone buildings', () => {
-    const sampler = makeSampler((lat, _lng) => (lat === 50 ? 100 : 200));
+  it('uses centroid elevation for standalone buildings', () => {
+    // rectanglePolygon centroid ≈ lat=55 → sampler returns 100
+    const sampler = makeSampler((lat, _lng) => (lat > 53 ? 100 : 200));
     const elevFactory = new BuildingMeshFactory(sampler);
     const building = makeBuilding();
     const result = elevFactory.create([building], origin);
     expect(result).toHaveLength(1);
-    // Position Y should be based on min elevation (100), not centroid
     expect(result[0]!.position.y).toBeCloseTo(100, 0);
   });
 
   it('children use parent elevation, not their own', () => {
-    // Parent vertices at lat=50,60 → sampler returns 100 for lat 50
-    // Child vertices at lat=50,55 → sampler would return different values
-    const sampler = makeSampler((lat, _lng) => (lat <= 50 ? 50 : 200));
+    // Parent (rectanglePolygon) centroid ≈ lat=55 → sampler returns 100
+    // Child (smallChildPolygon) centroid ≈ lat=52.5 → sampler would return 200
+    // Both should use parent centroid elevation (100)
+    const sampler = makeSampler((lat, _lng) => (lat > 53 ? 100 : 200));
     const elevFactory = new BuildingMeshFactory(sampler);
 
     const child = makeBuilding({
@@ -252,9 +253,8 @@ describe('BuildingMeshFactory', () => {
       children: [child],
     });
     const result = elevFactory.create([parent, child], origin);
-    // Both should use parent's min elevation (50)
     for (const mesh of result) {
-      expect(mesh.position.y).toBeCloseTo(50, 0);
+      expect(mesh.position.y).toBeCloseTo(100, 0);
     }
   });
 });
