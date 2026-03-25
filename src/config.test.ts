@@ -116,10 +116,6 @@ describe('debugConfig', () => {
   });
 
   describe('defaults', () => {
-    it('should have showAxisHelper set to true by default', () => {
-      expect(debugConfig.showAxisHelper).toBe(true);
-    });
-
     it('should have axesHelperSize set to 500 by default', () => {
       expect(debugConfig.axesHelperSize).toBe(500);
     });

@@ -488,5 +488,5 @@ export const debugConfig = {
   axesHelperSize: 500,
 
   // Use simple unlit mesh material for terrain instead of realistic phong shading
-  useSimpleTerrainMaterial: true,
+  useSimpleTerrainMaterial: false,
 };
