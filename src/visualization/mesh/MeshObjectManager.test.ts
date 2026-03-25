@@ -36,16 +36,19 @@ function makeDataSource() {
   };
 }
 
-function makeElevationDataSource() {
+function makeElevationDataSource(elevationReady = false) {
   let addedHandler:
     | ((data: { key: string; tile: unknown }) => void)
     | undefined;
+  const getTileAt = vi.fn().mockReturnValue(elevationReady ? {} : null);
   return {
     on: vi.fn((event: string, handler: unknown) => {
       if (event === 'tileAdded') addedHandler = handler as typeof addedHandler;
     }),
     off: vi.fn(),
+    getTileAt,
     fireAdded: (key: string) => addedHandler!({ key, tile: null }),
+    setReady: (ready: boolean) => getTileAt.mockReturnValue(ready ? {} : null),
   };
 }
 
@@ -118,9 +121,30 @@ describe('MeshObjectManager', () => {
         expect.any(Function)
       );
     });
+
+    it('subscribes to tileAdded on elevationData', () => {
+      const elevationSource = makeElevationDataSource();
+      buildManager(elevationSource);
+      expect(elevationSource.on).toHaveBeenCalledWith(
+        'tileAdded',
+        expect.any(Function)
+      );
+    });
   });
 
-  describe('tileAdded', () => {
+  describe('tileAdded (gating)', () => {
+    it('does not add to scene when elevation is not ready', () => {
+      buildManager(makeElevationDataSource(false));
+      dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
+      expect(scene.add).not.toHaveBeenCalled();
+    });
+
+    it('adds a Group to scene immediately when elevation is already ready', () => {
+      buildManager(makeElevationDataSource(true));
+      dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
+      expect(scene.add).toHaveBeenCalledWith(expect.any(THREE.Group));
+    });
+
     it('does not throw when tile is added', () => {
       buildManager();
       expect(() =>
@@ -128,23 +152,61 @@ describe('MeshObjectManager', () => {
       ).not.toThrow();
     });
 
-    it('adds a Group to scene', () => {
-      buildManager();
-      dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
-
-      expect(scene.add).toHaveBeenCalledWith(expect.any(THREE.Group));
-    });
-
-    it('includes factory-produced meshes inside the group', () => {
+    it('includes factory-produced meshes inside the group when elevation is ready', () => {
       const mesh = makeMockMesh();
       mockCreateAllMeshes.mockReturnValue([mesh]);
 
-      buildManager();
+      buildManager(makeElevationDataSource(true));
       dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
 
       const group = (scene.add as ReturnType<typeof vi.fn>).mock
         .calls[0]![0] as THREE.Group;
       expect(group.children).toContain(mesh);
+    });
+  });
+
+  describe('elevation tileAdded', () => {
+    it('no-ops when no pending context exists', () => {
+      const elevationSource = makeElevationDataSource();
+      buildManager(elevationSource);
+      expect(() => elevationSource.fireAdded('9:261:168')).not.toThrow();
+      expect(scene.add).not.toHaveBeenCalled();
+    });
+
+    it('builds pending tile when elevation becomes ready', () => {
+      const elevationSource = makeElevationDataSource(false);
+      buildManager(elevationSource);
+
+      dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
+      expect(scene.add).not.toHaveBeenCalled();
+
+      elevationSource.setReady(true);
+      elevationSource.fireAdded('9:261:168');
+
+      expect(scene.add).toHaveBeenCalledWith(expect.any(THREE.Group));
+    });
+
+    it('builds pending tile only once — no rebuild on subsequent elevation events', () => {
+      const elevationSource = makeElevationDataSource(false);
+      buildManager(elevationSource);
+
+      dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
+      elevationSource.setReady(true);
+      elevationSource.fireAdded('9:261:168');
+      elevationSource.fireAdded('9:261:168'); // second elevation event
+
+      expect(scene.add).toHaveBeenCalledTimes(1);
+    });
+
+    it('never calls scene.remove during tile build (no rebuild cycle)', () => {
+      const elevationSource = makeElevationDataSource(false);
+      buildManager(elevationSource);
+
+      dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
+      elevationSource.setReady(true);
+      elevationSource.fireAdded('9:261:168');
+
+      expect(scene.remove).not.toHaveBeenCalled();
     });
   });
 
@@ -154,11 +216,18 @@ describe('MeshObjectManager', () => {
       expect(() => dataSource.fireRemoved('9:999:999')).not.toThrow();
     });
 
+    it('does not call scene.remove for a tile that was pending (never built)', () => {
+      buildManager(makeElevationDataSource(false));
+      dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
+      dataSource.fireRemoved('9:261:168');
+      expect(scene.remove).not.toHaveBeenCalled();
+    });
+
     it('removes the group from scene and disposes geometry and material', () => {
       const mesh = makeMockMesh();
       mockCreateAllMeshes.mockReturnValue([mesh]);
 
-      buildManager();
+      buildManager(makeElevationDataSource(true));
       dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
 
       const group = (scene.add as ReturnType<typeof vi.fn>).mock
@@ -179,65 +248,17 @@ describe('MeshObjectManager', () => {
       const mesh = makeMockMesh();
       mockCreateAllMeshes.mockReturnValue([mesh]);
 
-      buildManager();
+      buildManager(makeElevationDataSource(true));
       dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
       dataSource.fireRemoved('9:261:168');
-      dataSource.fireRemoved('9:261:168'); // key no longer in map
+      dataSource.fireRemoved('9:261:168');
 
       expect(scene.remove).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('elevation tileAdded (rebuild)', () => {
-    it('no-ops when elevation key has no matching context tile', () => {
-      const elevationSource = makeElevationDataSource();
-      buildManager(elevationSource);
-      expect(() => elevationSource.fireAdded('9:261:168')).not.toThrow();
-      expect(scene.add).not.toHaveBeenCalled();
-    });
-
-    it('rebuilds meshes when elevation key matches a loaded context tile', () => {
-      const mesh = makeMockMesh();
-      mockCreateAllMeshes.mockReturnValue([mesh]);
-
-      const elevationSource = makeElevationDataSource();
-      buildManager(elevationSource);
-
-      dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
-      expect(scene.add).toHaveBeenCalledTimes(1);
-
-      // Reset for rebuild detection
-      vi.clearAllMocks();
-      mockCreateAllMeshes.mockReturnValue([makeMockMesh()]);
-
-      elevationSource.fireAdded('9:261:168');
-
-      // Old group removed before new group added
-      expect(scene.remove).toHaveBeenCalled();
-      expect(scene.add).toHaveBeenCalled();
-    });
-
-    it('disposes old mesh geometry and material on rebuild', () => {
-      const mesh = makeMockMesh();
-      mockCreateAllMeshes.mockReturnValue([mesh]);
-
-      const elevationSource = makeElevationDataSource();
-      buildManager(elevationSource);
-
-      dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
-      elevationSource.fireAdded('9:261:168');
-
-      expect(
-        mesh.geometry.dispose as ReturnType<typeof vi.fn>
-      ).toHaveBeenCalled();
-      expect(
-        (mesh.material as THREE.Material).dispose as ReturnType<typeof vi.fn>
-      ).toHaveBeenCalled();
-    });
-  });
-
   describe('dispose', () => {
-    it('unsubscribes from tileAdded and tileRemoved', () => {
+    it('unsubscribes from tileAdded and tileRemoved on contextData', () => {
       const manager = buildManager();
       manager.dispose();
       expect(dataSource.off).toHaveBeenCalledWith(
@@ -250,12 +271,27 @@ describe('MeshObjectManager', () => {
       );
     });
 
-    it('removes all remaining groups from scene', () => {
-      const manager = buildManager();
+    it('unsubscribes from tileAdded on elevationData', () => {
+      const elevationSource = makeElevationDataSource();
+      const manager = buildManager(elevationSource);
+      manager.dispose();
+      expect(elevationSource.off).toHaveBeenCalledWith(
+        'tileAdded',
+        expect.any(Function)
+      );
+    });
+
+    it('removes all remaining built groups from scene', () => {
+      const manager = buildManager(makeElevationDataSource(true));
       dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
       manager.dispose();
-
       expect(scene.remove).toHaveBeenCalledWith(expect.any(THREE.Group));
+    });
+
+    it('does not throw when disposing with pending (unbuilt) tiles', () => {
+      const manager = buildManager(makeElevationDataSource(false));
+      dataSource.fireAdded('9:261:168', makeTile('9:261:168'));
+      expect(() => manager.dispose()).not.toThrow();
     });
 
     it('does not throw when disposing empty manager', () => {

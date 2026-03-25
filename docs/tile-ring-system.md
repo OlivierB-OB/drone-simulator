@@ -170,6 +170,8 @@ flowchart TD
 
 **Concurrency:** While one tile loads, up to 2 others can load simultaneously (maxConcurrentLoads = 3)
 
+**Load order:** Candidates are sorted by squared Euclidean distance to the center tile before dispatch. The center tile loads first, then the 4 cardinal neighbours, then the 4 corners. This applies both in `updateTileRing()` (initial dispatch) and `processQueuedTiles()` (queue drain after each completed load), so the visually most important tile always has priority.
+
 ### 4. Tile Eviction (Memory Management)
 
 ```mermaid

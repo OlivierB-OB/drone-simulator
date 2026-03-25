@@ -170,11 +170,21 @@ export abstract class TileDataManager<TileType> extends TypedEventEmitter<
       }
     }
 
-    // Dispatch loads for tiles not yet present
-    for (const key of desiredTiles) {
-      if (!this.tileCache.has(key) && !this.pendingLoads.has(key)) {
-        this.loadTileAsync(key);
-      }
+    // Dispatch loads for tiles not yet present, nearest first
+    const candidates = [...desiredTiles].filter(
+      (k) => !this.tileCache.has(k) && !this.pendingLoads.has(k)
+    );
+    candidates.sort((a, b) => {
+      const [, ax, ay] = this.parseTileKey(a);
+      const [, bx, by] = this.parseTileKey(b);
+      return (
+        (ax - center.x) ** 2 +
+        (ay - center.y) ** 2 -
+        ((bx - center.x) ** 2 + (by - center.y) ** 2)
+      );
+    });
+    for (const key of candidates) {
+      this.loadTileAsync(key);
     }
   }
 }

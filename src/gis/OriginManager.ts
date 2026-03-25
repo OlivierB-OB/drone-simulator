@@ -26,6 +26,7 @@ export class OriginManager {
   }
 
   setOrigin(geo: GeoCoordinates): void {
+    if (this.origin.lat === geo.lat && this.origin.lng === geo.lng) return;
     const prev = this.origin;
     this.origin = { ...geo };
     for (const handler of this.changeHandlers) handler(this.origin, prev);

@@ -139,15 +139,24 @@ Vegetation areas identified by Overture fields:
 
 ### Rendering Strategy
 
-**Strategy Pattern**: Each vegetation type (forest, scrub, orchard, vineyard, single tree, tree row) uses a dedicated strategy class implementing consistent tree/bush creation.
+**Strategy Pattern**: Each vegetation type (forest, scrub, orchard, vineyard, single tree, tree row) uses a dedicated strategy class implementing `collectPoints()`.
 
-**Key Optimization: InstancedMesh**
+**Key Optimization: Unified InstancedMesh Batching**
 
-Instead of creating individual meshes for 100s or 1000s of trees, the system uses Three.js `InstancedMesh`:
-- Single geometry (e.g., cylinder for trunk) drawn multiple times with different transforms
-- **Memory efficiency**: O(1) geometry, O(n) per-instance transforms (matrices)
-- **GPU efficiency**: Single draw call per type instead of n draw calls
-- **Color variation**: Per-instance color attributes add visual variety
+All vegetation in a tile is batched into a maximum of **4 draw calls**, regardless of how many forests, orchards, or single trees are present:
+
+| Mesh | Geometry | Count |
+|------|----------|-------|
+| Trunk | `CylinderGeometry` | All trees in tile |
+| Broadleaf canopy | `SphereGeometry` | All broadleaf trees |
+| Needle canopy | `ConeGeometry` | All needleleaf trees |
+| Bush | `SphereGeometry` | All bushes (scrub, vineyard) |
+
+**Two-Pass Batch in `VegetationMeshFactory`:**
+1. **Pass 1 — collect**: each strategy's `collectPoints()` pushes `TreePoint` or `BushPoint` records into shared arrays (no Three.js objects created yet)
+2. **Pass 2 — batch**: `batchInstancedTrees()` and `batchInstancedBushes()` create a single `InstancedMesh` per geometry type across all collected points
+
+Shared geometries (`TRUNK_GEOM`, `BROADLEAF_GEOM`, `NEEDLE_GEOM`, `BUSH_GEOM`) are module-level constants — created once and reused by every `InstancedMesh` in every tile.
 
 **Distribution Methods:**
 
@@ -156,32 +165,41 @@ Instead of creating individual meshes for 100s or 1000s of trees, the system use
    - Jitter applied to grid to avoid grid artifact
 2. **Orchard/Vineyard**: Regular grid spacing with optional jitter
    - `spacingX` × `spacingY` meters between plants
-3. **Single Tree**: Point geometry → single tree mesh at location
+3. **Single Tree**: Point geometry → one `TreePoint` with exact dimensions (no random variation)
 4. **Tree Row**: LineString interpolated at regular intervals along path
 
 ### Geometry Details
 
-**Tree Structure (Forest/Scrub):**
+**Tree Structure:**
 - **Trunk**: Tapered cylinder (base 0.2m radius, top 0.15m radius, height 40% of tree)
 - **Canopy**:
   - Broadleaf: Sphere scaled to crown radius
   - Needleleaf: Cone scaled to height and radius
-- **Coloring**: Each tree instance assigned random color from palette (#3a7a30 to #407a30 for broadleaf)
+- **Coloring**: Per-instance color assigned from palette using seeded hash (deterministic)
 - **Elevation**: Sampled at tree point; trunk base at terrain elevation
 
-**Bush Structure (Scrub):**
+**Bush Structure (Scrub/Vineyard):**
 - Single sphere (no trunk), height × 0.6 × radius aspect ratio
 - Color varied from palette (#4a7a38 to #5a8a40)
 
 **Instancing Implementation:**
 ```
-count = number of trees
-For each tree i:
-  - Sample terrain elevation at tree location
-  - Create transform matrix (scale + position)
-  - Set matrix at index i in InstancedMesh
-  - Set per-instance color at index i
-Update InstancedMesh.instanceMatrix.needsUpdate = true
+Pass 1 — strategies push TreePoint/BushPoint records (geo coords + size range + colors)
+
+Pass 2 — batchInstancedTrees(treePoints, elevation, origin):
+  Split points into broadleaf[] and needle[]
+  trunkMesh = InstancedMesh(TRUNK_GEOM, count=all points)
+  broadleafMesh = InstancedMesh(BROADLEAF_GEOM, count=broadleaf.length)  [if any]
+  needleMesh = InstancedMesh(NEEDLE_GEOM, count=needle.length)           [if any]
+  For each point:
+    seed = hash(lng, lat)  →  deterministic random variation
+    Sample terrain elevation, compute matrix, setMatrixAt(i), setColorAt(i)
+  Return [trunkMesh, broadleafMesh?, needleMesh?]
+
+batchInstancedBushes(bushPoints, elevation, origin):
+  bushMesh = InstancedMesh(BUSH_GEOM, count=all points)
+  For each point: setMatrixAt(i), setColorAt(i)
+  Return [bushMesh]
 ```
 
 ### Configuration
@@ -481,7 +499,7 @@ flowchart TD
   - Tracks meshes by tile key (z:x:y)
   - When tile ring updates, removes meshes for old tiles
   - Disposes geometries and materials
-  - Subscribes to `ElevationDataManager.tileAdded` (via `TileObjectManager` secondary sources): if an elevation tile arrives *after* the matching context tile, all meshes for that tile are disposed and recreated so they sample the correct terrain elevation
+  - Subscribes to both `ContextDataManager.tileAdded` and `ElevationDataManager.tileAdded`. Meshes are created only when both are available for a tile. Tiles awaiting elevation are held in a pending map — no rebuild or destroy+recreate cycle occurs.
 - **Output**: Animated scene with meshes added/removed as drone moves
 
 ### Performance Implications

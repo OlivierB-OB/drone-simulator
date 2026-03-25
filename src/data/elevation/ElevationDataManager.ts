@@ -98,6 +98,7 @@ export class ElevationDataManager extends TileDataManager<ElevationDataTile> {
 
     const center = this.currentTileCenter;
 
+    const candidates: string[] = [];
     for (let dx = -ringRadius; dx <= ringRadius; dx++) {
       for (let dy = -ringRadius; dy <= ringRadius; dy++) {
         const key = this.getTileKey({
@@ -105,15 +106,23 @@ export class ElevationDataManager extends TileDataManager<ElevationDataTile> {
           x: center.x + dx,
           y: center.y + dy,
         });
-
         if (!this.tileCache.has(key) && !this.pendingLoads.has(key)) {
-          this.loadTileAsync(key);
-
-          if (this.loadingCount >= maxConcurrentLoads) {
-            return;
-          }
+          candidates.push(key);
         }
       }
+    }
+    candidates.sort((a, b) => {
+      const [, ax, ay] = this.parseTileKey(a);
+      const [, bx, by] = this.parseTileKey(b);
+      return (
+        (ax - center.x) ** 2 +
+        (ay - center.y) ** 2 -
+        ((bx - center.x) ** 2 + (by - center.y) ** 2)
+      );
+    });
+    for (const key of candidates) {
+      this.loadTileAsync(key);
+      if (this.loadingCount >= maxConcurrentLoads) return;
     }
   }
 

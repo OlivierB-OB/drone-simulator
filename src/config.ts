@@ -13,7 +13,7 @@ export const droneConfig = {
   initialAzimuth: 0,
 
   // Movement speed in meters per second
-  movementSpeed: 15,
+  movementSpeed: 60,
 
   // Mouse sensitivity for azimuth control (degrees per pixel of mouse movement)
   mouseSensitivity: 0.15,
@@ -482,11 +482,11 @@ export const textureConfig = {
 
 export const debugConfig = {
   // Show visual axes helper for debugging coordinate system (red=X, green=Y, blue=Z)
-  showAxisHelper: true,
+  showAxisHelper: false,
 
   // Size of the axes helper visualization
   axesHelperSize: 500,
 
   // Use simple unlit mesh material for terrain instead of realistic phong shading
-  useSimpleTerrainMaterial: false,
+  useSimpleTerrainMaterial: true,
 };

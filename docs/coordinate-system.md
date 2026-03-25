@@ -34,6 +34,7 @@ The drone is always at `(0, elevation, 0)`. All scene objects are expressed as m
 - When the drone moves, `OriginManager.setOrigin(newGeo)` is called.
 - Subscribers (`TerrainObjectManager`, `MeshObjectManager`) register via `onChange()` and **reposition all existing tile meshes** by calling `geoToLocal(tileCenter, newOrigin)` for each tile.
 - Newly created tiles are positioned with the current origin at creation time.
+- `setOrigin()` short-circuits when `lat` and `lng` are unchanged, so subscribers are not notified on idle frames.
 
 This keeps the drone at `(0, elevation, 0)` while the world moves around it.
 

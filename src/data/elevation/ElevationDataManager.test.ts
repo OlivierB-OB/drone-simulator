@@ -95,6 +95,26 @@ describe('ElevationDataManager', () => {
       expect((loadAsyncSpy.mock?.calls || []).length).toBe(initialCalls);
     });
 
+    it('processQueuedTiles dispatches center tile before corner tiles', () => {
+      const loadSpy = vi
+        .spyOn(manager as any, 'loadTileAsync')
+        .mockImplementation(() => {});
+
+      // Reset state so processQueuedTiles has all ring tiles as candidates
+      (manager as any).pendingLoads.clear();
+      (manager as any).tileCache.clear();
+      (manager as any).loadingCount = 0;
+
+      (manager as any).processQueuedTiles();
+
+      const firstKey = loadSpy.mock.calls[0]![0] as string;
+      const [, cx, cy] = (manager as any).parseTileKey(firstKey);
+      const center = (manager as any).currentTileCenter;
+
+      expect(cx).toBe(center.x);
+      expect(cy).toBe(center.y);
+    });
+
     it('should remove tiles outside ring radius on move', async () => {
       const removedTiles: string[] = [];
       manager.on('tileRemoved', ({ key }) => {

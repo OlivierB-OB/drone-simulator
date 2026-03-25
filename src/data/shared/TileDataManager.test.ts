@@ -162,6 +162,12 @@ describe('TileDataManager (base class)', () => {
       m.dispose();
       d.dispose();
     });
+
+    it('dispatches center tile before corner tiles', () => {
+      // Drone at lat=48.853, lng=2.3499 → x=Math.floor(234.99)=234, y=Math.floor(4885.3)=4885
+      const centerKey = manager.exposeGetTileKey({ z: 10, x: 234, y: 4885 });
+      expect(manager.loadTileAsyncCallKeys[0]).toBe(centerKey);
+    });
   });
 
   // -----------------------------------------------------------------------

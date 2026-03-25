@@ -18,8 +18,15 @@ import {
   EARTH_RADIUS,
   type GeoCoordinates,
 } from '../../../gis/GeoCoordinates';
+import type { TreePoint, BushPoint } from './types';
 
 const TO_RAD = Math.PI / 180;
+
+// Shared geometries — created once, reused across all InstancedMesh calls
+const TRUNK_GEOM = new CylinderGeometry(0.15, 0.2, 1, 5);
+const BROADLEAF_GEOM = new SphereGeometry(1, 6, 4);
+const NEEDLE_GEOM = new ConeGeometry(1, 1, 6);
+const BUSH_GEOM = new SphereGeometry(1, 6, 4);
 
 export const TRUNK_COLOR = '#6b4226';
 export const BROADLEAF_COLORS = ['#2d6b1e', '#3a7a30', '#357a28', '#408030'];
@@ -106,108 +113,160 @@ export function distributeGridInPolygon(
 }
 
 /**
- * Creates instanced tree meshes from [lng, lat] points.
+ * Batches all tree points into a minimal set of InstancedMeshes.
+ * Returns 1 trunk mesh + up to 2 canopy meshes (broadleaf, needle).
  */
-export function createInstancedTrees(
-  points: [number, number][],
-  trunkHeightMin: number,
-  trunkHeightMax: number,
-  crownRadiusMin: number,
-  crownRadiusMax: number,
-  isNeedle: boolean,
-  colors: string[],
+export function batchInstancedTrees(
+  points: TreePoint[],
   elevation: ElevationSampler,
   origin: GeoCoordinates
 ): Object3D[] {
-  const count = points.length;
-  if (count === 0) return [];
+  if (points.length === 0) return [];
 
-  const trunkGeom = new CylinderGeometry(0.15, 0.2, 1, 5);
-  const canopyGeom = isNeedle
-    ? new ConeGeometry(1, 1, 6)
-    : new SphereGeometry(1, 6, 4);
+  const broadleaf = points.filter((p) => !p.isNeedle);
+  const needle = points.filter((p) => p.isNeedle);
 
   const trunkMat = new MeshLambertMaterial({ color: TRUNK_COLOR });
-  const canopyMat = new MeshLambertMaterial({ color: colors[0]! });
-
-  const trunkMesh = new InstancedMesh(trunkGeom, trunkMat, count);
-  const canopyMesh = new InstancedMesh(canopyGeom, canopyMat, count);
+  const trunkMesh = new InstancedMesh(TRUNK_GEOM, trunkMat, points.length);
 
   const matrix = new Matrix4();
   const color = new Color();
 
-  for (let i = 0; i < count; i++) {
-    const [lng, lat] = points[i]!;
+  // Trunks — iterate all points in order (broadleaf first, then needle)
+  const ordered = [...broadleaf, ...needle];
+  for (let i = 0; i < ordered.length; i++) {
+    const { lng, lat, trunkHeightMin, trunkHeightMax, crownRadiusMin } =
+      ordered[i]!;
     const seed = hash(lng, lat);
     const t = seededRandom(seed);
 
     const treeHeight = trunkHeightMin + t * (trunkHeightMax - trunkHeightMin);
-    const crownRadius = crownRadiusMin + t * (crownRadiusMax - crownRadiusMin);
+    const crownRadius =
+      crownRadiusMin + t * (ordered[i]!.crownRadiusMax - crownRadiusMin);
     const trunkHeight = treeHeight * 0.4;
     const trunkRadius = crownRadius * 0.15;
     const terrainY = elevation.sampleAt(lat, lng);
-
     const pos = geoToLocal(lat, lng, 0, origin);
 
     matrix.makeScale(trunkRadius / 0.15, trunkHeight, trunkRadius / 0.15);
     matrix.setPosition(pos.x, terrainY + trunkHeight / 2, pos.z);
     trunkMesh.setMatrixAt(i, matrix);
+  }
+  trunkMesh.instanceMatrix.needsUpdate = true;
 
-    const canopyHeight = treeHeight - trunkHeight;
-    if (isNeedle) {
+  const result: Object3D[] = [trunkMesh];
+
+  if (broadleaf.length > 0) {
+    const canopyMat = new MeshLambertMaterial({
+      color: broadleaf[0]!.colors[0]!,
+    });
+    const canopyMesh = new InstancedMesh(
+      BROADLEAF_GEOM,
+      canopyMat,
+      broadleaf.length
+    );
+
+    for (let i = 0; i < broadleaf.length; i++) {
+      const {
+        lng,
+        lat,
+        trunkHeightMin,
+        trunkHeightMax,
+        crownRadiusMin,
+        crownRadiusMax,
+        colors,
+      } = broadleaf[i]!;
+      const seed = hash(lng, lat);
+      const t = seededRandom(seed);
+
+      const treeHeight = trunkHeightMin + t * (trunkHeightMax - trunkHeightMin);
+      const crownRadius =
+        crownRadiusMin + t * (crownRadiusMax - crownRadiusMin);
+      const trunkHeight = treeHeight * 0.4;
+      const terrainY = elevation.sampleAt(lat, lng);
+      const pos = geoToLocal(lat, lng, 0, origin);
+
+      matrix.makeScale(crownRadius, crownRadius, crownRadius);
+      matrix.setPosition(pos.x, terrainY + trunkHeight + crownRadius, pos.z);
+      canopyMesh.setMatrixAt(i, matrix);
+
+      const colorIdx = Math.floor(seededRandom(seed + 1) * colors.length);
+      color.set(colors[colorIdx]!);
+      canopyMesh.setColorAt(i, color);
+    }
+    canopyMesh.instanceMatrix.needsUpdate = true;
+    if (canopyMesh.instanceColor) canopyMesh.instanceColor.needsUpdate = true;
+    result.push(canopyMesh);
+  }
+
+  if (needle.length > 0) {
+    const canopyMat = new MeshLambertMaterial({ color: needle[0]!.colors[0]! });
+    const canopyMesh = new InstancedMesh(NEEDLE_GEOM, canopyMat, needle.length);
+
+    for (let i = 0; i < needle.length; i++) {
+      const {
+        lng,
+        lat,
+        trunkHeightMin,
+        trunkHeightMax,
+        crownRadiusMin,
+        crownRadiusMax,
+        colors,
+      } = needle[i]!;
+      const seed = hash(lng, lat);
+      const t = seededRandom(seed);
+
+      const treeHeight = trunkHeightMin + t * (trunkHeightMax - trunkHeightMin);
+      const crownRadius =
+        crownRadiusMin + t * (crownRadiusMax - crownRadiusMin);
+      const trunkHeight = treeHeight * 0.4;
+      const canopyHeight = treeHeight - trunkHeight;
+      const terrainY = elevation.sampleAt(lat, lng);
+      const pos = geoToLocal(lat, lng, 0, origin);
+
       matrix.makeScale(crownRadius, canopyHeight, crownRadius);
       matrix.setPosition(
         pos.x,
         terrainY + trunkHeight + canopyHeight / 2,
         pos.z
       );
-    } else {
-      matrix.makeScale(crownRadius, crownRadius, crownRadius);
-      matrix.setPosition(pos.x, terrainY + trunkHeight + crownRadius, pos.z);
-    }
-    canopyMesh.setMatrixAt(i, matrix);
+      canopyMesh.setMatrixAt(i, matrix);
 
-    const colorIdx = Math.floor(seededRandom(seed + 1) * colors.length);
-    color.set(colors[colorIdx]!);
-    canopyMesh.setColorAt(i, color);
+      const colorIdx = Math.floor(seededRandom(seed + 1) * colors.length);
+      color.set(colors[colorIdx]!);
+      canopyMesh.setColorAt(i, color);
+    }
+    canopyMesh.instanceMatrix.needsUpdate = true;
+    if (canopyMesh.instanceColor) canopyMesh.instanceColor.needsUpdate = true;
+    result.push(canopyMesh);
   }
 
-  trunkMesh.instanceMatrix.needsUpdate = true;
-  canopyMesh.instanceMatrix.needsUpdate = true;
-  if (canopyMesh.instanceColor) canopyMesh.instanceColor.needsUpdate = true;
-
-  return [trunkMesh, canopyMesh];
+  return result;
 }
 
 /**
- * Creates instanced bush meshes from [lng, lat] points.
+ * Batches all bush points into a single InstancedMesh.
  */
-export function createInstancedBushes(
-  points: [number, number][],
-  radiusMin: number,
-  radiusMax: number,
-  colors: string[],
+export function batchInstancedBushes(
+  points: BushPoint[],
   elevation: ElevationSampler,
   origin: GeoCoordinates
 ): Object3D[] {
-  const count = points.length;
-  if (count === 0) return [];
+  if (points.length === 0) return [];
 
-  const bushGeom = new SphereGeometry(1, 6, 4);
-  const bushMat = new MeshLambertMaterial({ color: colors[0]! });
-  const bushMesh = new InstancedMesh(bushGeom, bushMat, count);
+  const bushMat = new MeshLambertMaterial({ color: points[0]!.colors[0]! });
+  const bushMesh = new InstancedMesh(BUSH_GEOM, bushMat, points.length);
 
   const matrix = new Matrix4();
   const color = new Color();
 
-  for (let i = 0; i < count; i++) {
-    const [lng, lat] = points[i]!;
+  for (let i = 0; i < points.length; i++) {
+    const { lng, lat, radiusMin, radiusMax, colors } = points[i]!;
     const seed = hash(lng, lat);
     const t = seededRandom(seed);
 
     const radius = radiusMin + t * (radiusMax - radiusMin);
     const terrainY = elevation.sampleAt(lat, lng);
-
     const pos = geoToLocal(lat, lng, 0, origin);
 
     matrix.makeScale(radius, radius * 0.6, radius);
