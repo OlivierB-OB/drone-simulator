@@ -638,20 +638,20 @@ Lake water:    Ring boundary crossed 0 times → Filled (correct)
 
 ### Seamless Boundary Alignment
 
-Tiles are positioned at **tile centers** in Mercator space:
+Tiles are positioned at their geographic center using `geoToLocal()`:
 
 ```typescript
-meshPosition.x = tileCenter_mercatorX;
-meshPosition.z = -tileCenter_mercatorY; // Z-negated
+const pos = geoToLocal(tileCenterLat, tileCenterLng, 0, origin);
+mesh.position.set(pos.x, pos.y, pos.z);
 ```
 
-Canvas bounds match tile extent perfectly:
+Canvas bounds match the tile's Mercator extent perfectly, so canvas pixels align with the terrain geometry UV coordinates:
 
 ```
-Canvas pixel (0, 0)      ↔ Mercator (minX, maxY)
-Canvas pixel (2048, 0)   ↔ Mercator (maxX, maxY)
-Canvas pixel (0, 2048)   ↔ Mercator (minX, minY)
-Canvas pixel (2048, 2048)↔ Mercator (maxX, minY)
+Canvas pixel (0, 0)      ↔ Mercator (minX, maxY)  [NW corner]
+Canvas pixel (2048, 0)   ↔ Mercator (maxX, maxY)  [NE corner]
+Canvas pixel (0, 2048)   ↔ Mercator (minX, minY)  [SW corner]
+Canvas pixel (2048, 2048)↔ Mercator (maxX, minY)  [SE corner]
 ```
 
 This ensures **pixel-perfect alignment** at tile boundaries.
@@ -700,26 +700,25 @@ TerrainCanvasRenderer (canvas) → TerrainTextureFactory (texture) → TerrainOb
                                                                Three.js Mesh + Material
 ```
 
-The canvas texture is applied to the terrain mesh via the material's `.map` property. The mesh is positioned using Mercator → Three.js transformation:
+The canvas texture is applied to the terrain mesh via the material's `.map` property. The mesh is positioned using `geoToLocal()` (geographic → local tangent plane):
 
 ```typescript
-position.x = mercatorX;
-position.y = 0;
-position.z = -mercatorY; // Z-negated (critical!)
+const pos = geoToLocal(tileCenterLat, tileCenterLng, 0, origin);
+mesh.position.set(pos.x, pos.y, pos.z);
 ```
 
 ### Coordinate Consistency
 
-Canvas rendering uses **identical transformation** as all other components:
+Canvas rasterization uses Mercator coordinates internally (matching the tile's Mercator bounds). Mesh positioning uses the WGS84 → local tangent plane system shared by all components:
 
-| Component                                       | Transformation |
-| ----------------------------------------------- | -------------- |
-| Canvas: `canvasY = (maxY - mercatorY) * scaleY` | Inverts Y      |
-| Terrain geometry: Z vertices use `-mercatorY`   | Inverts Y      |
-| Drone position: Z = `-mercatorY`                | Inverts Y      |
-| Camera: lookAt uses Z negation                  | Inverts Y      |
+| Component | Convention |
+| --------- | ---------- |
+| Canvas: `canvasY = (maxY - mercatorY) * scaleY` | Mercator Y inverted for canvas pixel space |
+| Terrain geometry: `geoToLocal()` → Z = −Δlat × R | Local tangent plane, south = +Z |
+| Feature meshes: `geoToLocal()` for group position | Origin = drone at (0, elevation, 0) |
+| Camera: `lookAt(0, droneElevation, 0)` | Drone always at world origin |
 
-**Guarantee:** All components use the same formula. Buildings, roads, and terrain align perfectly in 3D space.
+**Guarantee:** All mesh positioning goes through `geoToLocal()`. Buildings, roads, and terrain align perfectly in 3D space.
 
 ### Event-Driven Pipeline
 

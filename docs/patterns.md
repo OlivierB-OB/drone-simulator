@@ -180,7 +180,7 @@ document.body.removeChild(container);
 ```
 src/
 ├── 3Dviewer/          # Three.js wrappers (Camera, Scene, Renderer, Viewer3D)
-├── core/              # Core utilities (TypedEventEmitter, AnimationLoop)
+├── core/              # Core utilities (TypedEventEmitter)
 ├── drone/             # Drone physics and control
 ├── gis/               # Geographic coordinate system
 ├── data/

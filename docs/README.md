@@ -6,7 +6,7 @@ Organized by task/question. Start here to find the right doc.
 |-------|------|-------------|
 | System overview | [overview.md](overview.md) | What the simulator does and its goals |
 | Architecture & components | [architecture.md](architecture.md) | Components, dependencies, initialization order |
-| Coordinate system | [coordinate-system.md](coordinate-system.md) | **Critical:** Mercator ↔ Three.js conversion, Z-negation |
+| Coordinate system | [coordinate-system.md](coordinate-system.md) | **Critical:** Geographic (WGS84) → local tangent plane, `geoToLocal()` |
 | Data pipeline pattern | [data-pipeline.md](data-pipeline.md) | Four-stage pipeline used across all data systems |
 | Tile ring system | [tile-ring-system.md](tile-ring-system.md) | Spatial tile loading/eviction around drone |
 | Design patterns | [patterns.md](patterns.md) | Observer, Factory, and other patterns used |

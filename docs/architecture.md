@@ -30,9 +30,9 @@ A real-time 3D drone simulator that renders the drone's viewpoint as it moves th
 - **Receives**: Drone's location updates
 - **Produces**: Elevation data for terrain mesh generation
 
-- **ContextDataManager**: Placeholder for contextual data (e.g., landmarks, road networks)
+- **ContextDataManager**: Loads contextual vector features (roads, buildings, vegetation, water, aeroways) from Overture Maps PMTiles archives
 - **Receives**: Drone's location updates
-- **Produces**: Contextual information for visualization
+- **Produces**: Parsed `ContextDataTile` objects containing classified features grouped by type, used by both `TerrainTextureObjectManager` (canvas texture) and `MeshObjectManager` (3D objects)
 
 ### Terrain Visualization
 - **TerrainObjectManager** (`src/visualization/terrain/TerrainObjectManager.ts`): Oversees the complete terrain rendering pipeline

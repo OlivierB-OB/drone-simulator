@@ -50,22 +50,24 @@ Full docs in `docs/`. See `docs/README.md` for the complete index.
 
 ## Architecture
 
-**Stack:** SolidJS 1.9 · TypeScript 5.9 · Three.js 0.160 · Vite 7.3 · Vitest 4.0 · Bun
+**Stack:** SolidJS 1.9 · TypeScript 5.9 · Three.js 0.160 · Vite 7.3 · Vitest 4.1 · Bun
 
 **Core Components:**
 
 - `src/App.tsx` - Orchestrates Viewer3D, AnimationLoop, DroneController, Drone, DroneObject, OriginManager (all initialized in onMount, disposed in cleanup)
 - `src/3Dviewer/` - Wrapper pattern around Three.js (Camera, Scene, Renderer) with constructor injection for testing
-- `src/core/AnimationLoop.ts` - requestAnimationFrame loop, delta time (seconds), frame synchronization
-- `src/drone/` - Drone physics (GeoCoordinates {lat, lng}), DroneController (keyboard input, arrow keys)
+- `src/drone/AnimationLoop.ts` - requestAnimationFrame loop, delta time (seconds), frame synchronization; starts/stops based on drone `movingChanged` event
+- `src/drone/` - Drone physics (GeoCoordinates {lat, lng}), DroneController (keyboard + mouse input); Drone emits `locationChanged`, `azimuthChanged`, `elevationChanged`, `movingChanged` via TypedEventEmitter
 - `src/gis/GeoCoordinates.ts` - Core geo math: `geoToLocal`, `getTileCoordinatesFromGeo`, `getTileGeoBounds`, `EARTH_RADIUS`
 - `src/gis/OriginManager.ts` - Holds drone position as Three.js origin; `onChange`/`offChange` callbacks let `TerrainObjectManager` and `MeshObjectManager` reposition existing tiles on each drone move
 - `src/data/` - ElevationDataManager (tile caching, z:x:y keys, AWS Terrarium PNG), ContextDataManager; `src/data/shared/tileLoaderUtils.ts` for cache-then-load pattern
 - `src/visualization/terrain/` - TerrainGeometryObjectManager + TerrainTextureObjectManager → TerrainObjectManager → TerrainObjectFactory → Three.js meshes (orchestrated pipeline)
-- `src/visualization/DroneObject.ts` - Cone mesh representing the drone in the scene
+- `src/visualization/drone/DroneObject.ts` - Cone mesh representing the drone in the scene
+- `src/visualization/TileObjectManager.ts` - Abstract base for all visual tile lifecycle managers; supports primary source + optional secondary rebuild sources
+- `src/features/` - Feature module registry (`registry.ts`): per-type canvas drawers and 3D mesh factories (buildings, vegetation, structures, barriers, roads, aeroways, water); dispatched by `TerrainCanvasRenderer` and `MeshObjectManager`
 - `src/config.ts` - Centralized config: drone position/speed, camera chase distance/height, elevation zoom/ring/concurrency
 
-**Animation Frame Timing:** `AnimationLoop` (`src/core/AnimationLoop.ts`) manages `requestAnimationFrame` timing and calls `drone.applyMove(deltaTime)` each frame. Subsequent data loading, mesh creation, and rendering are orchestrated via event subscriptions in `App.tsx` and triggered by drone movement—not controlled by AnimationLoop itself.
+**Animation Frame Timing:** `AnimationLoop` (`src/drone/AnimationLoop.ts`) manages `requestAnimationFrame` timing and calls `drone.applyMove(deltaTime)` each frame. Subsequent data loading, mesh creation, and rendering are orchestrated via event subscriptions in `App.tsx` and triggered by drone movement—not controlled by AnimationLoop itself.
 
 ## Coordinate System: Geographic → Three.js (Local Tangent Plane)
 

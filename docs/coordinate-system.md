@@ -69,7 +69,7 @@ lat += dNorth / EARTH_RADIUS / (π/180)
 lng += dEast  / (EARTH_RADIUS × cos(lat × π/180)) / (π/180)
 ```
 
-Speed is 15 m/s (configured in `src/config.ts`).
+Speed is 60 m/s (configured in `src/config.ts`).
 
 ## Chase Camera
 
