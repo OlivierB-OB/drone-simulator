@@ -4,6 +4,18 @@ export interface InterestingPlace {
   lng: number;
   elevation: number;
   category: 'landmark';
-  subcategory: 'building' | 'bridge' | 'religious' | 'monument' | 'stadium' | 'airport' | 'tower' | 'museum' | 'castle' | 'dam' | 'palace' | 'ancient';
+  subcategory:
+    | 'building'
+    | 'bridge'
+    | 'religious'
+    | 'monument'
+    | 'stadium'
+    | 'airport'
+    | 'tower'
+    | 'museum'
+    | 'castle'
+    | 'dam'
+    | 'palace'
+    | 'ancient';
   description: string;
 }

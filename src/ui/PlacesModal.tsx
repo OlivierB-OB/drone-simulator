@@ -1,7 +1,10 @@
 import { Dialog } from '@kobalte/core/dialog';
 import { createSignal, For } from 'solid-js';
 import { TbOutlineX, TbOutlineRefresh } from 'solid-icons/tb';
-import { getRandomPlaces, type InterestingPlace } from '../data/places/interestingPlaces';
+import {
+  getRandomPlaces,
+  type InterestingPlace,
+} from '../data/places/interestingPlaces';
 
 type Props = {
   open: boolean;
@@ -50,7 +53,8 @@ export function PlacesModal(props: Props) {
                     <p class="text-sm text-gray-600">{place.description}</p>
                   )}
                   <p class="text-xs text-gray-500 mt-2">
-                    {place.lat.toFixed(4)}°, {place.lng.toFixed(4)}° • {place.elevation}m
+                    {place.lat.toFixed(4)}°, {place.lng.toFixed(4)}° •{' '}
+                    {place.elevation}m
                   </p>
                 </div>
               )}

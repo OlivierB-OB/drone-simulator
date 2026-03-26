@@ -1,27 +1,53 @@
 import { BufferGeometry, ConeGeometry } from 'three';
 import type { IRoofGeometryStrategy, RoofParams } from './types';
-import { computeOBB } from './roofGeometryUtils';
+import { computeOBB, polygonExtentAtAngle } from './roofGeometryUtils';
+import { PyramidalRoofStrategy } from './PyramidalRoofStrategy';
+
+const CIRCULARITY_THRESHOLD = 1.2;
 
 export class ConeRoofStrategy implements IRoofGeometryStrategy {
   create(params: RoofParams): BufferGeometry {
-    const obb = computeOBB(params.outerRing);
-    const hL = obb.halfLength;
-    const hW = obb.halfWidth;
-    const baseRadius = Math.min(hL, hW);
+    const { outerRing: ring, roofHeight: h } = params;
+    const obb = computeOBB(ring);
 
-    // Cone: open-ended (no base cap, wall extrusion cap covers it)
-    const geom = new ConeGeometry(baseRadius, params.roofHeight, 16, 1, true);
+    // Case B: irregular/elongated footprint — delegate to pyramid
+    if (obb.halfLength / obb.halfWidth >= CIRCULARITY_THRESHOLD) {
+      return new PyramidalRoofStrategy().create(params);
+    }
 
-    // ConeGeometry centers at origin; translate so base is at Y=0
-    geom.translate(0, params.roofHeight / 2, 0);
+    // Case A: approximately circular — per-vertex angular fitting
+    // ConeGeometry(1,1,64): apex at Y=+0.5, base at Y=-0.5
+    const geom = new ConeGeometry(1, 1, 64, 1, true);
+    // Shift so base is at Y=0, apex at Y=1
+    geom.translate(0, 0.5, 0);
 
-    // Scale to fit elongated footprint
-    geom.scale(hL / baseRadius, 1, hW / baseRadius);
+    const pos = geom.attributes.position!;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i); // 0=base, 1=apex after translate
+      const x = pos.getX(i);
+      const z = pos.getZ(i);
+      const sinTheta = Math.sqrt(x * x + z * z);
 
-    geom.rotateY(-params.ridgeAngle);
-    const cx = obb.center[0];
-    const cz = -obb.center[1];
-    geom.translate(cx, 0, cz);
+      if (sinTheta < 0.001) {
+        // Apex vertex
+        pos.setXYZ(i, obb.center[0], h, -obb.center[1]);
+        continue;
+      }
+
+      const theta = Math.atan2(z, x);
+      const rPoly = polygonExtentAtAngle(ring, theta);
+      const rAtHeight = rPoly * (1 - y); // linear taper: full at base, zero at apex
+
+      pos.setXYZ(
+        i,
+        rAtHeight * Math.cos(theta) + obb.center[0],
+        y * h,
+        rAtHeight * Math.sin(theta) - obb.center[1]
+      );
+    }
+
+    pos.needsUpdate = true;
+    geom.computeVertexNormals();
     return geom;
   }
 }

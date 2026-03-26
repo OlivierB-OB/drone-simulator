@@ -4,9 +4,17 @@ import { PyramidalRoofStrategy } from './roofStrategies/PyramidalRoofStrategy';
 import { GabledRoofStrategy } from './roofStrategies/GabledRoofStrategy';
 import { HippedRoofStrategy } from './roofStrategies/HippedRoofStrategy';
 import { SkillionRoofStrategy } from './roofStrategies/SkillionRoofStrategy';
+import { ButterflyRoofStrategy } from './roofStrategies/ButterflyRoofStrategy';
 import { DomeRoofStrategy } from './roofStrategies/DomeRoofStrategy';
 import { OnionRoofStrategy } from './roofStrategies/OnionRoofStrategy';
 import { ConeRoofStrategy } from './roofStrategies/ConeRoofStrategy';
+import { CrosspitchedRoofStrategy } from './roofStrategies/CrosspitchedRoofStrategy';
+import { GambrelRoofStrategy } from './roofStrategies/GambrelRoofStrategy';
+import { HalfHippedRoofStrategy } from './roofStrategies/HalfHippedRoofStrategy';
+import { MansardRoofStrategy } from './roofStrategies/MansardRoofStrategy';
+import { RoundRoofStrategy } from './roofStrategies/RoundRoofStrategy';
+import { SaltboxRoofStrategy } from './roofStrategies/SaltboxRoofStrategy';
+import { SawtoothRoofStrategy } from './roofStrategies/SawtoothRoofStrategy';
 
 export type { OBB, RoofParams } from './roofStrategies/types';
 export {
@@ -28,8 +36,17 @@ export class RoofGeometryFactory {
     ['gabled', new GabledRoofStrategy()],
     ['hipped', new HippedRoofStrategy()],
     ['skillion', new SkillionRoofStrategy()],
+    ['butterfly', new ButterflyRoofStrategy()],
     ['dome', new DomeRoofStrategy()],
     ['onion', new OnionRoofStrategy()],
+    ['crosspitched', new CrosspitchedRoofStrategy()],
+    ['gambrel', new GambrelRoofStrategy()],
+    ['half-hipped', new HalfHippedRoofStrategy()],
+    ['half_hipped', new HalfHippedRoofStrategy()],
+    ['mansard', new MansardRoofStrategy()],
+    ['round', new RoundRoofStrategy()],
+    ['saltbox', new SaltboxRoofStrategy()],
+    ['sawtooth', new SawtoothRoofStrategy()],
   ]);
 
   create(params: RoofParams): BufferGeometry | null {

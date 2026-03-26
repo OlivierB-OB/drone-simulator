@@ -6,22 +6,30 @@ import {
 } from 'three';
 import type { IRoofGeometryStrategy, RoofParams } from './types';
 import { computeOBB } from './roofGeometryUtils';
-import { PyramidalRoofStrategy } from './PyramidalRoofStrategy';
 
-export class HippedRoofStrategy implements IRoofGeometryStrategy {
+/**
+ * Saltbox roof: asymmetric gabled roof with an offset ridge.
+ * One slope is short and steep, the other is long and gentle.
+ * The ridge is displaced toward +across by ridgeOffset = halfWidth * 0.3.
+ *
+ * Uses per-vertex height projection (same pattern as GabledRoofStrategy).
+ */
+export class SaltboxRoofStrategy implements IRoofGeometryStrategy {
+  private readonly RIDGE_OFFSET_FRACTION = 0.3;
+
   create(params: RoofParams): BufferGeometry {
     const ring = params.outerRing;
     const h = params.roofHeight;
+    const obb = computeOBB(ring);
 
-    // --- 1. Ring normalisation ---
+    // --- Ring normalisation (mirrors GabledRoofStrategy) ---
     const isClosedRing =
       ring.length > 1 &&
       ring[0]![0] === ring[ring.length - 1]![0] &&
       ring[0]![1] === ring[ring.length - 1]![1];
     const count = isClosedRing ? ring.length - 1 : ring.length;
-    if (count < 3) return new BufferGeometry();
 
-    // Winding detection via shoelace (positive = CCW in Mercator XY)
+    // Winding detection via shoelace
     let signedArea = 0;
     for (let i = 0; i < count; i++) {
       const j = (i + 1) % count;
@@ -29,62 +37,57 @@ export class HippedRoofStrategy implements IRoofGeometryStrategy {
     }
     const isCCW = signedArea > 0;
 
-    // --- 2. OBB for ridge geometry ---
-    const obb = computeOBB(params.outerRing);
-    const halfLength = obb.halfLength;
-    const halfWidth = obb.halfWidth;
+    // --- Ridge offset ---
+    // Clamp to at most 90% of halfWidth to avoid degenerate geometry
+    const ridgeOffset = Math.min(
+      obb.halfWidth * this.RIDGE_OFFSET_FRACTION,
+      obb.halfWidth * 0.9
+    );
+    const halfWidthShort = obb.halfWidth - ridgeOffset; // steep side (+across)
+    const halfWidthLong = obb.halfWidth + ridgeOffset; // gentle side (-across)
 
-    // --- 3. Degenerate check: square or near-square → pyramidal ---
-    if (halfWidth <= 0.01 || halfLength <= halfWidth + 0.01) {
-      return new PyramidalRoofStrategy().create(params);
-    }
+    // Across-ridge direction in Mercator XY
+    const acrossX = -Math.sin(params.ridgeAngle);
+    const acrossY = Math.cos(params.ridgeAngle);
 
-    // --- 4. Per-vertex height via double projection ---
-    // tAcross: slopes from eave (0) to centreline (1) across the width
-    // tAlong:  tapers from 1 at (halfWidth inward from hip) to 0 at hip end
-    // height = roofHeight * clamp(min(tAcross, tAlong), 0, 1)
-    const cosA = Math.cos(params.ridgeAngle);
-    const sinA = Math.sin(params.ridgeAngle);
-    const ocx = obb.center[0];
-    const ocy = obb.center[1];
-
+    // --- Per-vertex heights ---
+    // Project each vertex onto the across-ridge axis; height depends on which
+    // side of the offset ridge it falls on.
     const heights = new Float64Array(count);
     for (let i = 0; i < count; i++) {
-      const dx = ring[i]![0] - ocx;
-      const dy = ring[i]![1] - ocy;
-
-      const alongProj = dx * cosA + dy * sinA;
-      const acrossProj = -dx * sinA + dy * cosA;
-
-      const tAcross = 1 - Math.abs(acrossProj) / halfWidth;
-      const tAlong = (halfLength - Math.abs(alongProj)) / halfWidth;
-      heights[i] = h * Math.max(0, Math.min(1, Math.min(tAcross, tAlong)));
+      const proj = ring[i]![0] * acrossX + ring[i]![1] * acrossY;
+      if (proj >= ridgeOffset) {
+        // +across side: short steep slope
+        heights[i] = h * Math.max(0, 1 - (proj - ridgeOffset) / halfWidthShort);
+      } else {
+        // -across side: long gentle slope
+        heights[i] = h * Math.max(0, 1 - (ridgeOffset - proj) / halfWidthLong);
+      }
     }
 
-    // --- 5. Triangulate top face ---
+    // --- Top face triangulation ---
     const contour: Vector2[] = [];
     for (let i = 0; i < count; i++) {
       contour.push(new Vector2(ring[i]![0], ring[i]![1]));
     }
     const triangles = ShapeUtils.triangulateShape(contour, []);
 
-    // --- 6. Allocate positions buffer (non-indexed, flat normals) ---
+    // --- Allocate position buffer ---
     const topTriCount = triangles.length;
     const sideTriCount = count * 2;
     const positions = new Float32Array((topTriCount + sideTriCount) * 9);
     let o = 0;
 
-    // --- 7. Top face ---
+    // Top face (Three.js: X=mercX, Y=height, Z=-mercY)
     for (const tri of triangles) {
-      for (const idx of tri) {
-        positions[o++] = ring[idx]![0];
-        positions[o++] = heights[idx]!;
-        positions[o++] = -ring[idx]![1];
+      for (const vi of tri) {
+        positions[o++] = ring[vi]![0];
+        positions[o++] = heights[vi]!;
+        positions[o++] = -ring[vi]![1];
       }
     }
 
-    // --- 8. Side walls (quads as two triangles) ---
-    // Winding: Z=-mercY reverses handedness; swap a/b for CW rings.
+    // Side walls (same winding convention as GabledRoofStrategy)
     for (let i = 0; i < count; i++) {
       const j = (i + 1) % count;
       const a = isCCW ? i : j;
@@ -113,7 +116,6 @@ export class HippedRoofStrategy implements IRoofGeometryStrategy {
       positions[o++] = -ring[a]![1];
     }
 
-    // --- 9. Build BufferGeometry ---
     const geom = new BufferGeometry();
     geom.setAttribute('position', new Float32BufferAttribute(positions, 3));
     geom.computeVertexNormals();

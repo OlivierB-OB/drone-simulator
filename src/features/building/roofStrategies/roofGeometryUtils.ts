@@ -86,8 +86,15 @@ export function resolveRidgeAngle(
 }
 
 /**
- * Computes OBB corners in Three.js local space (XZ plane).
- * Returns [C0, C1, C2, C3] going around the OBB.
+ * Returns the 4 OBB corner positions in Three.js XZ space (Y=0) for a given
+ * OBB and ridge angle. Corner order:
+ *   [0]: +along, +across (C0)
+ *   [1]: +along, -across (C1)
+ *   [2]: -along, -across (C2)
+ *   [3]: -along, +across (C3)
+ *
+ * Along-ridge Three.js XZ: (cos, -sin)
+ * Across-ridge Three.js XZ: (-sin, -cos)
  */
 export function getOBBCorners(
   obb: OBB,
@@ -95,24 +102,48 @@ export function getOBBCorners(
 ): [number, number, number][] {
   const cos = Math.cos(ridgeAngle);
   const sin = Math.sin(ridgeAngle);
-
-  // Along-ridge direction in Mercator: (cos, sin)
-  // Across-ridge direction in Mercator: (-sin, cos)
-  // Map to Three.js: threeX = mercX, threeZ = -mercY
-  const alongX = cos;
-  const alongZ = -sin;
-  const acrossX = -sin;
-  const acrossZ = -cos;
-
   const cx = obb.center[0];
-  const cz = -obb.center[1];
+  const cz = -obb.center[1]; // Three.js Z = -Mercator Y
   const hL = obb.halfLength;
   const hW = obb.halfWidth;
-
   return [
-    [cx + hL * alongX + hW * acrossX, 0, cz + hL * alongZ + hW * acrossZ], // C0: +along +across
-    [cx + hL * alongX - hW * acrossX, 0, cz + hL * alongZ - hW * acrossZ], // C1: +along -across
-    [cx - hL * alongX - hW * acrossX, 0, cz - hL * alongZ - hW * acrossZ], // C2: -along -across
-    [cx - hL * alongX + hW * acrossX, 0, cz - hL * alongZ + hW * acrossZ], // C3: -along +across
+    [cx + hL * cos - hW * sin, 0, cz - hL * sin - hW * cos], // C0: +along +across
+    [cx + hL * cos + hW * sin, 0, cz - hL * sin + hW * cos], // C1: +along -across
+    [cx - hL * cos + hW * sin, 0, cz + hL * sin + hW * cos], // C2: -along -across
+    [cx - hL * cos - hW * sin, 0, cz + hL * sin - hW * cos], // C3: -along +across
   ];
+}
+
+/**
+ * Returns the distance from the polygon centroid (origin) to the polygon
+ * boundary in direction `theta` (radians, Mercator XY plane).
+ * Ring vertices are centroid-relative: [mercX, mercY].
+ * Falls back to OBB half-extent if no intersection is found (concave edge case).
+ */
+export function polygonExtentAtAngle(
+  ring: [number, number][],
+  theta: number
+): number {
+  const dx = Math.cos(theta);
+  const dz = Math.sin(theta);
+  let best = Infinity;
+  for (let i = 0; i < ring.length; i++) {
+    const [ax, ay] = ring[i]!;
+    const [bx, by] = ring[(i + 1) % ring.length]!;
+    const ex = bx - ax;
+    const ey = by - ay;
+    const denom = dx * ey - dz * ex;
+    if (Math.abs(denom) < 1e-10) continue;
+    const t = (ax * ey - ay * ex) / denom;
+    const s = (ax * dz - ay * dx) / denom;
+    if (t > 0 && s >= 0 && s <= 1) best = Math.min(best, t);
+  }
+  if (isFinite(best)) return best;
+  // Fallback: OBB half-extent
+  const obb = computeOBB(ring);
+  const localTheta = theta - obb.angle;
+  return Math.sqrt(
+    Math.pow(obb.halfLength * Math.cos(localTheta), 2) +
+      Math.pow(obb.halfWidth * Math.sin(localTheta), 2)
+  );
 }
