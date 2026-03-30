@@ -74,7 +74,10 @@ export class Drone {
   }
 
   changeElevation(deltaMeters: number): void {
-    this.elevation = Math.max(this.elevationFloor, this.elevation + deltaMeters);
+    this.elevation = Math.max(
+      this.elevationFloor,
+      this.elevation + deltaMeters
+    );
     this.emitter.emit('elevationChanged', this.elevation);
   }
 

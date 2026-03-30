@@ -50,7 +50,9 @@ Full docs in `docs/`. See `docs/README.md` for the complete index.
 
 ## Architecture
 
-**Stack:** SolidJS 1.9 · TypeScript 5.9 · Three.js 0.160 · Vite 7.3 · Vitest 4.1 · Bun
+**Stack:** SolidJS · TypeScript · Three.js · Vite · Vitest · Bun
+
+See [`package.json`](package.json) for current versions and [`docs/technical-stack.md`](docs/technical-stack.md) for architectural decisions.
 
 **Core Components:**
 

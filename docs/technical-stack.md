@@ -2,13 +2,15 @@
 
 ## Overview
 
-This document records the key technology decisions made for the drone simulator project. Each entry includes the technology, version, and the rationale behind the choice.
+This document records the key technology decisions made for the drone simulator project. Each entry includes the technology and the rationale behind the choice.
+
+> **Note:** This document focuses on technology choices and architectural rationale. For current version information, see [`package.json`](../package.json) (dependencies and devDependencies).
 
 ---
 
 ## Frontend Framework
 
-### Decision: SolidJS 1.9
+### Decision: SolidJS
 
 **Rationale:**
 - Fine-grained reactivity model eliminates virtual DOM overhead
@@ -23,7 +25,7 @@ This document records the key technology decisions made for the drone simulator 
 
 ## 3D Graphics Engine
 
-### Decision: Three.js 0.160
+### Decision: Three.js
 
 **Rationale:**
 - Industry-standard abstraction over WebGL, reducing complexity while maintaining performance
@@ -39,7 +41,7 @@ This document records the key technology decisions made for the drone simulator 
 
 ## Language & Type System
 
-### Decision: TypeScript 5.9 (Strict Mode)
+### Decision: TypeScript (Strict Mode)
 
 **Rationale:**
 - Static type checking catches errors at compile-time, reducing runtime failures
@@ -55,7 +57,7 @@ This document records the key technology decisions made for the drone simulator 
 
 ## Build Tool
 
-### Decision: Vite 7.3
+### Decision: Vite
 
 **Rationale:**
 - Native ES module support in dev mode eliminates bundling overhead, enabling instant feedback
@@ -87,7 +89,7 @@ This document records the key technology decisions made for the drone simulator 
 
 ## Testing Framework
 
-### Decision: Vitest 4.1
+### Decision: Vitest
 
 **Rationale:**
 - Vite-native test runner shares configuration (tsconfig.json, vite.config.ts), eliminating duplication
@@ -103,7 +105,7 @@ This document records the key technology decisions made for the drone simulator 
 
 ## DOM Implementation for Tests
 
-### Decision: happy-dom 20.8
+### Decision: happy-dom
 
 **Rationale:**
 - Lightweight implementation (~20× faster than jsdom) enables rapid test execution
@@ -118,7 +120,7 @@ This document records the key technology decisions made for the drone simulator 
 
 ## CSS Framework
 
-### Decision: Tailwind CSS 4.2
+### Decision: Tailwind CSS
 
 **Rationale:**
 - Utility-first approach eliminates custom stylesheet maintenance and keeps styles co-located with markup
@@ -133,7 +135,7 @@ This document records the key technology decisions made for the drone simulator 
 
 ## Geospatial Libraries
 
-### Decision: Turf.js 7.3 + PMTiles 4.4 + Vector Tile Stack
+### Decision: Turf.js + PMTiles + Vector Tile Stack
 
 **Rationale:**
 
@@ -142,12 +144,12 @@ This document records the key technology decisions made for the drone simulator 
 - Covers area, bearing, centroid, distance, boolean containment, point grids, line slicing — all needed for GIS feature processing
 - Operates on standard GeoJSON; no custom format conversion
 
-**PMTiles 4.4:**
+**PMTiles:**
 - Single-file tile archive format that the browser can fetch range-requests against directly
 - Eliminates the need for a tile server; Overture Maps tiles are served as a static `.pmtiles` file
 - Native browser support with the `pmtiles` JS library
 
-**`@mapbox/vector-tile` 2.0 + `pbf` 4.0:**
+**`@mapbox/vector-tile` + `pbf`:**
 - Decode Mapbox Vector Tile (MVT) binary format extracted from the PMTiles archive
 - `pbf` handles Protocol Buffer deserialization; `@mapbox/vector-tile` wraps it with a GeoJSON-compatible API
 - Used in `ContextDataManager` / `OvertureParser` to convert raw tile bytes into feature geometries
@@ -160,16 +162,16 @@ This document records the key technology decisions made for the drone simulator 
 
 ## UI Components
 
-### Decision: Kobalte 0.13 + solid-icons 1.2
+### Decision: Kobalte + solid-icons
 
 **Rationale:**
 
-**`@kobalte/core` 0.13:**
+**`@kobalte/core`:**
 - Accessible, unstyled SolidJS component primitives (Dialog, Popover, etc.)
 - Provides WAI-ARIA compliance out of the box without dictating visual design
 - Styled with Tailwind CSS classes; no style conflicts with the utility-first approach
 
-**`solid-icons` 1.2:**
+**`solid-icons`:**
 - Tree-shakeable icon set built for SolidJS; renders icons as optimized SVG components
 - Used in the Header and location search UI
 
@@ -181,7 +183,7 @@ This document records the key technology decisions made for the drone simulator 
 
 ## Code Linting
 
-### Decision: ESLint 10.0 (with @typescript-eslint)
+### Decision: ESLint (with @typescript-eslint)
 
 **Rationale:**
 - Flat config format (`eslint.config.js`) improves readability and configurability over legacy .eslintrc
@@ -197,7 +199,7 @@ This document records the key technology decisions made for the drone simulator 
 
 ## Code Formatter
 
-### Decision: Prettier 3.8
+### Decision: Prettier
 
 **Rationale:**
 - Opinionated formatting eliminates bikeshedding on style choices
@@ -261,16 +263,16 @@ This document records the key technology decisions made for the drone simulator 
 
 | Category | Technology | Key Rationale |
 |----------|-----------|---------------|
-| **UI Framework** | SolidJS 1.9 | Fine-grained reactivity, compiler-optimized rendering, minimal bundle size |
-| **3D Graphics** | Three.js 0.160 | Industry-standard WebGL abstraction, scene graph, extensible |
-| **Language** | TypeScript 5.9 | Static typing, strict mode, IDE support, type safety |
-| **Build** | Vite 7.3 | ESM-native, instant HMR, zero-config, optimized production output |
+| **UI Framework** | SolidJS | Fine-grained reactivity, compiler-optimized rendering, minimal bundle size |
+| **3D Graphics** | Three.js | Industry-standard WebGL abstraction, scene graph, extensible |
+| **Language** | TypeScript | Static typing, strict mode, IDE support, type safety |
+| **Build** | Vite | ESM-native, instant HMR, zero-config, optimized production output |
 | **Runtime & PM** | Bun | All-in-one tool, 25× faster, npm-compatible, native TS support |
-| **Testing** | Vitest 4.1 | Vite-native, Jest-compatible, shared config, fast execution |
-| **Test DOM** | happy-dom 20.8 | Lightweight, fast, sufficient for logic testing |
-| **CSS** | Tailwind CSS 4.2 | Utility-first, CSS-first config, Vite-native plugin |
-| **Geospatial** | Turf.js 7.3 + PMTiles 4.4 | Modular GIS math, serverless tile access, MVT decoding |
-| **UI Components** | Kobalte 0.13 + solid-icons 1.2 | Accessible SolidJS primitives, tree-shakeable icons |
-| **Linting** | ESLint 10.0 | TypeScript-aware, rule-based, auto-fix, flat config |
-| **Formatting** | Prettier 3.8 | Opinionated, minimal config, language-agnostic, IDE support |
+| **Testing** | Vitest | Vite-native, Jest-compatible, shared config, fast execution |
+| **Test DOM** | happy-dom | Lightweight, fast, sufficient for logic testing |
+| **CSS** | Tailwind CSS | Utility-first, CSS-first config, Vite-native plugin |
+| **Geospatial** | Turf.js + PMTiles | Modular GIS math, serverless tile access, MVT decoding |
+| **UI Components** | Kobalte + solid-icons | Accessible SolidJS primitives, tree-shakeable icons |
+| **Linting** | ESLint | TypeScript-aware, rule-based, auto-fix, flat config |
+| **Formatting** | Prettier | Opinionated, minimal config, language-agnostic, IDE support |
 | **Modules** | ESM | Native browser support, tree-shakeable, modern ecosystem |

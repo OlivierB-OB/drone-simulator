@@ -83,7 +83,10 @@ export function App() {
 
     const updateTerrainFloor = () => {
       const location = drone!.getLocation();
-      const terrainElevation = elevationSampler.sampleAt(location.lat, location.lng);
+      const terrainElevation = elevationSampler.sampleAt(
+        location.lat,
+        location.lng
+      );
       drone!.setElevationFloor(terrainElevation + 1);
     };
     elevationData.on('tileAdded', updateTerrainFloor);
