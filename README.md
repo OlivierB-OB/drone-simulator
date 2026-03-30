@@ -2,7 +2,7 @@
 
 An interactive real-time 3D web application that lets you pilot a virtual drone over real-world terrain. Combines actual satellite elevation data with smooth flight physics, intuitive keyboard controls, and immersive 3D visualization.
 
-**Live demo:** Available at [GitHub Pages](https://github.com/OBernard2/drone-simulator/deployments/activity_log?environment=github-pages) (auto-deployed from main branch via GitHub Actions)
+**Live demo:** Available at [GitHub Pages](https://olivierb-ob.github.io/osm-drone-simulator/) (auto-deployed from main branch via GitHub Actions)
 
 ---
 
