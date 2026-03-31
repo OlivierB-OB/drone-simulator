@@ -8,6 +8,7 @@ import {
   Color,
   type Object3D,
 } from 'three';
+import bbox from '@turf/bbox';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { point, polygon as turfPolygon } from '@turf/helpers';
 import pointGrid from '@turf/point-grid';
@@ -34,8 +35,8 @@ export const NEEDLELEAF_COLORS = ['#1a5020', '#205828', '#256030', '#1a4a20'];
 export const SCRUB_COLORS = ['#4a7a38', '#5a8a40', '#4a8030'];
 
 export function hash(x: number, y: number): number {
-  const a = Math.floor(x * 1000) & 0xffff;
-  const b = Math.floor(y * 1000) & 0xffff;
+  const a = Math.floor(x * 1e6);
+  const b = Math.floor(y * 1e6);
   return ((a * 73856093) ^ (b * 19349663)) & 0x7fffffff;
 }
 
@@ -74,16 +75,7 @@ export function distributeGridInPolygon(
   const ring = polygon.coordinates[0];
   if (!ring || ring.length < 4) return [];
 
-  let minLng = Infinity,
-    maxLng = -Infinity;
-  let minLat = Infinity,
-    maxLat = -Infinity;
-  for (const [lng, lat] of ring as [number, number][]) {
-    if (lng < minLng) minLng = lng;
-    if (lng > maxLng) maxLng = lng;
-    if (lat < minLat) minLat = lat;
-    if (lat > maxLat) maxLat = lat;
-  }
+  const [minLng, minLat, maxLng, maxLat] = bbox(polygon);
 
   const grid = pointGrid([minLng, minLat, maxLng, maxLat], spacingX, {
     units: 'meters',
