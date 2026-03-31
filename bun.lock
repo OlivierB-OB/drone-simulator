@@ -9,6 +9,7 @@
         "@kobalte/core": "^0.13.11",
         "@mapbox/vector-tile": "^2.0.4",
         "@turf/area": "^7.3.4",
+        "@turf/bbox-clip": "^7.3.4",
         "@turf/bearing": "^7.3.4",
         "@turf/boolean-contains": "^7.3.4",
         "@turf/boolean-point-in-polygon": "^7.3.4",
@@ -311,6 +312,8 @@
     "@turf/area": ["@turf/area@7.3.4", "", { "dependencies": { "@turf/helpers": "7.3.4", "@turf/meta": "7.3.4", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-UEQQFw2XwHpozSBAMEtZI3jDsAad4NnHL/poF7/S6zeDCjEBCkt3MYd6DSGH/cvgcOozxH/ky3/rIVSMZdx4vA=="],
 
     "@turf/bbox": ["@turf/bbox@7.3.4", "", { "dependencies": { "@turf/helpers": "7.3.4", "@turf/meta": "7.3.4", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-D5ErVWtfQbEPh11yzI69uxqrcJmbPU/9Y59f1uTapgwAwQHQztDWgsYpnL3ns8r1GmPWLP8sGJLVTIk2TZSiYA=="],
+
+    "@turf/bbox-clip": ["@turf/bbox-clip@7.3.4", "", { "dependencies": { "@turf/helpers": "7.3.4", "@turf/invariant": "7.3.4", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-HCn0q/WPVEE9Dztg7tCvClOPrrh9MoxNUk73byHvcZLBcvziN6F84f/ZbFcbQSh8hgOeVMs/keeqWMqsICcNLg=="],
 
     "@turf/bearing": ["@turf/bearing@7.3.4", "", { "dependencies": { "@turf/helpers": "7.3.4", "@turf/invariant": "7.3.4", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-zvFjapyFaOrM8nBtAND7f4yb0BJV0jyj6cyoXyTYqLY+3Hn0eHgL0M8lwxDLbTom5KfqYDHDVDQC3+VSfypoEA=="],
 

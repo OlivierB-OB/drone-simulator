@@ -46,6 +46,7 @@
     "@kobalte/core": "^0.13.11",
     "@mapbox/vector-tile": "^2.0.4",
     "@turf/area": "^7.3.4",
+    "@turf/bbox-clip": "^7.3.4",
     "@turf/bearing": "^7.3.4",
     "@turf/boolean-contains": "^7.3.4",
     "@turf/boolean-point-in-polygon": "^7.3.4",
