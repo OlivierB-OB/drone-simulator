@@ -3,7 +3,7 @@ import { TilePersistenceCache } from '../shared/TilePersistenceCache';
 
 const _cache = new TilePersistenceCache<ContextDataTile>({
   dbName: 'drone-simulator-context',
-  dbVersion: 6,
+  dbVersion: 7,
   storeName: 'contextTiles',
   clearOnUpgrade: true, // Wipe on upgrade to clear stale color/structure data
 });

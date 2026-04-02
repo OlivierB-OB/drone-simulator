@@ -20,6 +20,8 @@ export interface FeatureModule<T> {
 
   postProcess?(features: ModulesFeatures): void;
 
+  filterFeatures?(features: ModulesFeatures, bounds: GeoBounds): void;
+
   drawCanvas?(features: ModulesFeatures, draw: CanvasDrawContext): void;
 
   createMeshes?(

@@ -1,8 +1,7 @@
 import type { VegetationVisual } from './types';
-import type { Feature, LineString, Point, Polygon } from 'geojson';
+import type { LineString, Point, Polygon } from 'geojson';
 import { groundColors } from '../../config';
 import type { HexColor } from '../sharedTypes';
-import { clipPolygonToBounds, clipLineStringToBounds } from '../clipGeometry';
 
 function getColorForVegetation(vegType: string): HexColor {
   const map = groundColors.vegetation as Record<string, string | undefined>;
@@ -43,8 +42,7 @@ function resolveSourceTags(
 export function classifyOvertureVegetation(
   id: string,
   props: Record<string, unknown>,
-  geometry: Polygon | LineString | Point,
-  boundsPolygon: Feature<Polygon>
+  geometry: Polygon | LineString | Point
 ): VegetationVisual | null {
   const rawClass = (props.class as string) ?? 'vegetation';
   // land_cover `class: 'tree'` is a forested polygon area, not an individual tree
@@ -65,22 +63,9 @@ export function classifyOvertureVegetation(
   const crownDiameter = parseFiniteFloat(tags?.diameter_crown);
   const trunkCircumference = parseFiniteFloat(tags?.circumference);
 
-  let clippedGeometry: Polygon | LineString | Point;
-  if (geometry.type === 'Polygon') {
-    const clipped = clipPolygonToBounds(geometry, boundsPolygon);
-    if (!clipped) return null;
-    clippedGeometry = clipped;
-  } else if (geometry.type === 'LineString') {
-    const clipped = clipLineStringToBounds(geometry, boundsPolygon);
-    if (!clipped) return null;
-    clippedGeometry = clipped;
-  } else {
-    clippedGeometry = geometry;
-  }
-
   return {
     id,
-    geometry: clippedGeometry,
+    geometry,
     type: vegClass,
     height,
     heightCategory,

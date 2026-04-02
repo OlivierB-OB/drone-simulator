@@ -20,7 +20,7 @@ import {
 } from '../../../features/structure/overtureClassify';
 import { featureRegistry } from '../../../features/registry';
 import '../../../features/registration';
-import type { Feature, LineString, Point, Polygon } from 'geojson';
+import type { LineString, Point, Polygon } from 'geojson';
 import { polygon } from '@turf/helpers';
 
 const RAIL_CLASSES = new Set([
@@ -46,19 +46,9 @@ export class OvertureParser {
     _coordinates: TileCoordinates
   ): ModulesFeatures {
     const features = featureRegistry.modulesFeaturesFactory();
-    const { minLng, minLat, maxLng, maxLat } = bounds;
-    const boundsPolygon = polygon([
-      [
-        [minLng, minLat],
-        [maxLng, minLat],
-        [maxLng, maxLat],
-        [minLng, maxLat],
-        [minLng, minLat],
-      ],
-    ]);
 
     for (const [layerName, layer] of layers) {
-      this.processLayer(layerName, layer, bounds, boundsPolygon, features);
+      this.processLayer(layerName, layer, bounds, features);
     }
 
     featureRegistry.runPostProcessing(features);
@@ -69,7 +59,6 @@ export class OvertureParser {
     layerName: string,
     layer: VectorTileLayer,
     bounds: GeoBounds,
-    boundsPolygon: Feature<Polygon>,
     features: ModulesFeatures
   ): void {
     switch (layerName) {
@@ -83,19 +72,19 @@ export class OvertureParser {
         this.processTransportSegments(layer, bounds, features);
         break;
       case 'land_use':
-        this.processLandUse(layer, bounds, boundsPolygon, features);
+        this.processLandUse(layer, bounds, features);
         break;
       case 'land':
-        this.processLand(layer, bounds, boundsPolygon, features);
+        this.processLand(layer, bounds, features);
         break;
       case 'land_cover':
-        this.processLandCover(layer, bounds, boundsPolygon, features);
+        this.processLandCover(layer, bounds, features);
         break;
       case 'infrastructure':
         this.processInfrastructure(layer, bounds, features);
         break;
       case 'water':
-        this.processWater(layer, bounds, boundsPolygon, features);
+        this.processWater(layer, bounds, features);
         break;
     }
   }
@@ -148,7 +137,6 @@ export class OvertureParser {
   private static processLandUse(
     layer: VectorTileLayer,
     bounds: GeoBounds,
-    boundsPolygon: Feature<Polygon>,
     features: ModulesFeatures
   ): void {
     for (let i = 0; i < layer.length; i++) {
@@ -157,12 +145,7 @@ export class OvertureParser {
       if (!geometry || geometry.type !== 'Polygon') continue;
       const props = f.properties;
       const id = String(props.id ?? `landuse-${i}`);
-      const visual = classifyOvertureLanduse(
-        id,
-        props,
-        geometry as Polygon,
-        boundsPolygon
-      );
+      const visual = classifyOvertureLanduse(id, props, geometry as Polygon);
       if (visual) features.landuse.push(visual);
     }
   }
@@ -170,7 +153,6 @@ export class OvertureParser {
   private static processLand(
     layer: VectorTileLayer,
     bounds: GeoBounds,
-    boundsPolygon: Feature<Polygon>,
     features: ModulesFeatures
   ): void {
     for (let i = 0; i < layer.length; i++) {
@@ -189,19 +171,13 @@ export class OvertureParser {
         subtype === 'scrub' ||
         subtype === 'heath'
       ) {
-        const visual = classifyOvertureVegetation(
-          id,
-          props,
-          geometry,
-          boundsPolygon
-        );
+        const visual = classifyOvertureVegetation(id, props, geometry);
         if (visual) features.vegetation.push(visual);
       } else if (featureClass === 'tree' && geometry.type === 'Point') {
         const visual = classifyOvertureVegetation(
           id,
           props,
-          geometry as Point,
-          boundsPolygon
+          geometry as Point
         );
         if (visual) features.vegetation.push(visual);
       } else if (
@@ -211,17 +187,11 @@ export class OvertureParser {
         const visual = classifyOvertureVegetation(
           id,
           props,
-          geometry as LineString,
-          boundsPolygon
+          geometry as LineString
         );
         if (visual) features.vegetation.push(visual);
       } else if (geometry.type === 'Polygon') {
-        const visual = classifyOvertureLanduse(
-          id,
-          props,
-          geometry as Polygon,
-          boundsPolygon
-        );
+        const visual = classifyOvertureLanduse(id, props, geometry as Polygon);
         if (visual) features.landuse.push(visual);
       }
     }
@@ -230,7 +200,6 @@ export class OvertureParser {
   private static processLandCover(
     layer: VectorTileLayer,
     bounds: GeoBounds,
-    boundsPolygon: Feature<Polygon>,
     features: ModulesFeatures
   ): void {
     const LANDUSE_SUBTYPES = new Set(['crop', 'snow', 'barren', 'urban']);
@@ -248,20 +217,17 @@ export class OvertureParser {
         const visual = classifyOvertureLanduse(
           id,
           { ...props, class: subtype },
-          geometry as Polygon,
-          boundsPolygon
+          geometry as Polygon
         );
         if (visual) features.landuse.push(visual);
       } else {
         // forest, shrub, grass, moss, mangrove, wetland → vegetation
         // Normalize 'shrub' → 'scrub' to match existing ScrubStrategy
         const vegClass = subtype === 'shrub' ? 'scrub' : subtype;
-        const visual = classifyOvertureVegetation(
-          id,
-          { ...props, class: vegClass },
-          geometry,
-          boundsPolygon
-        );
+        const visual = classifyOvertureVegetation(id, {
+          ...props,
+          class: vegClass,
+        }, geometry);
         if (visual) features.vegetation.push(visual);
       }
     }
@@ -314,9 +280,18 @@ export class OvertureParser {
   private static processWater(
     layer: VectorTileLayer,
     bounds: GeoBounds,
-    boundsPolygon: Feature<Polygon>,
     features: ModulesFeatures
   ): void {
+    const { minLng, minLat, maxLng, maxLat } = bounds;
+    const boundsPolygon = polygon([
+      [
+        [minLng, minLat],
+        [maxLng, minLat],
+        [maxLng, maxLat],
+        [minLng, maxLat],
+        [minLng, minLat],
+      ],
+    ]);
     for (let i = 0; i < layer.length; i++) {
       const f = layer.feature(i);
       const geometry = mvtToGeoGeometry(f, bounds);

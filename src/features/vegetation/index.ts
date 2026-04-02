@@ -4,7 +4,13 @@ import type { ElevationSampler } from '../../visualization/mesh/util/ElevationSa
 import type { GeoCoordinates } from '../../gis/GeoCoordinates';
 import { drawVegetation } from './canvas';
 import { VegetationMeshFactory } from './VegetationMeshFactory';
-import type { ModuleFeatures } from './types';
+import { postProcessVegetation } from './postProcess';
+import type { VegetationVisual, ModuleFeatures } from './types';
+import type { ModulesFeatures } from '../registrationTypes';
+import type { GeoBounds } from '../../gis/GeoCoordinates';
+import { clipPolygonToBounds, clipLineStringToBounds } from '../clipGeometry';
+import { polygon } from '@turf/helpers';
+import booleanIntersects from '@turf/boolean-intersects';
 
 export const vegetationModule: FeatureModule<ModuleFeatures> = {
   classifyPriority: 60,
@@ -12,6 +18,36 @@ export const vegetationModule: FeatureModule<ModuleFeatures> = {
 
   moduleFeaturesFactory(): ModuleFeatures {
     return { vegetation: [] };
+  },
+
+  postProcess(features: ModulesFeatures): void {
+    postProcessVegetation(features);
+  },
+
+  filterFeatures(features: ModulesFeatures, bounds: GeoBounds): void {
+    const { minLng, minLat, maxLng, maxLat } = bounds;
+    const boundsPolygon = polygon([
+      [
+        [minLng, minLat],
+        [maxLng, minLat],
+        [maxLng, maxLat],
+        [minLng, maxLat],
+        [minLng, minLat],
+      ],
+    ]);
+    features.vegetation = features.vegetation
+      .map((veg) => {
+        if (veg.geometry.type === 'Polygon') {
+          const clipped = clipPolygonToBounds(veg.geometry, boundsPolygon);
+          return clipped ? { ...veg, geometry: clipped } : null;
+        }
+        if (veg.geometry.type === 'LineString') {
+          const clipped = clipLineStringToBounds(veg.geometry, boundsPolygon);
+          return clipped ? { ...veg, geometry: clipped } : null;
+        }
+        return booleanIntersects(veg.geometry, boundsPolygon) ? veg : null;
+      })
+      .filter((veg): veg is VegetationVisual => veg !== null);
   },
 
   drawCanvas(features: ModuleFeatures, draw: CanvasDrawContext): void {

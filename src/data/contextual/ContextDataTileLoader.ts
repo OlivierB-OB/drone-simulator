@@ -8,7 +8,6 @@ import { OvertureParser } from './pmtiles/OvertureParser';
 import type { PMTilesReader, ArchiveGroup } from './pmtiles/PMTilesReader';
 import type { ModulesFeatures } from '../../features/registrationTypes';
 import type { GeoBounds } from '../elevation/types';
-import { filterFeaturesByBounds } from './pmtiles/featureBoundsFilter';
 import { featureRegistry } from '../../features/registry';
 
 /**
@@ -64,7 +63,7 @@ export class ContextDataTileLoader {
         dst.push(...src);
       }
     }
-    return filterFeaturesByBounds(merged, clampBounds);
+    return featureRegistry.filterFeatures(merged, clampBounds);
   }
 
   private static async loadTileDirect(
@@ -144,7 +143,7 @@ export class ContextDataTileLoader {
           y: baseY + dy,
         };
         const subBounds = getTileGeoBounds(subCoords);
-        const subFeatures = filterFeaturesByBounds(allFeatures, subBounds);
+        const subFeatures = featureRegistry.filterFeatures(allFeatures, subBounds);
         const subTile: ContextDataTile = {
           coordinates: subCoords,
           geoBounds: subBounds,

@@ -197,8 +197,7 @@ describe('Overture classify functions', () => {
     const forest = classifyOvertureVegetation(
       'v1',
       { class: 'forest', height: 25 },
-      geom,
-      BOUNDS_POLYGON
+      geom
     );
 
     expect(forest!.type).toBe('forest');
@@ -217,12 +216,7 @@ describe('Overture classify functions', () => {
       ],
     ]).geometry;
 
-    const landuse = classifyOvertureLanduse(
-      'l1',
-      { class: 'residential' },
-      geom,
-      BOUNDS_POLYGON
-    );
+    const landuse = classifyOvertureLanduse('l1', { class: 'residential' }, geom);
 
     expect(landuse).not.toBeNull();
     expect(landuse!.type).toBe('residential');
@@ -537,8 +531,7 @@ describe('Overture classify functions', () => {
           circumference: '3.2',
         }),
       },
-      geom,
-      BOUNDS_POLYGON
+      geom
     );
 
     expect(veg!.leafType).toBe('broadleaved');
@@ -564,8 +557,7 @@ describe('Overture classify functions', () => {
         class: 'tree',
         source_tags: { leaf_type: 'needleleaved', circumference: '2.1' },
       },
-      geom,
-      BOUNDS_POLYGON
+      geom
     );
 
     expect(veg!.leafType).toBe('needleleaved');
@@ -588,8 +580,7 @@ describe('Overture classify functions', () => {
     const veg = classifyOvertureVegetation(
       'v-st3',
       { class: 'grass' },
-      geom,
-      BOUNDS_POLYGON
+      geom
     );
 
     expect(veg!.leafType).toBeUndefined();
@@ -612,8 +603,7 @@ describe('Overture classify functions', () => {
     const veg = classifyOvertureVegetation(
       'v-st4',
       { class: 'scrub', source_tags: '{not valid json' },
-      geom,
-      BOUNDS_POLYGON
+      geom
     );
 
     expect(veg!.leafType).toBeUndefined();
@@ -637,8 +627,7 @@ describe('Overture classify functions', () => {
         class: 'tree',
         source_tags: { diameter_crown: 'wide', leaf_type: 'broadleaved' },
       },
-      geom,
-      BOUNDS_POLYGON
+      geom
     );
 
     expect(veg!.crownDiameter).toBeUndefined();
